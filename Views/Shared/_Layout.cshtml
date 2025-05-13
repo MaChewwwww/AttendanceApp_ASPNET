@@ -1,0 +1,64 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - ASP.NET_CRUD_DEMO</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 text-gray-800">
+    <!-- Header -->
+    <header class="bg-white shadow">
+        <nav class="container mx-auto flex items-center justify-between px-6 py-4">
+            <a class="text-2xl font-bold text-blue-600" asp-area="" asp-controller="Home" asp-action="Index">
+                ASP.NET_CRUD_DEMO
+            </a>
+            <button class="text-gray-600 focus:outline-none lg:hidden" id="menu-toggle">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+                </svg>
+            </button>
+            <ul class="hidden space-x-6 lg:flex" id="menu">
+                <li>
+                    <a class="text-gray-600 transition hover:text-blue-600" asp-area="" asp-controller="Dashboard" asp-action="Index">Dashboard</a>
+                </li>
+                <li>
+                    <a class="text-gray-600 transition hover:text-blue-600" asp-area="" asp-controller="User" asp-action="Index">Users</a>
+                </li>
+                <li>
+                    <a class="text-gray-600 transition hover:text-blue-600" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+                </li>
+                <!-- Logout Link -->
+                <li>
+                    <a class="text-gray-600 transition hover:text-blue-600" asp-area="" asp-controller="Authentication" asp-action="Logout">Logout</a>
+                </li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    @RenderBody()
+
+    <!-- Footer -->
+    <footer class="fixed bottom-0 mt-10 w-full bg-gray-800 text-gray-300">
+        <div class="container mx-auto flex flex-col items-center justify-between px-6 py-6 md:flex-row">
+            <p class="text-sm">&copy; 2025 - ASP.NET_CRUD_DEMO</p>
+            <a class="text-sm text-blue-400 hover:underline" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy Policy</a>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script>
+        // Toggle mobile menu
+        document.getElementById('menu-toggle').addEventListener('click', function () {
+            const menu = document.getElementById('menu');
+            menu.classList.toggle('hidden');
+        });
+    </script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

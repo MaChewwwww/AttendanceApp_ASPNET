@@ -1,0 +1,24 @@
+﻿@{  
+   ViewData["Title"] = "Users";  
+}  
+
+@model List<User>  
+
+<h1 class="mb-4 text-2xl font-bold text-gray-800">Users</h1>  
+<div class="overflow-x-auto">  
+   <table class="min-w-full rounded-lg border border-gray-200 bg-white shadow-md">  
+       <thead class="border-b bg-gray-100">  
+           <tr>  
+               <th class="px-6 py-3 text-left font-medium uppercase tracking-wider text-gray-600">Name</th>  
+           </tr>  
+       </thead>  
+       <tbody>  
+           @foreach (var user in Model)  
+           {  
+               <tr class="border-b hover:bg-gray-50">  
+                   <td class="px-6 py-4 text-gray-700">@user.Name</td>  
+               </tr>  
+           }  
+       </tbody>  
+   </table>  
+</div>
