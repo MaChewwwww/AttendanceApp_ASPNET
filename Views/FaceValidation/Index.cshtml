@@ -1,0 +1,64 @@
+﻿@{
+    ViewData["Title"] = "FaceValidation";
+}
+
+<div class="mx-auto max-w-2xl rounded-lg bg-white p-6 shadow-md">
+    <h2 class="mb-6 text-center text-3xl font-extrabold text-gray-900">Validate Face</h2>
+
+    <form id="faceValidationForm" asp-action="Index" asp-controller="FaceValidation" method="post" enctype="multipart/form-data" class="space-y-6">
+        <div asp-validation-summary="ModelOnly" class="text-red-500"></div> <!-- Display validation errors -->
+
+        <div class="form-group">
+            <label for="faceImage" class="block text-sm font-medium text-gray-700">Capture Face Image:</label>
+            <video id="video" autoplay class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm"></video>
+            <canvas id="canvas" class="hidden"></canvas>
+            <input type="file" id="faceImage" name="faceImage" class="hidden" /> <!-- Hidden file input -->
+            <button type="button" id="capture" class="mt-4 w-full rounded-lg bg-indigo-600 px-4 py-2 text-white shadow-md hover:bg-indigo-700">
+                Capture & Submit
+            </button>
+        </div>
+    </form>
+
+    @if (ViewBag.Message != null)
+    {
+        <div class="relative mt-6 rounded-lg border border-green-400 bg-green-100 px-4 py-3 text-green-700" role="alert">
+            @ViewBag.Message
+        </div>
+    }
+</div>
+
+<script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const captureButton = document.getElementById('capture');
+    const faceImageInput = document.getElementById('faceImage');
+    const form = document.getElementById('faceValidationForm');
+
+    // Access the user's camera
+    navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => {
+            video.srcObject = stream;
+        })
+        .catch(err => {
+            console.error("Error accessing camera: ", err);
+        });
+
+    // Capture the image and submit the form
+    captureButton.addEventListener('click', () => {
+        const context = canvas.getContext('2d');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        // Convert the captured image to a data URL and set it as the value of the hidden input
+        canvas.toBlob(blob => {
+            const file = new File([blob], "faceImage.jpg", { type: "image/jpeg" });
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            faceImageInput.files = dataTransfer.files;
+
+            // Submit the form programmatically
+            form.submit();
+        });
+    });
+</script>

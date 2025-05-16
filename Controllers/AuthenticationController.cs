@@ -92,6 +92,11 @@ namespace Authentication.Controllers
                         // Safely set session values
                         HttpContext.Session.SetString("UserId", result?["user_id"]?.ToString() ?? string.Empty);
                         HttpContext.Session.SetString("UserName", result?["name"]?.ToString() ?? string.Empty);
+                        HttpContext.Session.SetString("UserEmail", result?["email"]?.ToString() ?? string.Empty);
+                        HttpContext.Session.SetString("UserRole", result?["role"]?.ToString() ?? string.Empty);
+                        HttpContext.Session.SetString("UserStudentNumber", result?["student_number"]?.ToString() ?? string.Empty);
+                        HttpContext.Session.SetString("UserFaceImage", result?["face_image"]?.ToString() ?? string.Empty);
+
 
                         return RedirectToAction("Index", "Dashboard");
                     }
