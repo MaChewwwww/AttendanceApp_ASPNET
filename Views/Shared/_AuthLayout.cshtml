@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - AttendanceApp</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    animation: {
+                        'slide-in-left': 'slideInLeft 0.6s ease-out',
+                        'slide-in-right': 'slideInRight 0.6s ease-out',
+                        'slide-out-left': 'slideOutLeft 0.6s ease-in',
+                        'slide-out-right': 'slideOutRight 0.6s ease-in',
+                        'fade-in': 'fadeIn 0.5s ease-in-out',
+                        'slide-down': 'slideDown 0.3s ease-out',
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/css">
+        @@keyframes slideInLeft {
+            from { transform: translateX(-100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @@keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @@keyframes slideOutLeft {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(-100%); opacity: 0; }
+        }
+        @@keyframes slideOutRight {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+        @@keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @@keyframes slideDown {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .auth-slider {
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .content-container {
+            width: 50%;
+            overflow: hidden;
+            position: relative;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen overflow-hidden">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="w-full max-w-6xl h-[700px] bg-white rounded-2xl shadow-2xl overflow-hidden relative">
+            
+            <!-- Navigation Tabs -->
+            <div class="absolute top-0 left-0 right-0 z-30 bg-white border-b border-gray-200">
+                <div class="flex">
+                    <button id="loginTab" class="flex-1 py-4 px-6 text-center font-semibold transition-all duration-300 border-b-2 border-transparent hover:bg-gray-50">
+                        <span class="text-gray-600">Login</span>
+                    </button>
+                    <button id="registerTab" class="flex-1 py-4 px-6 text-center font-semibold transition-all duration-300 border-b-2 border-blue-600 bg-blue-50">
+                        <span class="text-blue-600">Register</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Content Container -->
+            <div class="relative h-full pt-16">
+                
+                <!-- Sliding Panel with Logo/Wallpaper -->
+                <div id="slidingPanel" class="absolute inset-0 auth-slider transform translate-x-0 z-20 content-container">
+                    <div class="h-full bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 flex items-center justify-center relative overflow-hidden">
+                        <!-- Background Pattern -->
+                        <div class="absolute inset-0 opacity-10">
+                            <svg class="w-full h-full" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                                <defs>
+                                    <pattern id="pattern" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+                                        <circle cx="10" cy="10" r="2" fill="white"/>
+                                    </pattern>
+                                </defs>
+                                <rect width="100" height="100" fill="url(#pattern)"/>
+                            </svg>
+                        </div>
+                        
+                        <!-- Logo Section -->
+                        <div class="text-center z-10 px-8">
+                            <div class="mb-8">
+                                <!-- Logo Icon -->
+                                <div class="mx-auto w-24 h-24 bg-white bg-opacity-20 rounded-full flex items-center justify-center mb-4 backdrop-blur-sm">
+                                    <svg class="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+                                    </svg>
+                                </div>
+                                
+                                <!-- App Name -->
+                                <h1 class="text-4xl font-bold text-white mb-2">AttendanceApp</h1>
+                                <p class="text-blue-100 text-lg">Track. Learn. Succeed.</p>
+                            </div>
+                            
+                            <!-- Features -->
+                            <div class="space-y-4 text-white">
+                                <div class="flex items-center justify-center space-x-3">
+                                    <svg class="w-5 h-5 text-blue-200" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    <span>Real-time Attendance Tracking</span>
+                                </div>
+                                <div class="flex items-center justify-center space-x-3">
+                                    <svg class="w-5 h-5 text-blue-200" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    <span>Secure Student Portal</span>
+                                </div>
+                                <div class="flex items-center justify-center space-x-3">
+                                    <svg class="w-5 h-5 text-blue-200" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    <span>Easy Registration Process</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Content Area -->
+                <div class="flex h-full relative">
+                    <!-- Login Section -->
+                    <div id="loginSection" class="content-container absolute left-0 top-0 h-full hidden">
+                        <div class="h-full flex items-center justify-center p-8 bg-white">
+                            <div class="w-full max-w-md">
+                                <!-- Login content -->
+                                <div class="text-center mb-8">
+                                    <h2 class="text-3xl font-bold text-gray-800 mb-2">Welcome Back</h2>
+                                    <p class="text-gray-600">Sign in to your account</p>
+                                </div>
+                                
+                                <form class="space-y-6">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                                        <input type="email" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" placeholder="your.email@iskolarngbayan.pup.edu.ph">
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                                        <input type="password" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" placeholder="••••••••">
+                                    </div>
+                                    
+                                    <div class="flex items-center justify-between">
+                                        <label class="flex items-center">
+                                            <input type="checkbox" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                            <span class="ml-2 text-sm text-gray-600">Remember me</span>
+                                        </label>
+                                        <a href="#" class="text-sm text-blue-600 hover:text-blue-700">Forgot password?</a>
+                                    </div>
+                                    
+                                    <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors">
+                                        Sign In
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Register Section -->
+                    <div id="registerSection" class="content-container absolute right-0 top-0 h-full bg-white">
+                        <div class="h-full overflow-y-auto">
+                            @RenderBody()
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const loginTab = document.getElementById('loginTab');
+            const registerTab = document.getElementById('registerTab');
+            const loginSection = document.getElementById('loginSection');
+            const registerSection = document.getElementById('registerSection');
+            const slidingPanel = document.getElementById('slidingPanel');
+            
+            let currentView = 'register';
+            
+            function showLogin() {
+                if (currentView === 'login') return;
+                
+                currentView = 'login';
+                
+                // Update tabs
+                loginTab.classList.add('border-blue-600', 'bg-blue-50');
+                loginTab.querySelector('span').classList.remove('text-gray-600');
+                loginTab.querySelector('span').classList.add('text-blue-600');
+                loginTab.classList.remove('border-transparent');
+                
+                registerTab.classList.remove('border-blue-600', 'bg-blue-50');
+                registerTab.querySelector('span').classList.remove('text-blue-600');
+                registerTab.querySelector('span').classList.add('text-gray-600');
+                registerTab.classList.add('border-transparent');
+                
+                // Slide panel to cover register (move right)
+                slidingPanel.style.transform = 'translateX(100%)';
+                
+                // Show login, hide register
+                loginSection.classList.remove('hidden');
+                registerSection.classList.add('hidden');
+            }
+            
+            function showRegister() {
+                if (currentView === 'register') return;
+                
+                currentView = 'register';
+                
+                // Update tabs
+                registerTab.classList.add('border-blue-600', 'bg-blue-50');
+                registerTab.querySelector('span').classList.remove('text-gray-600');
+                registerTab.querySelector('span').classList.add('text-blue-600');
+                registerTab.classList.remove('border-transparent');
+                
+                loginTab.classList.remove('border-blue-600', 'bg-blue-50');
+                loginTab.querySelector('span').classList.remove('text-blue-600');
+                loginTab.querySelector('span').classList.add('text-gray-600');
+                loginTab.classList.add('border-transparent');
+                
+                // Slide panel to cover login (move left to original position)
+                slidingPanel.style.transform = 'translateX(0%)';
+                
+                // Show register, hide login
+                registerSection.classList.remove('hidden');
+                loginSection.classList.add('hidden');
+            }
+            
+            loginTab.addEventListener('click', showLogin);
+            registerTab.addEventListener('click', showRegister);
+            
+            // Initialize with register view
+            showRegister();
+        });
+    </script>
+</body>
+</html>
