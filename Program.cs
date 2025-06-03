@@ -1,41 +1,40 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Http;
+using AttendanceApp_ASPNET.Models;
+using AttendanceApp_ASPNET.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
-builder.Services.AddDistributedMemoryCache();
-builder.Services.AddHttpClient();
 
+// Configure session
+builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
 {
-    options.IdleTimeout = TimeSpan.FromMinutes(30);
-    options.Cookie.HttpOnly = true;
-    options.Cookie.IsEssential = true;
-    options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Ensure cookies are secure
-    options.Cookie.SameSite = SameSiteMode.Strict; // Prevent cookies from being sent to third-party sites
+    var sessionConfig = builder.Configuration.GetSection("SessionOptions");
+    options.IdleTimeout = TimeSpan.Parse(sessionConfig["IdleTimeout"] ?? "00:30:00");
+    options.Cookie.HttpOnly = bool.Parse(sessionConfig["Cookie:HttpOnly"] ?? "true");
+    options.Cookie.IsEssential = bool.Parse(sessionConfig["Cookie:IsEssential"] ?? "true");
 });
 
-builder.Services.AddAntiforgery();
-builder.Services.Configure<CookiePolicyOptions>(options =>
-{
-    options.CheckConsentNeeded = context => true;
-    options.MinimumSameSitePolicy = SameSiteMode.Strict;  // Ensure cookies are same-site
-});
+// Configure API settings
+builder.Services.Configure<ApiSettings>(builder.Configuration.GetSection("ApiSettings"));
 
-// Enforce HTTPS in production
-builder.Services.AddHttpsRedirection(options =>
-{
-    options.HttpsPort = 443;  // Ensure this is the correct port for HTTPS (443 is default)
-});
+// Register HttpClient and ApiService
+builder.Services.AddHttpClient<IApiService, ApiService>();
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (!app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment())
+{
+    app.UseDeveloperExceptionPage(); // Enables detailed error pages
+}
+else
 {
     app.UseExceptionHandler("/Home/Error");
-    app.UseHsts();  // Enforce HTTP Strict Transport Security (HSTS)
+    app.UseHsts();
 }
 
 app.UseHttpsRedirection();  // Enforce HTTPS redirection
@@ -49,6 +48,6 @@ app.UseAuthorization();
 // Default route configuration
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Authentication}/{action=Login}/{id?}");
+    pattern: "{controller=Auth}/{action=Register}/{id?}");
 
 app.Run();
