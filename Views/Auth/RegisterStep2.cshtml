@@ -3,7 +3,7 @@
     ViewData["Title"] = "Register - Step 2";
 }
 
-<div class="p-6 h-full">
+<div class="p-6 h-full animate-slide-in-right">
     <!-- Progress Indicator -->
     <div class="mb-6">
         <div class="flex items-center justify-center space-x-2">
@@ -97,7 +97,7 @@
             <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16l-4-4m0 0l4-4m-4 4h18"></path>
             </svg>
-            Back
+            Back to Step 1
         </button>
         <button id="continueButton" class="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-4 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled>
             <span id="continueButtonText">Continue to Final Step</span>
@@ -117,6 +117,10 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     let capturedPhoto = null;
+    
+    // Retrieve stored form data from session/localStorage if needed
+    const registrationData = JSON.parse(sessionStorage.getItem('registrationData') || '{}');
+    console.log('Retrieved registration data:', registrationData);
     
     // Photo capture functionality
     document.getElementById('capturePhotoBtn').addEventListener('click', function() {
@@ -151,8 +155,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Navigation
     document.getElementById('backButton').addEventListener('click', function() {
-        // Navigate back to step 1
-        window.location.href = '/Auth/Register';
+        // Add slide-out animation and navigate back
+        document.querySelector('.animate-slide-in-right').classList.add('animate-slide-out-left');
+        
+        setTimeout(() => {
+            window.location.href = '/Auth/Register';
+        }, 300);
     });
     
     document.getElementById('continueButton').addEventListener('click', function() {
@@ -166,10 +174,39 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('continueButtonText').textContent = 'Processing...';
         document.getElementById('continueSpinner').classList.remove('hidden');
         
-        // Simulate processing and navigate to step 3
-        setTimeout(() => {
-            window.location.href = '/Auth/RegisterStep3';
-        }, 2000);
+        // Complete registration with both form data and photo
+        completeRegistration();
     });
+    
+    async function completeRegistration() {
+        try {
+            const completeRegistrationData = {
+                ...registrationData,
+                face_photo: capturedPhoto
+            };
+            
+            console.log('Completing registration with data:', completeRegistrationData);
+            
+            // Here you would call your final registration API
+            // For now, simulate success and redirect
+            setTimeout(() => {
+                // Clear stored data
+                sessionStorage.removeItem('registrationData');
+                alert('Registration completed successfully!');
+                window.location.href = '/Auth/Login';
+            }, 2000);
+            
+        } catch (error) {
+            console.error('Registration completion failed:', error);
+            
+            // Reset button state
+            const continueBtn = document.getElementById('continueButton');
+            continueBtn.disabled = false;
+            document.getElementById('continueButtonText').textContent = 'Continue to Final Step';
+            document.getElementById('continueSpinner').classList.add('hidden');
+            
+            alert('Registration failed. Please try again.');
+        }
+    }
 });
 </script>

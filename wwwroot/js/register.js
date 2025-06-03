@@ -79,7 +79,6 @@ function validateRequiredFields(formData) {
     if (!formData.contact_number || formData.contact_number.trim() === '') {
         errors.push("Contact Number is required and must not be empty.");
     } else {
-        // Remove all non-digit characters and check if exactly 11 digits
         const digitsOnly = formData.contact_number.replace(/\D/g, '');
         if (digitsOnly.length !== 11) {
             errors.push("Contact Number must be exactly 11 digits.");
@@ -189,57 +188,6 @@ function checkPasswordStrength(password) {
     strengthText.className = `text-xs mt-1 ${strength < 2 ? 'text-red-600' : strength < 4 ? 'text-yellow-600' : 'text-green-600'}`;
 }
 
-// Real-time password validation
-document.getElementById("password").addEventListener("input", function() {
-    checkPasswordStrength(this.value);
-    
-    const confirmPassword = document.getElementById("confirm_password").value;
-    if (confirmPassword && this.value !== confirmPassword) {
-        document.getElementById("confirm_password").classList.add("border-red-300");
-    } else if (confirmPassword) {
-        document.getElementById("confirm_password").classList.remove("border-red-300");
-        document.getElementById("confirm_password").classList.add("border-green-300");
-    }
-});
-
-document.getElementById("confirm_password").addEventListener("input", function() {
-    const password = document.getElementById("password").value;
-    
-    if (this.value && password !== this.value) {
-        this.classList.add("border-red-300");
-        this.classList.remove("border-green-300");
-    } else if (this.value && password === this.value) {
-        this.classList.remove("border-red-300");
-        this.classList.add("border-green-300");
-    } else {
-        this.classList.remove("border-red-300", "border-green-300");
-    }
-});
-
-// Password visibility toggles
-function setupPasswordToggle(passwordId, toggleId) {
-    const passwordField = document.getElementById(passwordId);
-    const toggleButton = document.getElementById(toggleId);
-    
-    toggleButton.addEventListener('click', function() {
-        const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
-        passwordField.setAttribute('type', type);
-        
-        // Toggle eye icon
-        this.innerHTML = type === 'password' ? 
-            `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-            </svg>` :
-            `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"></path>
-            </svg>`;
-    });
-}
-
-setupPasswordToggle('password', 'togglePassword');
-setupPasswordToggle('confirm_password', 'toggleConfirmPassword');
-
 // Loading state management
 function setLoadingState(loading) {
     if (loading) {
@@ -258,12 +206,9 @@ function setLoadingState(loading) {
 // Function to send form data to the API for validation
 async function validateWithAPI(formData) {
     console.log('=== API Validation Started ===');
-    console.log('Form Data to send:', formData);
     
     try {
         const apiUrl = '/Auth/ValidateRegistration';
-        console.log('Making request to:', apiUrl);
-
         const requestOptions = {
             method: "POST",
             headers: {
@@ -272,82 +217,34 @@ async function validateWithAPI(formData) {
             },
             body: JSON.stringify(formData)
         };
-        
-        console.log('Request options:', requestOptions);
 
         const response = await fetch(apiUrl, requestOptions);
-        
-        console.log('Response received:', {
-            status: response.status,
-            statusText: response.statusText,
-            ok: response.ok,
-            headers: Object.fromEntries(response.headers.entries())
-        });
-
-        // Get response text first to see what we're actually getting
         const responseText = await response.text();
-        console.log('Raw response text:', responseText);
 
         if (!response.ok) {
-            console.warn(`API returned ${response.status}: ${response.statusText}`);
             return { 
                 success: false, 
                 errors: [`API Error ${response.status}: ${response.statusText} - ${responseText}`] 
             };
         }
 
-        // Try to parse as JSON
         let result;
         try {
             result = JSON.parse(responseText);
-            console.log('Parsed JSON response:', result);
         } catch (jsonError) {
-            console.error('Failed to parse JSON:', jsonError);
-            console.log('Response was not valid JSON, treating as success since status was 200');
-            return {
-                success: true,
-                errors: []
-            };
+            return { success: true, errors: [] };
         }
         
-        // Handle your Python API response format with is_valid
         if (result.is_valid !== undefined) {
-            return {
-                success: result.is_valid,
-                errors: result.errors || []
-            };
+            return { success: result.is_valid, errors: result.errors || [] };
         } else if (result.success !== undefined) {
             return result;
-        } else if (result.valid !== undefined) {
-            return {
-                success: result.valid,
-                errors: result.errors || []
-            };
-        } else if (result.error) {
-            return {
-                success: false,
-                errors: [result.error]
-            };
-        } else if (result.message && !result.is_valid) {
-            return {
-                success: false,
-                errors: [result.message]
-            };
         } else {
-            // If response is 200 and no error indicators, assume success
-            console.log('No specific success/error format detected, assuming success');
-            return {
-                success: true,
-                errors: []
-            };
+            return { success: true, errors: [] };
         }
         
     } catch (error) {
         console.error('API Validation Error:', error);
-        console.error('Error name:', error.name);
-        console.error('Error message:', error.message);
-        console.error('Error stack:', error.stack);
-        
         return { 
             success: false, 
             errors: [`Network Error: ${error.message}`] 
@@ -355,133 +252,457 @@ async function validateWithAPI(formData) {
     }
 }
 
-// Handle form submission
-submitButton.addEventListener("click", async (event) => {
-    event.preventDefault();
-    console.log('=== FORM SUBMISSION STARTED ===');
+// Function to transition to Step 2 content
+function transitionToStep2() {
+    const registerSection = document.getElementById('registerSection');
+    const currentContent = registerSection.querySelector('.h-full');
     
-    setLoadingState(true);
-    hideErrors();
-
-    try {
-        // Collect form data
-        const year = form.year.value.trim();
-        const month = form.month.value.trim().padStart(2, "0");
-        const day = form.day.value.trim().padStart(2, "0");
-
-        const formData = {
-            first_name: form.first_name.value.trim(),
-            last_name: form.last_name.value.trim(),
-            birthday: `${year}-${month}-${day}`,
-            contact_number: form.contact_number.value.trim(),
-            student_number: form.student_number.value.trim(),
-            email: form.email.value.trim(),
-            password: form.password.value.trim(),
-            confirm_password: form.confirm_password.value.trim(),
-            terms: form.terms.checked,
-        };
-
-        console.log('Form data collected:', formData);
-
-        // Perform local validation first
-        console.log('Starting local validation...');
-        const localErrors = [];
-        localErrors.push(...validateRequiredFields(formData));
-        localErrors.push(...validatePasswords(formData.password, formData.confirm_password));
-        
-        if (localErrors.length > 0) {
-            console.log('Local validation failed:', localErrors);
-            displayErrors(localErrors);
-            setLoadingState(false);
-            return;
-        }
-
-        console.log('Local validation passed');
-
-        // Try API validation
-        console.log('Starting API validation...');
-        const validationResult = await validateWithAPI(formData);
-        console.log('API validation completed:', validationResult);
-
-        if (!validationResult.success) {
-            console.log('API validation failed:', validationResult.errors);
-            displayErrors(validationResult.errors || ['Unknown validation error']);
-        } else {
-            console.log('All validation passed - showing success');
-            showSuccess("Registration validation successful!");
-            
-            // Navigate to step 2 after success
-            setTimeout(() => {
-                window.location.href = '/Auth/RegisterStep2';
-            }, 1500);
-        }
-        
-    } catch (error) {
-        console.error('=== UNEXPECTED ERROR ===');
-        console.error('Error:', error);
-        console.error('Stack:', error.stack);
-        displayErrors([`Unexpected error: ${error.message}`]);
-    } finally {
-        console.log('=== FORM SUBMISSION ENDED ===');
-        setLoadingState(false);
-    }
-});
-
-// Auto-format contact number to exactly 11 digits
-document.getElementById("contact_number").addEventListener("input", function() {
-    let value = this.value.replace(/\D/g, ''); // Remove all non-digits
+    currentContent.classList.add('animate-slide-out-right');
     
-    // Limit to 11 digits
-    if (value.length > 11) {
-        value = value.substring(0, 11);
-    }
-    
-    // Format with spacing for readability but store as digits only
-    if (value.length >= 4 && value.length <= 7) {
-        value = value.replace(/(\d{4})(\d{1,3})/, '$1 $2');
-    } else if (value.length >= 8) {
-        value = value.replace(/(\d{4})(\d{3})(\d{1,4})/, '$1 $2 $3');
-    }
-    
-    this.value = value;
-});
-
-// Auto-format student number to uppercase
-document.getElementById("student_number").addEventListener("input", function() {
-    this.value = this.value.toUpperCase();
-});
-
-// Form field animations on focus
-document.querySelectorAll('input').forEach(input => {
-    input.addEventListener('focus', function() {
-        this.parentElement.classList.add('transform', 'scale-[1.02]');
-    });
-    
-    input.addEventListener('blur', function() {
-        this.parentElement.classList.remove('transform', 'scale-[1.02]');
-    });
-});
-
-// Pre-fill form with test data for faster testing
-function prefillTestData() {
-    document.getElementById('first_name').value = 'Juan';
-    document.getElementById('last_name').value = 'Dela Cruz';
-    document.getElementById('day').value = '15';
-    document.getElementById('month').value = '8';
-    document.getElementById('year').value = '1999';
-    document.getElementById('contact_number').value = '09123456789';
-    document.getElementById('student_number').value = 'STU2023001';
-    document.getElementById('email').value = 'juan.delacruz@iskolarngbayan.pup.edu.ph';
-    document.getElementById('password').value = 'TestPass123!';
-    document.getElementById('confirm_password').value = 'TestPass123!';
-    document.getElementById('terms').checked = true;
-    
-    // Trigger password strength check
-    checkPasswordStrength('TestPass123!');
+    setTimeout(() => {
+        currentContent.innerHTML = createStep2HTML();
+        currentContent.classList.remove('animate-slide-out-right');
+        initializeStep2();
+    }, 200);
 }
 
-// Initialize configuration when page loads
+// Create Step 2 HTML content
+function createStep2HTML() {
+    return `
+        <div class="p-6 h-full animate-slide-in-right">
+            <!-- Progress Indicator -->
+            <div class="mb-6">
+                <div class="flex items-center justify-center space-x-2">
+                    <div class="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">✓</div>
+                    <div class="w-12 h-1 bg-blue-600 rounded"></div>
+                    <div class="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">2</div>
+                    <div class="w-12 h-1 bg-gray-300 rounded"></div>
+                    <div class="w-6 h-6 bg-gray-300 rounded-full flex items-center justify-center text-gray-500 text-xs font-semibold">3</div>
+                </div>
+                <div class="text-center mt-2 text-xs text-gray-600">Step 2: Face Recognition Setup</div>
+            </div>
+
+            <!-- Success Message -->
+            <div id="step2SuccessMessage" class="hidden mb-4 rounded-lg bg-green-50 border border-green-200 p-3 animate-slide-down">
+                <div class="flex items-center">
+                    <svg class="w-4 h-4 text-green-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                </div>
+            </div>
+
+            <!-- Face Recognition Section -->
+            <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-6 mb-6">
+                <div class="text-center">
+                    <div class="mx-auto w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mb-4">
+                        <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path>
+                    </div>
+                    <h2 class="text-xl font-bold text-gray-800 mb-2">Face Recognition Setup</h2>
+                    <p class="text-gray-600 text-sm mb-6">
+                        Take a clear photo of your face for secure attendance tracking
+                    </p>
+                </div>
+
+                <!-- Photo Preview -->
+                <div class="bg-white rounded-lg p-4 mb-4">
+                    <div id="photoPreview" class="w-full h-64 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center">
+                        <div class="text-center">
+                            <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+                            </svg>
+                            <p class="text-gray-500 text-sm mb-2">No photo captured yet</p>
+                            <p class="text-gray-400 text-xs">Click the button below to take your photo</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Capture Button -->
+                <button id="capturePhotoBtn" class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm">
+                    <svg class="w-5 h-5 inline mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path>
+                    </svg>
+                    Take Photo
+                </button>
+            </div>
+
+            <!-- Important Notes -->
+            <div class="bg-yellow-50 rounded-lg p-4 border border-yellow-200 mb-6">
+                <div class="flex items-start">
+                    <svg class="w-5 h-5 text-yellow-400 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                    </svg>
+                    <div>
+                        <h4 class="text-sm font-medium text-yellow-800 mb-2">Important Notes:</h4>
+                        <ul class="text-xs text-yellow-700 space-y-1">
+                            <li>• This photo will be used for facial recognition during attendance</li>
+                            <li>• Make sure your face is clearly visible and well-lit</li>
+                            <li>• Avoid wearing sunglasses or face coverings</li>
+                            <li>• You can retake the photo if you're not satisfied</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation Buttons -->
+            <div class="flex space-x-3">
+                <button id="backToStep1Button" class="flex-1 bg-gray-200 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-300 transition-colors font-medium text-sm">
+                    <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16l-4-4m0 0l4-4m-4 4h18"></path>
+                    </svg>
+                    Back to Step 1
+                </button>
+                <button id="continueToFinalButton" class="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-4 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                    <span id="continueButtonText">Complete Registration</span>
+                    <svg id="continueSpinner" class="hidden animate-spin -mr-1 ml-2 h-4 w-4 text-white inline" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <svg class="inline ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+// Initialize Step 2 functionality
+function initializeStep2() {
+    let capturedPhoto = null;
+    
+    // Create camera modal
+    createCameraModal();
+    
+    // Photo capture functionality
+    document.getElementById('capturePhotoBtn').addEventListener('click', function() {
+        openCameraModal(function(photoData) {
+            capturedPhoto = photoData;
+            displayCapturedPhoto(photoData);
+            document.getElementById('continueToFinalButton').disabled = false;
+            document.getElementById('step2SuccessMessage').classList.remove('hidden');
+        });
+    });
+    
+    // Back to step 1
+    document.getElementById('backToStep1Button').addEventListener('click', function() {
+        sessionStorage.removeItem('registrationData');
+        window.location.reload();
+    });
+    
+    // Complete registration
+    document.getElementById('continueToFinalButton').addEventListener('click', function() {
+        if (!capturedPhoto) {
+            alert('Please capture your photo first.');
+            return;
+        }
+        
+        // Complete registration
+        completeRegistration(capturedPhoto);
+    });
+}
+
+// Create camera modal
+function createCameraModal() {
+    if (document.getElementById('cameraModal')) return;
+    
+    const modalHTML = `
+        <div id="cameraModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+            <div class="flex items-center justify-center min-h-screen p-4">
+                <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+                    <div class="p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-semibold text-gray-900">Take Your Photo</h3>
+                            <button id="closeCameraModal" class="text-gray-400 hover:text-gray-600">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <video id="cameraVideo" class="w-full h-64 bg-gray-100 rounded-lg" autoplay playsinline></video>
+                            <canvas id="cameraCanvas" class="hidden"></canvas>
+                        </div>
+                        
+                        <div class="flex space-x-3">
+                            <button id="captureBtn" class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
+                                Capture Photo
+                            </button>
+                            <button id="cancelCameraBtn" class="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+}
+
+// Camera modal functions
+let cameraStream = null;
+let cameraCallback = null;
+
+function openCameraModal(callback) {
+    cameraCallback = callback;
+    document.getElementById('cameraModal').classList.remove('hidden');
+    
+    navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => {
+            cameraStream = stream;
+            document.getElementById('cameraVideo').srcObject = stream;
+        })
+        .catch(err => {
+            console.error('Camera error:', err);
+            alert('Unable to access camera. Using test photo.');
+            callback('data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAf/AABEIAAEAAQMBEQACEQEDEQH/xAAUAAEAAAAAAAAAAAAAAAAAAAAA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/EABQBAQAAAAAAAAAAAAAAAAAAAAD/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdAA==');
+            closeCameraModal();
+        });
+}
+
+function closeCameraModal() {
+    if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+        cameraStream = null;
+    }
+    document.getElementById('cameraModal').classList.add('hidden');
+}
+
+function capturePhoto() {
+    const video = document.getElementById('cameraVideo');
+    const canvas = document.getElementById('cameraCanvas');
+    const context = canvas.getContext('2d');
+    
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    context.drawImage(video, 0, 0);
+    
+    const dataURL = canvas.toDataURL('image/jpeg', 0.8);
+    if (cameraCallback) {
+        cameraCallback(dataURL);
+    }
+    closeCameraModal();
+}
+
+function displayCapturedPhoto(photoData) {
+    const preview = document.getElementById('photoPreview');
+    preview.innerHTML = `<img src="${photoData}" class="w-full h-full object-cover rounded-lg" alt="Captured photo">`;
+    
+    const captureBtn = document.getElementById('capturePhotoBtn');
+    captureBtn.innerHTML = `
+        <svg class="w-5 h-5 inline mr-2" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"></path>
+        </svg>
+        Retake Photo
+    `;
+    captureBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+    captureBtn.classList.add('bg-orange-600', 'hover:bg-orange-700');
+}
+
+function completeRegistration(photoData) {
+    const registrationData = JSON.parse(sessionStorage.getItem('registrationData') || '{}');
+    
+    // Set loading state
+    const continueBtn = document.getElementById('continueToFinalButton');
+    continueBtn.disabled = true;
+    document.getElementById('continueButtonText').textContent = 'Processing...';
+    document.getElementById('continueSpinner').classList.remove('hidden');
+    
+    // Simulate API call
+    setTimeout(() => {
+        sessionStorage.removeItem('registrationData');
+        alert('Registration completed successfully!');
+        document.getElementById('loginTab').click();
+    }, 2000);
+}
+
+// Global function to reset registration form
+window.resetRegistrationForm = function() {
+    sessionStorage.removeItem('registrationData');
+    if (form) {
+        form.reset();
+        hideErrors();
+        const successMessage = document.getElementById('successMessage');
+        if (successMessage) successMessage.classList.add('hidden');
+        
+        const passwordStrength = document.getElementById('passwordStrength');
+        if (passwordStrength) passwordStrength.classList.add('hidden');
+        
+        const confirmPassword = document.getElementById('confirm_password');
+        if (confirmPassword) {
+            confirmPassword.classList.remove('border-red-300', 'border-green-300');
+        }
+        
+        setLoadingState(false);
+    }
+};
+
+// Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
-    // Pre-fill test data for development
-    prefillTestData();
+    // Password field event listeners
+    if (document.getElementById("password")) {
+        document.getElementById("password").addEventListener("input", function() {
+            checkPasswordStrength(this.value);
+            
+            const confirmPassword = document.getElementById("confirm_password").value;
+            if (confirmPassword && this.value !== confirmPassword) {
+                document.getElementById("confirm_password").classList.add("border-red-300");
+            } else if (confirmPassword) {
+                document.getElementById("confirm_password").classList.remove("border-red-300");
+                document.getElementById("confirm_password").classList.add("border-green-300");
+            }
+        });
+    }
+
+    if (document.getElementById("confirm_password")) {
+        document.getElementById("confirm_password").addEventListener("input", function() {
+            const password = document.getElementById("password").value;
+            
+            if (this.value && password !== this.value) {
+                this.classList.add("border-red-300");
+                this.classList.remove("border-green-300");
+            } else if (this.value && password === this.value) {
+                this.classList.remove("border-red-300");
+                this.classList.add("border-green-300");
+            } else {
+                this.classList.remove("border-red-300", "border-green-300");
+            }
+        });
+    }
+
+    // Password visibility toggles
+    function setupPasswordToggle(passwordId, toggleId) {
+        const passwordField = document.getElementById(passwordId);
+        const toggleButton = document.getElementById(toggleId);
+        
+        if (passwordField && toggleButton) {
+            toggleButton.addEventListener('click', function() {
+                const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordField.setAttribute('type', type);
+                
+                this.innerHTML = type === 'password' ? 
+                    `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                    </svg>` :
+                    `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"></path>
+                    </svg>`;
+            });
+        }
+    }
+
+    setupPasswordToggle('password', 'togglePassword');
+    setupPasswordToggle('confirm_password', 'toggleConfirmPassword');
+
+    // Auto-format contact number
+    const contactField = document.getElementById("contact_number");
+    if (contactField) {
+        contactField.addEventListener("input", function() {
+            let value = this.value.replace(/\D/g, '');
+            if (value.length > 11) value = value.substring(0, 11);
+            
+            if (value.length >= 4 && value.length <= 7) {
+                value = value.replace(/(\d{4})(\d{1,3})/, '$1 $2');
+            } else if (value.length >= 8) {
+                value = value.replace(/(\d{4})(\d{3})(\d{1,4})/, '$1 $2 $3');
+            }
+            
+            this.value = value;
+        });
+    }
+
+    // Auto-format student number
+    const studentField = document.getElementById("student_number");
+    if (studentField) {
+        studentField.addEventListener("input", function() {
+            this.value = this.value.toUpperCase();
+        });
+    }
+
+    // Form submission
+    if (submitButton) {
+        submitButton.addEventListener("click", async (event) => {
+            event.preventDefault();
+            
+            setLoadingState(true);
+            hideErrors();
+
+            try {
+                const year = form.year.value.trim();
+                const month = form.month.value.trim().padStart(2, "0");
+                const day = form.day.value.trim().padStart(2, "0");
+
+                const formData = {
+                    first_name: form.first_name.value.trim(),
+                    last_name: form.last_name.value.trim(),
+                    birthday: `${year}-${month}-${day}`,
+                    contact_number: form.contact_number.value.trim(),
+                    student_number: form.student_number.value.trim(),
+                    email: form.email.value.trim(),
+                    password: form.password.value.trim(),
+                    confirm_password: form.confirm_password.value.trim(),
+                    terms: form.terms.checked,
+                };
+
+                // Local validation
+                const localErrors = [];
+                localErrors.push(...validateRequiredFields(formData));
+                localErrors.push(...validatePasswords(formData.password, formData.confirm_password));
+                
+                if (localErrors.length > 0) {
+                    displayErrors(localErrors);
+                    return;
+                }
+
+                // API validation
+                const validationResult = await validateWithAPI(formData);
+
+                if (!validationResult.success) {
+                    displayErrors(validationResult.errors || ['Unknown validation error']);
+                } else {
+                    showSuccess("Registration validation successful!");
+                    sessionStorage.setItem('registrationData', JSON.stringify(formData));
+                    
+                    setTimeout(() => {
+                        transitionToStep2();
+                    }, 800);
+                }
+                
+            } catch (error) {
+                displayErrors([`Unexpected error: ${error.message}`]);
+            } finally {
+                setLoadingState(false);
+            }
+        });
+    }
+
+    // Camera modal event listeners
+    document.addEventListener('click', function(e) {
+        if (e.target.id === 'captureBtn') {
+            capturePhoto();
+        } else if (e.target.id === 'cancelCameraBtn' || e.target.id === 'closeCameraModal') {
+            closeCameraModal();
+        } else if (e.target.id === 'cameraModal') {
+            closeCameraModal();
+        }
+    });
+
+    // Pre-fill test data
+    if (document.getElementById('first_name')) {
+        document.getElementById('first_name').value = 'Juan';
+        document.getElementById('last_name').value = 'Dela Cruz';
+        document.getElementById('day').value = '15';
+        document.getElementById('month').value = '8';
+        document.getElementById('year').value = '1999';
+        document.getElementById('contact_number').value = '09123456789';
+        document.getElementById('student_number').value = 'STU2023001';
+        document.getElementById('email').value = 'juan.delacruz@iskolarngbayan.pup.edu.ph';
+        document.getElementById('password').value = 'TestPass123!';
+        document.getElementById('confirm_password').value = 'TestPass123!';
+        document.getElementById('terms').checked = true;
+        checkPasswordStrength('TestPass123!');
+    }
 });

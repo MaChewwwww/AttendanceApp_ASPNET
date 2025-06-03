@@ -27,16 +27,28 @@
             to { transform: translateX(0); opacity: 1; }
         }
         @@keyframes slideInRight {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
+            from { 
+                opacity: 0; 
+                transform: translateX(100%); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateX(0); 
+            }
         }
         @@keyframes slideOutLeft {
             from { transform: translateX(0); opacity: 1; }
             to { transform: translateX(-100%); opacity: 0; }
         }
         @@keyframes slideOutRight {
-            from { transform: translateX(0); opacity: 1; }
-            to { transform: translateX(100%); opacity: 0; }
+            from { 
+                opacity: 1; 
+                transform: translateX(0); 
+            }
+            to { 
+                opacity: 0; 
+                transform: translateX(100%); 
+            }
         }
         @@keyframes fadeIn {
             from { opacity: 0; transform: translateY(-10px); }
@@ -46,6 +58,7 @@
             from { opacity: 0; transform: translateY(-5px); }
             to { opacity: 1; transform: translateY(0); }
         }
+        
         .auth-slider {
             transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
         }
@@ -231,6 +244,9 @@
                 
                 currentView = 'login';
                 
+                // Reset registration to step 1 and clear forms
+                resetRegistrationToStep1();
+                
                 // Update tabs
                 loginTab.classList.add('border-blue-600', 'bg-blue-50');
                 loginTab.querySelector('span').classList.remove('text-gray-600');
@@ -274,6 +290,105 @@
                 loginSection.classList.add('hidden');
             }
             
+            function resetRegistrationToStep1() {
+                // Clear session storage
+                sessionStorage.removeItem('registrationData');
+                
+                // Check if we're currently on step 2
+                const registerContent = registerSection.querySelector('.h-full');
+                const isOnStep2 = registerContent && !registerContent.querySelector('#registrationForm');
+                
+                if (isOnStep2) {
+                    // We're on step 2, restore step 1 content immediately
+                    restoreStep1Content();
+                } else {
+                    // We're on step 1, just clear the form
+                    clearRegistrationForm();
+                }
+            }
+            
+            function restoreStep1Content() {
+                // Restore step 1 by fetching the register page content
+                fetch('/Auth/Register')
+                    .then(response => response.text())
+                    .then(html => {
+                        // Extract the register content from the response
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(html, 'text/html');
+                        const step1Content = doc.querySelector('.p-6');
+                        
+                        if (step1Content) {
+                            // Replace current content with step 1
+                            const registerContent = registerSection.querySelector('.h-full');
+                            registerContent.innerHTML = step1Content.outerHTML;
+                            
+                            // Clear the form after restoration
+                            setTimeout(() => {
+                                clearRegistrationForm();
+                                
+                                // Re-load the register.js script to reinitialize functionality
+                                const existingScript = document.querySelector('script[src*="register.js"]');
+                                if (existingScript) {
+                                    existingScript.remove();
+                                }
+                                
+                                const script = document.createElement('script');
+                                script.src = '/js/register.js?' + new Date().getTime(); // Cache bust
+                                document.head.appendChild(script);
+                            }, 100);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error restoring step 1:', error);
+                        // Fallback: just clear session storage and let user manually refresh if needed
+                        sessionStorage.removeItem('registrationData');
+                    });
+            }
+            
+            function clearRegistrationForm() {
+                // Clear all form fields if form exists
+                const form = document.getElementById('registrationForm');
+                if (form) {
+                    form.reset();
+                    
+                    // Clear validation messages
+                    const validationMessages = document.getElementById('validationMessages');
+                    const successMessage = document.getElementById('successMessage');
+                    const errorList = document.getElementById('errorList');
+                    
+                    if (validationMessages) validationMessages.classList.add('hidden');
+                    if (successMessage) successMessage.classList.add('hidden');
+                    if (errorList) errorList.innerHTML = '';
+                    
+                    // Hide password strength indicator
+                    const passwordStrength = document.getElementById('passwordStrength');
+                    if (passwordStrength) passwordStrength.classList.add('hidden');
+                    
+                    // Reset password field borders
+                    const confirmPassword = document.getElementById('confirm_password');
+                    if (confirmPassword) {
+                        confirmPassword.classList.remove('border-red-300', 'border-green-300');
+                    }
+                    
+                    // Reset submit button state
+                    const submitButton = document.getElementById('submitButton');
+                    const buttonText = document.getElementById('buttonText');
+                    const buttonSpinner = document.getElementById('buttonSpinner');
+                    
+                    if (submitButton) {
+                        submitButton.disabled = false;
+                        submitButton.classList.remove('opacity-75');
+                    }
+                    if (buttonText) buttonText.textContent = 'Continue to Next Step';
+                    if (buttonSpinner) buttonSpinner.classList.add('hidden');
+                    
+                    // Call the global reset function if available
+                    if (window.resetRegistrationForm) {
+                        window.resetRegistrationForm();
+                    }
+                }
+            }
+
             loginTab.addEventListener('click', showLogin);
             registerTab.addEventListener('click', showRegister);
             
