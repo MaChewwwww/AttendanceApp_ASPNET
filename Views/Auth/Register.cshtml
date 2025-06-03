@@ -227,80 +227,13 @@
             Already have an account? 
             <button id="switchToLogin" class="text-blue-600 hover:text-blue-800 font-medium underline cursor-pointer">Sign in here</button>
         </p>
-        <!-- Development Testing Helper -->
-        <div class="mt-2 text-center">
-            <button type="button" id="clearForm" class="text-xs text-gray-500 hover:text-gray-700 underline mr-3">Clear Form</button>
-            <button type="button" id="fillTestData" class="text-xs text-gray-500 hover:text-gray-700 underline">Fill Test Data</button>
-            <button type="button" id="toggleConsole" class="text-xs text-gray-500 hover:text-gray-700 underline ml-3">Toggle Console</button>
-            <button type="button" id="testButton" class="text-xs text-blue-500 hover:text-blue-700 underline ml-3">Test JS</button>
-            <span class="text-xs text-gray-400 ml-3">(Development Mode)</span>
-        </div>
-        
-        <!-- Development Console -->
-        <div id="devConsole" class="hidden mt-4 p-3 bg-black text-green-400 text-xs font-mono rounded-lg max-h-40 overflow-y-auto">
-            <div id="consoleOutput"></div>
-        </div>
     </div>
 </div>
 
 <script src="~/js/register.js"></script>
 <script>
-    // Development console
-    const devConsole = document.getElementById('devConsole');
-    const consoleOutput = document.getElementById('consoleOutput');
-    
-    function addToDevConsole(message, type = 'log') {
-        const timestamp = new Date().toLocaleTimeString();
-        const color = type === 'error' ? 'text-red-400' : type === 'warn' ? 'text-yellow-400' : 'text-green-400';
-        consoleOutput.innerHTML += `<div class="${color}">[${timestamp}] ${message}</div>`;
-        consoleOutput.scrollTop = consoleOutput.scrollHeight;
-    }
-    
-    // Override console methods for development
-    const originalLog = console.log;
-    const originalError = console.error;
-    const originalWarn = console.warn;
-    
-    console.log = function(...args) {
-        originalLog.apply(console, args);
-        addToDevConsole(args.join(' '), 'log');
-    };
-    
-    console.error = function(...args) {
-        originalError.apply(console, args);
-        addToDevConsole(args.join(' '), 'error');
-    };
-    
-    console.warn = function(...args) {
-        originalWarn.apply(console, args);
-        addToDevConsole(args.join(' '), 'warn');
-    };
-
-    // Additional helper functions for testing
+    // Additional helper functions
     document.addEventListener('DOMContentLoaded', function() {
-        console.log('Page loaded successfully');
-        
-        document.getElementById('clearForm').addEventListener('click', function() {
-            document.getElementById('registrationForm').reset();
-            document.getElementById('passwordStrength').classList.add('hidden');
-            hideErrors();
-            console.log('Form cleared');
-        });
-        
-        document.getElementById('fillTestData').addEventListener('click', function() {
-            prefillTestData();
-        });
-        
-        document.getElementById('toggleConsole').addEventListener('click', function() {
-            devConsole.classList.toggle('hidden');
-        });
-        
-        document.getElementById('testButton').addEventListener('click', function() {
-            console.log('Test button clicked - JavaScript is working!');
-            console.log('Backend API endpoint: /Auth/ValidateRegistration');
-            alert('JavaScript is working! Check console for details.');
-        });
-        
         // Add switch to login functionality
         document.getElementById('switchToLogin')?.addEventListener('click', function() {
             document.getElementById('loginTab')?.click();

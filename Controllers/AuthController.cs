@@ -42,11 +42,23 @@ namespace AttendanceApp_ASPNET.Controllers
                 // Parse the API response
                 var apiResponse = JsonSerializer.Deserialize<JsonElement>(result);
                 
+                // Handle your Python API's response format with is_valid
+                bool isValid = false;
+                string[] errors = new string[0];
+                
+                if (apiResponse.TryGetProperty("is_valid", out var isValidProperty))
+                {
+                    isValid = isValidProperty.GetBoolean();
+                }
+                
+                if (apiResponse.TryGetProperty("errors", out var errorsProperty) && errorsProperty.ValueKind == JsonValueKind.Array)
+                {
+                    errors = errorsProperty.EnumerateArray().Select(e => e.GetString()).ToArray();
+                }
+                
                 return Json(new { 
-                    success = apiResponse.GetProperty("success").GetBoolean(),
-                    errors = apiResponse.TryGetProperty("errors", out var errorsProperty) 
-                        ? errorsProperty.EnumerateArray().Select(e => e.GetString()).ToArray()
-                        : new string[0]
+                    success = isValid,
+                    errors = errors
                 });
             }
             catch (Exception ex)

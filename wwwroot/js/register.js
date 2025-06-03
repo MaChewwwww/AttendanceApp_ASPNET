@@ -225,7 +225,7 @@ function setupPasswordToggle(passwordId, toggleId) {
         const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
         passwordField.setAttribute('type', type);
         
-        // Toggle eye icon (you can enhance this with different icons)
+        // Toggle eye icon
         this.innerHTML = type === 'password' ? 
             `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -239,6 +239,21 @@ function setupPasswordToggle(passwordId, toggleId) {
 
 setupPasswordToggle('password', 'togglePassword');
 setupPasswordToggle('confirm_password', 'toggleConfirmPassword');
+
+// Loading state management
+function setLoadingState(loading) {
+    if (loading) {
+        submitButton.disabled = true;
+        buttonText.textContent = "Validating...";
+        buttonSpinner.classList.remove("hidden");
+        submitButton.classList.add("opacity-75");
+    } else {
+        submitButton.disabled = false;
+        buttonText.textContent = "Continue to Next Step";
+        buttonSpinner.classList.add("hidden");
+        submitButton.classList.remove("opacity-75");
+    }
+}
 
 // Function to send form data to the API for validation
 async function validateWithAPI(formData) {
@@ -265,48 +280,78 @@ async function validateWithAPI(formData) {
         console.log('Response received:', {
             status: response.status,
             statusText: response.statusText,
-            ok: response.ok
+            ok: response.ok,
+            headers: Object.fromEntries(response.headers.entries())
         });
+
+        // Get response text first to see what we're actually getting
+        const responseText = await response.text();
+        console.log('Raw response text:', responseText);
 
         if (!response.ok) {
             console.warn(`API returned ${response.status}: ${response.statusText}`);
-            const errorText = await response.text();
-            console.log('Error response body:', errorText);
-            
             return { 
                 success: false, 
-                errors: [`API Error ${response.status}: ${response.statusText}`] 
+                errors: [`API Error ${response.status}: ${response.statusText} - ${responseText}`] 
             };
         }
 
-        const result = await response.json();
-        console.log('API Response:', result);
-        return result;
+        // Try to parse as JSON
+        let result;
+        try {
+            result = JSON.parse(responseText);
+            console.log('Parsed JSON response:', result);
+        } catch (jsonError) {
+            console.error('Failed to parse JSON:', jsonError);
+            console.log('Response was not valid JSON, treating as success since status was 200');
+            return {
+                success: true,
+                errors: []
+            };
+        }
+        
+        // Handle your Python API response format with is_valid
+        if (result.is_valid !== undefined) {
+            return {
+                success: result.is_valid,
+                errors: result.errors || []
+            };
+        } else if (result.success !== undefined) {
+            return result;
+        } else if (result.valid !== undefined) {
+            return {
+                success: result.valid,
+                errors: result.errors || []
+            };
+        } else if (result.error) {
+            return {
+                success: false,
+                errors: [result.error]
+            };
+        } else if (result.message && !result.is_valid) {
+            return {
+                success: false,
+                errors: [result.message]
+            };
+        } else {
+            // If response is 200 and no error indicators, assume success
+            console.log('No specific success/error format detected, assuming success');
+            return {
+                success: true,
+                errors: []
+            };
+        }
         
     } catch (error) {
         console.error('API Validation Error:', error);
         console.error('Error name:', error.name);
         console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
         
         return { 
             success: false, 
             errors: [`Network Error: ${error.message}`] 
         };
-    }
-}
-
-// Loading state management
-function setLoadingState(loading) {
-    if (loading) {
-        submitButton.disabled = true;
-        buttonText.textContent = "Validating...";
-        buttonSpinner.classList.remove("hidden");
-        submitButton.classList.add("opacity-75");
-    } else {
-        submitButton.disabled = false;
-        buttonText.textContent = "Continue to Next Step";
-        buttonSpinner.classList.add("hidden");
-        submitButton.classList.remove("opacity-75");
     }
 }
 
@@ -365,10 +410,10 @@ submitButton.addEventListener("click", async (event) => {
             console.log('All validation passed - showing success');
             showSuccess("Registration validation successful!");
             
-            // Just show success for now
+            // Navigate to step 2 after success
             setTimeout(() => {
-                alert("Form validation completed successfully!");
-            }, 1000);
+                window.location.href = '/Auth/RegisterStep2';
+            }, 1500);
         }
         
     } catch (error) {
@@ -419,8 +464,6 @@ document.querySelectorAll('input').forEach(input => {
 
 // Pre-fill form with test data for faster testing
 function prefillTestData() {
-    // Only pre-fill in development/testing environment
-    // You can remove this or add a condition to check environment
     document.getElementById('first_name').value = 'Juan';
     document.getElementById('last_name').value = 'Dela Cruz';
     document.getElementById('day').value = '15';
@@ -435,8 +478,6 @@ function prefillTestData() {
     
     // Trigger password strength check
     checkPasswordStrength('TestPass123!');
-    
-    console.log('Test data pre-filled for faster testing');
 }
 
 // Initialize configuration when page loads

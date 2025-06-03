@@ -1,0 +1,175 @@
+@{
+    Layout = "_AuthLayout";
+    ViewData["Title"] = "Register - Step 2";
+}
+
+<div class="p-6 h-full">
+    <!-- Progress Indicator -->
+    <div class="mb-6">
+        <div class="flex items-center justify-center space-x-2">
+            <div class="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">✓</div>
+            <div class="w-12 h-1 bg-blue-600 rounded"></div>
+            <div class="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">2</div>
+            <div class="w-12 h-1 bg-gray-300 rounded"></div>
+            <div class="w-6 h-6 bg-gray-300 rounded-full flex items-center justify-center text-gray-500 text-xs font-semibold">3</div>
+        </div>
+        <div class="text-center mt-2 text-xs text-gray-600">Step 2: Face Recognition Setup</div>
+    </div>
+
+    <!-- Validation Messages -->
+    <div id="validationMessages" class="hidden mb-4 rounded-lg bg-red-50 border border-red-200 p-3 animate-slide-down">
+        <div class="flex items-center">
+            <svg class="w-4 h-4 text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+            </svg>
+            <h3 class="text-sm font-medium text-red-800">Please fix the following errors:</h3>
+        </div>
+        <ul id="errorList" class="mt-2 text-xs text-red-700 list-disc pl-5"></ul>
+    </div>
+
+    <!-- Success Message -->
+    <div id="successMessage" class="hidden mb-4 rounded-lg bg-green-50 border border-green-200 p-3 animate-slide-down">
+        <div class="flex items-center">
+            <svg class="w-4 h-4 text-green-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+            </svg>
+            <p class="text-sm font-medium text-green-800">Face photo captured successfully!</p>
+        </div>
+    </div>
+
+    <!-- Face Recognition Section -->
+    <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-6 mb-6">
+        <div class="text-center">
+            <div class="mx-auto w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mb-4">
+                <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path>
+                </svg>
+            </div>
+            <h2 class="text-xl font-bold text-gray-800 mb-2">Face Recognition Setup</h2>
+            <p class="text-gray-600 text-sm mb-6">
+                Take a clear photo of your face for secure attendance tracking
+            </p>
+        </div>
+
+        <!-- Photo Preview -->
+        <div class="bg-white rounded-lg p-4 mb-4">
+            <div id="photoPreview" class="w-full h-64 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center">
+                <div class="text-center">
+                    <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+                    </svg>
+                    <p class="text-gray-500 text-sm mb-2">No photo captured yet</p>
+                    <p class="text-gray-400 text-xs">Click the button below to take your photo</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Capture Button -->
+        <button id="capturePhotoBtn" class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm">
+            <svg class="w-5 h-5 inline mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path>
+            </svg>
+            Take Photo
+        </button>
+    </div>
+
+    <!-- Important Notes -->
+    <div class="bg-yellow-50 rounded-lg p-4 border border-yellow-200 mb-6">
+        <div class="flex items-start">
+            <svg class="w-5 h-5 text-yellow-400 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+            </svg>
+            <div>
+                <h4 class="text-sm font-medium text-yellow-800 mb-2">Important Notes:</h4>
+                <ul class="text-xs text-yellow-700 space-y-1">
+                    <li>• This photo will be used for facial recognition during attendance</li>
+                    <li>• Make sure your face is clearly visible and well-lit</li>
+                    <li>• Avoid wearing sunglasses or face coverings</li>
+                    <li>• You can retake the photo if you're not satisfied</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Buttons -->
+    <div class="flex space-x-3">
+        <button id="backButton" class="flex-1 bg-gray-200 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-300 transition-colors font-medium text-sm">
+            <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16l-4-4m0 0l4-4m-4 4h18"></path>
+            </svg>
+            Back
+        </button>
+        <button id="continueButton" class="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-4 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+            <span id="continueButtonText">Continue to Final Step</span>
+            <svg id="continueSpinner" class="hidden animate-spin -mr-1 ml-2 h-4 w-4 text-white inline" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <svg class="inline ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+            </svg>
+        </button>
+    </div>
+</div>
+
+@await Html.PartialAsync("_CameraModal")
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let capturedPhoto = null;
+    
+    // Photo capture functionality
+    document.getElementById('capturePhotoBtn').addEventListener('click', function() {
+        window.cameraModal.open(function(photoData) {
+            capturedPhoto = photoData;
+            displayCapturedPhoto(photoData);
+            document.getElementById('continueButton').disabled = false;
+            showSuccessMessage();
+        });
+    });
+    
+    function displayCapturedPhoto(photoData) {
+        const preview = document.getElementById('photoPreview');
+        preview.innerHTML = `<img src="${photoData}" class="w-full h-full object-cover rounded-lg" alt="Captured photo">`;
+        
+        // Update capture button
+        const captureBtn = document.getElementById('capturePhotoBtn');
+        captureBtn.innerHTML = `
+            <svg class="w-5 h-5 inline mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"></path>
+            </svg>
+            Retake Photo
+        `;
+        captureBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+        captureBtn.classList.add('bg-orange-600', 'hover:bg-orange-700');
+    }
+    
+    function showSuccessMessage() {
+        document.getElementById('successMessage').classList.remove('hidden');
+        document.getElementById('validationMessages').classList.add('hidden');
+    }
+    
+    // Navigation
+    document.getElementById('backButton').addEventListener('click', function() {
+        // Navigate back to step 1
+        window.location.href = '/Auth/Register';
+    });
+    
+    document.getElementById('continueButton').addEventListener('click', function() {
+        if (!capturedPhoto) {
+            alert('Please capture your photo first.');
+            return;
+        }
+        
+        // Set loading state
+        this.disabled = true;
+        document.getElementById('continueButtonText').textContent = 'Processing...';
+        document.getElementById('continueSpinner').classList.remove('hidden');
+        
+        // Simulate processing and navigate to step 3
+        setTimeout(() => {
+            window.location.href = '/Auth/RegisterStep3';
+        }, 2000);
+    });
+});
+</script>
