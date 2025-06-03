@@ -247,6 +247,9 @@
                 // Reset registration to step 1 and clear forms
                 resetRegistrationToStep1();
                 
+                // Scroll to top of modal
+                scrollToTop();
+                
                 // Update tabs
                 loginTab.classList.add('border-blue-600', 'bg-blue-50');
                 loginTab.querySelector('span').classList.remove('text-gray-600');
@@ -271,6 +274,9 @@
                 
                 currentView = 'register';
                 
+                // Scroll to top of modal
+                scrollToTop();
+                
                 // Update tabs
                 registerTab.classList.add('border-blue-600', 'bg-blue-50');
                 registerTab.querySelector('span').classList.remove('text-gray-600');
@@ -288,6 +294,40 @@
                 // Show register, hide login
                 registerSection.classList.remove('hidden');
                 loginSection.classList.add('hidden');
+            }
+            
+            function scrollToTop() {
+                // Smooth scroll the main modal content to top
+                const mainContent = document.querySelector('.w-full.max-w-6xl.h-\\[700px\\]');
+                if (mainContent) {
+                    mainContent.scrollTo({
+                        top: 0,
+                        behavior: 'smooth'
+                    });
+                }
+                
+                // Smooth scroll any overflow content in sections to top
+                const loginContent = loginSection.querySelector('.h-full');
+                const registerContent = registerSection.querySelector('.h-full');
+                
+                if (loginContent) {
+                    loginContent.scrollTo({
+                        top: 0,
+                        behavior: 'smooth'
+                    });
+                }
+                if (registerContent) {
+                    registerContent.scrollTo({
+                        top: 0,
+                        behavior: 'smooth'
+                    });
+                }
+                
+                // Smooth scroll the window to top as well (in case modal is not in viewport)
+                window.scrollTo({ 
+                    top: 0, 
+                    behavior: 'smooth' 
+                });
             }
             
             function resetRegistrationToStep1() {
@@ -322,8 +362,9 @@
                             const registerContent = registerSection.querySelector('.h-full');
                             registerContent.innerHTML = step1Content.outerHTML;
                             
-                            // Clear the form after restoration
+                            // Smooth scroll to top after content restoration with delay
                             setTimeout(() => {
+                                scrollToTop();
                                 clearRegistrationForm();
                                 
                                 // Re-load the register.js script to reinitialize functionality
@@ -335,7 +376,7 @@
                                 const script = document.createElement('script');
                                 script.src = '/js/register.js?' + new Date().getTime(); // Cache bust
                                 document.head.appendChild(script);
-                            }, 100);
+                            }, 300); // Increased delay for smooth transition
                         }
                     })
                     .catch(error => {

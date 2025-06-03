@@ -262,8 +262,47 @@ function transitionToStep2() {
     setTimeout(() => {
         currentContent.innerHTML = createStep2HTML();
         currentContent.classList.remove('animate-slide-out-right');
+        
+        // Smooth scroll to top after content change with delay
+        setTimeout(() => {
+            scrollToTopOfSection();
+        }, 100); // Small delay to ensure content is rendered
+        
         initializeStep2();
     }, 200);
+}
+
+// Function to scroll to top of the current section
+function scrollToTopOfSection() {
+    // Scroll the register section content to top smoothly
+    const registerSection = document.getElementById('registerSection');
+    const registerContent = registerSection.querySelector('.h-full');
+    
+    if (registerContent) {
+        registerContent.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    }
+    
+    // Also scroll main modal container to top smoothly
+    const mainModal = document.querySelector('.w-full.max-w-6xl.h-\\[700px\\]');
+    if (mainModal) {
+        mainModal.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    }
+    
+    // Smooth scroll window to ensure modal is in view
+    const modalContainer = document.querySelector('.flex.items-center.justify-center.min-h-screen');
+    if (modalContainer) {
+        modalContainer.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start',
+            inline: 'nearest'
+        });
+    }
 }
 
 // Create Step 2 HTML content
@@ -370,6 +409,11 @@ function createStep2HTML() {
 function initializeStep2() {
     let capturedPhoto = null;
     
+    // Smooth scroll to top when step 2 initializes with delay
+    setTimeout(() => {
+        scrollToTopOfSection();
+    }, 300);
+    
     // Create camera modal
     createCameraModal();
     
@@ -380,13 +424,24 @@ function initializeStep2() {
             displayCapturedPhoto(photoData);
             document.getElementById('continueToFinalButton').disabled = false;
             document.getElementById('step2SuccessMessage').classList.remove('hidden');
+            
+            // Smooth scroll to top to show success message with delay
+            setTimeout(() => {
+                scrollToTopOfSection();
+            }, 200);
         });
     });
     
     // Back to step 1
     document.getElementById('backToStep1Button').addEventListener('click', function() {
         sessionStorage.removeItem('registrationData');
-        window.location.reload();
+        
+        // Smooth scroll to top before reloading
+        scrollToTopOfSection();
+        
+        setTimeout(() => {
+            window.location.reload();
+        }, 600); // Increased delay to allow smooth scroll to complete
     });
     
     // Complete registration
@@ -396,8 +451,13 @@ function initializeStep2() {
             return;
         }
         
-        // Complete registration
-        completeRegistration(capturedPhoto);
+        // Smooth scroll to top before processing
+        scrollToTopOfSection();
+        
+        // Complete registration with delay
+        setTimeout(() => {
+            completeRegistration(capturedPhoto);
+        }, 300);
     });
 }
 
@@ -448,6 +508,15 @@ let cameraCallback = null;
 function openCameraModal(callback) {
     cameraCallback = callback;
     document.getElementById('cameraModal').classList.remove('hidden');
+    
+    // Smooth scroll modal content to top when camera opens
+    const cameraModalContent = document.querySelector('#cameraModal .bg-white');
+    if (cameraModalContent) {
+        cameraModalContent.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    }
     
     navigator.mediaDevices.getUserMedia({ video: true })
         .then(stream => {
@@ -514,7 +583,13 @@ function completeRegistration(photoData) {
     setTimeout(() => {
         sessionStorage.removeItem('registrationData');
         alert('Registration completed successfully!');
-        document.getElementById('loginTab').click();
+        
+        // Smooth scroll to top before switching to login
+        scrollToTopOfSection();
+        
+        setTimeout(() => {
+            document.getElementById('loginTab').click();
+        }, 800); // Increased delay for smooth transition
     }, 2000);
 }
 
@@ -536,6 +611,11 @@ window.resetRegistrationForm = function() {
         }
         
         setLoadingState(false);
+        
+        // Smooth scroll to top after reset with delay
+        setTimeout(() => {
+            scrollToTopOfSection();
+        }, 100);
     }
 };
 
@@ -654,6 +734,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 if (localErrors.length > 0) {
                     displayErrors(localErrors);
+                    // Smooth scroll to top to show errors with delay
+                    setTimeout(() => {
+                        scrollToTopOfSection();
+                    }, 100);
                     return;
                 }
 
@@ -662,17 +746,30 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 if (!validationResult.success) {
                     displayErrors(validationResult.errors || ['Unknown validation error']);
+                    // Smooth scroll to top to show errors with delay
+                    setTimeout(() => {
+                        scrollToTopOfSection();
+                    }, 100);
                 } else {
                     showSuccess("Registration validation successful!");
                     sessionStorage.setItem('registrationData', JSON.stringify(formData));
                     
+                    // Smooth scroll to top to show success message
+                    setTimeout(() => {
+                        scrollToTopOfSection();
+                    }, 100);
+                    
                     setTimeout(() => {
                         transitionToStep2();
-                    }, 800);
+                    }, 1200); // Increased delay to show success message and allow smooth scroll
                 }
                 
             } catch (error) {
                 displayErrors([`Unexpected error: ${error.message}`]);
+                // Smooth scroll to top to show error with delay
+                setTimeout(() => {
+                    scrollToTopOfSection();
+                }, 100);
             } finally {
                 setLoadingState(false);
             }
