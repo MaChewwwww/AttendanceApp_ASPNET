@@ -206,22 +206,43 @@ function setLoadingState(loading) {
 // Function to send form data to the API for validation
 async function validateWithAPI(formData) {
     console.log('=== API Validation Started ===');
+    console.log('Sending data to API:', formData);
     
     try {
         const apiUrl = '/Auth/ValidateRegistration';
+        
+        // Get anti-forgery token
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+        console.log('Anti-forgery token:', token ? 'Found' : 'Not found');
+        
         const requestOptions = {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                "RequestVerificationToken": document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                "Accept": "application/json"
             },
             body: JSON.stringify(formData)
         };
+        
+        // Only add the token if it exists
+        if (token) {
+            requestOptions.headers["RequestVerificationToken"] = token;
+        }
+
+        console.log('Making API request to:', apiUrl);
+        console.log('Request body:', JSON.stringify(formData));
 
         const response = await fetch(apiUrl, requestOptions);
+        
+        console.log('Response received:');
+        console.log('- Status:', response.status);
+        console.log('- Status Text:', response.statusText);
+        
         const responseText = await response.text();
+        console.log('Raw response text:', responseText);
 
         if (!response.ok) {
+            console.error('API Error:', response.status, response.statusText);
             return { 
                 success: false, 
                 errors: [`API Error ${response.status}: ${response.statusText} - ${responseText}`] 
@@ -231,23 +252,107 @@ async function validateWithAPI(formData) {
         let result;
         try {
             result = JSON.parse(responseText);
+            console.log('Parsed API result:', result);
         } catch (jsonError) {
-            return { success: true, errors: [] };
+            console.error('JSON Parse Error:', jsonError);
+            console.error('Response text that failed to parse:', responseText);
+            return { success: false, errors: ['Invalid response format from server'] };
         }
         
-        if (result.is_valid !== undefined) {
-            return { success: result.is_valid, errors: result.errors || [] };
-        } else if (result.success !== undefined) {
-            return result;
+        // Handle your Python API's response format
+        if (result.success !== undefined) {
+            return { 
+                success: result.success, 
+                errors: result.errors || [],
+                message: result.message || ''
+            };
+        } else if (result.is_valid !== undefined) {
+            return { 
+                success: result.is_valid, 
+                errors: result.errors || [],
+                message: result.message || ''
+            };
         } else {
-            return { success: true, errors: [] };
+            console.warn('Unexpected response format:', result);
+            return { success: false, errors: ['Unexpected response format'] };
         }
         
     } catch (error) {
-        console.error('API Validation Error:', error);
+        console.error('API Validation Network Error:', error);
+        console.error('Error type:', error.constructor.name);
+        console.error('Error message:', error.message);
+        
         return { 
             success: false, 
             errors: [`Network Error: ${error.message}`] 
+        };
+    }
+}
+
+// Function to validate face image with API
+async function validateFaceWithAPI(faceImageData) {
+    console.log('=== Face Validation Started ===');
+    
+    try {
+        const apiUrl = '/Auth/ValidateFaceImage';
+        
+        // Get anti-forgery token
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+        
+        const requestOptions = {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
+            body: JSON.stringify({
+                face_image: faceImageData
+            })
+        };
+        
+        // Only add the token if it exists
+        if (token) {
+            requestOptions.headers["RequestVerificationToken"] = token;
+        }
+
+        console.log('Making face validation API request to:', apiUrl);
+
+        const response = await fetch(apiUrl, requestOptions);
+        
+        console.log('Face validation response received:');
+        console.log('- Status:', response.status);
+        console.log('- Status Text:', response.statusText);
+        
+        const responseText = await response.text();
+        console.log('Face validation raw response:', responseText);
+
+        if (!response.ok) {
+            console.error('Face validation API Error:', response.status, response.statusText);
+            return { 
+                success: false, 
+                message: `API Error ${response.status}: ${response.statusText}` 
+            };
+        }
+
+        let result;
+        try {
+            result = JSON.parse(responseText);
+            console.log('Parsed face validation result:', result);
+        } catch (jsonError) {
+            console.error('Face validation JSON Parse Error:', jsonError);
+            return { success: false, message: 'Invalid response format from server' };
+        }
+        
+        return {
+            success: result.success || false,
+            message: result.message || 'Face validation completed'
+        };
+        
+    } catch (error) {
+        console.error('Face validation network error:', error);
+        return { 
+            success: false, 
+            message: `Network Error: ${error.message}` 
         };
     }
 }
@@ -405,6 +510,57 @@ function createStep2HTML() {
     `;
 }
 
+// Function to show success message in step 2
+function showStep2SuccessMessage(message) {
+    const successMessage = document.getElementById('step2SuccessMessage');
+    if (successMessage) {
+        successMessage.querySelector('p').textContent = message;
+        successMessage.classList.remove('hidden');
+    }
+    
+    // Hide any error messages
+    const errorMessage = document.getElementById('step2ErrorMessage');
+    if (errorMessage) {
+        errorMessage.classList.add('hidden');
+    }
+}
+
+// Function to show error message in step 2
+function showStep2ErrorMessage(message) {
+    // Create error message element if it doesn't exist
+    let errorMessage = document.getElementById('step2ErrorMessage');
+    if (!errorMessage) {
+        const errorHTML = `
+            <div id="step2ErrorMessage" class="mb-4 rounded-lg bg-red-50 border border-red-200 p-3 animate-slide-down">
+                <div class="flex items-center">
+                    <svg class="w-4 h-4 text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                    </svg>
+                    <p class="text-sm font-medium text-red-800"></p>
+                </div>
+            </div>
+        `;
+        
+        // Insert after progress indicator
+        const progressIndicator = document.querySelector('.mb-6');
+        if (progressIndicator) {
+            progressIndicator.insertAdjacentHTML('afterend', errorHTML);
+            errorMessage = document.getElementById('step2ErrorMessage');
+        }
+    }
+    
+    if (errorMessage) {
+        errorMessage.querySelector('p').textContent = message;
+        errorMessage.classList.remove('hidden');
+    }
+    
+    // Hide success message
+    const successMessage = document.getElementById('step2SuccessMessage');
+    if (successMessage) {
+        successMessage.classList.add('hidden');
+    }
+}
+
 // Initialize Step 2 functionality
 function initializeStep2() {
     let capturedPhoto = null;
@@ -417,15 +573,48 @@ function initializeStep2() {
     // Create camera modal
     createCameraModal();
     
-    // Photo capture functionality
+    // Photo capture functionality with face validation
     document.getElementById('capturePhotoBtn').addEventListener('click', function() {
-        openCameraModal(function(photoData) {
-            capturedPhoto = photoData;
-            displayCapturedPhoto(photoData);
-            document.getElementById('continueToFinalButton').disabled = false;
-            document.getElementById('step2SuccessMessage').classList.remove('hidden');
+        openCameraModal(async function(photoData) {
+            // Show loading state on capture button
+            const captureBtn = document.getElementById('capturePhotoBtn');
+            const originalBtnText = captureBtn.innerHTML;
+            captureBtn.innerHTML = `
+                <svg class="animate-spin w-5 h-5 inline mr-2" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Validating Face...
+            `;
+            captureBtn.disabled = true;
             
-            // Smooth scroll to top to show success message with delay
+            try {
+                // Validate face image with API
+                console.log('Starting face validation...');
+                const faceValidationResult = await validateFaceWithAPI(photoData);
+                
+                console.log('Face validation result:', faceValidationResult);
+                
+                if (faceValidationResult.success) {
+                    capturedPhoto = photoData;
+                    displayCapturedPhoto(photoData);
+                    document.getElementById('continueToFinalButton').disabled = false;
+                    showStep2SuccessMessage(faceValidationResult.message || 'Face photo captured and validated successfully!');
+                } else {
+                    showStep2ErrorMessage(faceValidationResult.message || 'Face validation failed. Please try again with a clearer photo.');
+                    // Reset capture button to allow retry
+                    captureBtn.innerHTML = originalBtnText;
+                    captureBtn.disabled = false;
+                }
+            } catch (error) {
+                console.error('Face validation error:', error);
+                showStep2ErrorMessage('Face validation failed. Please try again.');
+                // Reset capture button to allow retry
+                captureBtn.innerHTML = originalBtnText;
+                captureBtn.disabled = false;
+            }
+            
+            // Smooth scroll to top to show result message
             setTimeout(() => {
                 scrollToTopOfSection();
             }, 200);
@@ -441,7 +630,7 @@ function initializeStep2() {
         
         setTimeout(() => {
             window.location.reload();
-        }, 600); // Increased delay to allow smooth scroll to complete
+        }, 600);
     });
     
     // Complete registration
@@ -707,6 +896,8 @@ document.addEventListener('DOMContentLoaded', function() {
         submitButton.addEventListener("click", async (event) => {
             event.preventDefault();
             
+            console.log('=== Form Submission Started ===');
+            
             setLoadingState(true);
             hideErrors();
 
@@ -727,46 +918,54 @@ document.addEventListener('DOMContentLoaded', function() {
                     terms: form.terms.checked,
                 };
 
-                // Local validation
+                console.log('Form data prepared:', formData);
+
+                // Local validation first (including confirm_password and terms that API doesn't check)
                 const localErrors = [];
                 localErrors.push(...validateRequiredFields(formData));
                 localErrors.push(...validatePasswords(formData.password, formData.confirm_password));
                 
+                console.log('Local validation errors:', localErrors);
+                
                 if (localErrors.length > 0) {
+                    console.log('Local validation failed, showing errors');
                     displayErrors(localErrors);
-                    // Smooth scroll to top to show errors with delay
                     setTimeout(() => {
                         scrollToTopOfSection();
                     }, 100);
                     return;
                 }
 
-                // API validation
+                console.log('Local validation passed, calling API...');
+
+                // API validation (server-side + database checks)
                 const validationResult = await validateWithAPI(formData);
+                
+                console.log('API validation result:', validationResult);
 
                 if (!validationResult.success) {
+                    console.log('API validation failed, showing errors');
                     displayErrors(validationResult.errors || ['Unknown validation error']);
-                    // Smooth scroll to top to show errors with delay
                     setTimeout(() => {
                         scrollToTopOfSection();
                     }, 100);
                 } else {
-                    showSuccess("Registration validation successful!");
+                    console.log('API validation successful, proceeding to step 2');
+                    showSuccess(validationResult.message || "Registration validation successful!");
                     sessionStorage.setItem('registrationData', JSON.stringify(formData));
                     
-                    // Smooth scroll to top to show success message
                     setTimeout(() => {
                         scrollToTopOfSection();
                     }, 100);
                     
                     setTimeout(() => {
                         transitionToStep2();
-                    }, 1200); // Increased delay to show success message and allow smooth scroll
+                    }, 1200);
                 }
                 
             } catch (error) {
+                console.error('Form submission error:', error);
                 displayErrors([`Unexpected error: ${error.message}`]);
-                // Smooth scroll to top to show error with delay
                 setTimeout(() => {
                     scrollToTopOfSection();
                 }, 100);
