@@ -200,6 +200,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (successMessage) {
             successMessage.classList.add('hidden');
         }
+        
+        // Scroll to top to show error
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
     
     function displaySuccess(message) {
@@ -214,10 +217,180 @@ document.addEventListener('DOMContentLoaded', function() {
         if (validationMessages) {
             validationMessages.classList.add('hidden');
         }
+        
+        // Scroll to top to show success
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    
+    // Resend OTP functionality with 5-minute cooldown
+    async function resendOTP() {
+        try {
+            // Set loading state for resend button
+            const originalText = resendBtn.innerHTML;
+            resendBtn.innerHTML = 'Sending...';
+            resendBtn.disabled = true;
+            
+            // Get stored registration data
+            const registrationData = JSON.parse(sessionStorage.getItem('registrationData') || '{}');
+            
+            if (!registrationData.email) {
+                throw new Error('Registration data not found');
+            }
+            
+            // Call resend OTP API
+            const result = await sendResendOTP(registrationData);
+            
+            if (result.success) {
+                // Update OTP ID if provided
+                if (result.otp_id) {
+                    sessionStorage.setItem('otpId', result.otp_id);
+                }
+                
+                displaySuccess(result.message || 'New verification code sent to your email.');
+                
+                // Clear current OTP inputs
+                otpInputs.forEach(input => {
+                    input.value = '';
+                });
+                checkOTPComplete();
+                
+                // Focus first input
+                otpInputs[0].focus();
+                
+                // Start 5-minute cooldown
+                startResendCooldown(300); // 5 minutes = 300 seconds
+                
+            } else {
+                displayError(result.message || 'Failed to resend verification code. Please try again.');
+                // Reset button state on failure
+                resendBtn.innerHTML = originalText;
+                resendBtn.disabled = false;
+            }
+            
+        } catch (error) {
+            console.error('Resend OTP failed:', error);
+            displayError('Failed to resend verification code. Please try again.');
+            
+            // Reset button state on error
+            resendBtn.innerHTML = 'Resend Code';
+            resendBtn.disabled = false;
+        }
+    }
+    
+    // Function to call resend OTP API
+    async function sendResendOTP(registrationData) {
+        try {
+            const apiUrl = '/Auth/SendRegistrationOTP';
+            
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+            
+            const requestData = {
+                registration_data: registrationData,
+                face_image: sessionStorage.getItem('faceImage') || '' // Get stored face image
+            };
+            
+            const requestOptions = {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
+                },
+                body: JSON.stringify(requestData)
+            };
+            
+            if (token) {
+                requestOptions.headers["RequestVerificationToken"] = token;
+            }
+
+            const response = await fetch(apiUrl, requestOptions);
+            const responseText = await response.text();
+
+            if (!response.ok) {
+                return { 
+                    success: false, 
+                    message: `API Error ${response.status}: ${response.statusText}` 
+                };
+            }
+
+            let result;
+            try {
+                result = JSON.parse(responseText);
+            } catch (jsonError) {
+                return { success: false, message: 'Invalid response format from server' };
+            }
+            
+            return {
+                success: result.success || false,
+                message: result.message || 'OTP resent successfully',
+                otp_id: result.otp_id || null
+            };
+            
+        } catch (error) {
+            return { 
+                success: false, 
+                message: `Network Error: ${error.message}` 
+            };
+        }
+    }
+    
+    // Cooldown timer functionality
+    function startResendCooldown(seconds) {
+        storeCooldownEnd(seconds);
+        let timeLeft = seconds;
+        
+        function updateTimer() {
+            const minutes = Math.floor(timeLeft / 60);
+            const remainingSeconds = timeLeft % 60;
+            const timeString = `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+            
+            resendBtn.innerHTML = `Resend Code (${timeString})`;
+            resendBtn.disabled = true;
+            
+            if (timeLeft > 0) {
+                timeLeft--;
+                setTimeout(updateTimer, 1000);
+            } else {
+                // Cooldown finished
+                resendBtn.innerHTML = 'Resend Code';
+                resendBtn.disabled = false;
+                localStorage.removeItem('otpCooldownEnd');
+            }
+        }
+        
+        updateTimer();
+    }
+    
+    // Check if there's an existing cooldown from localStorage
+    function checkExistingCooldown() {
+        const cooldownEnd = localStorage.getItem('otpCooldownEnd');
+        if (cooldownEnd) {
+            const now = Date.now();
+            const endTime = parseInt(cooldownEnd);
+            
+            if (now < endTime) {
+                // Still in cooldown
+                const remainingSeconds = Math.ceil((endTime - now) / 1000);
+                startResendCooldown(remainingSeconds);
+                return true;
+            } else {
+                // Cooldown expired, remove from storage
+                localStorage.removeItem('otpCooldownEnd');
+            }
+        }
+        return false;
+    }
+    
+    // Store cooldown end time in localStorage
+    function storeCooldownEnd(seconds) {
+        const endTime = Date.now() + (seconds * 1000);
+        localStorage.setItem('otpCooldownEnd', endTime.toString());
     }
     
     // Focus first input on load
     otpInputs[0].focus();
+    
+    // Check for existing cooldown on page load
+    checkExistingCooldown();
     
     // Verify OTP button
     verifyBtn.addEventListener('click', async function() {
@@ -240,9 +413,10 @@ document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => {
                 displaySuccess('Registration completed successfully! Redirecting to login...');
                 
-                // Clear session storage
+                // Clear session storage and cooldown
                 sessionStorage.removeItem('registrationData');
                 sessionStorage.removeItem('otpId');
+                localStorage.removeItem('otpCooldownEnd');
                 
                 // Redirect to login after delay
                 setTimeout(() => {
@@ -261,37 +435,18 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Resend OTP button with countdown
-    let resendCountdown = 0;
-    
-    function updateResendButton() {
-        if (resendCountdown > 0) {
-            resendBtn.textContent = `Resend Code (${resendCountdown}s)`;
-            resendBtn.disabled = true;
-            resendCountdown--;
-            setTimeout(updateResendButton, 1000);
-        } else {
-            resendBtn.textContent = 'Resend Code';
-            resendBtn.disabled = false;
-        }
-    }
-    
+    // Resend OTP button event listener
     resendBtn.addEventListener('click', function() {
-        // TODO: Implement resend OTP
-        console.log('Resending OTP for ID:', otpId);
-        
-        // Start countdown
-        resendCountdown = 60;
-        updateResendButton();
-        
-        // Show success message
-        displaySuccess('New verification code sent to your email.');
+        if (!this.disabled) {
+            resendOTP();
+        }
     });
     
     // Back button
     document.getElementById('backButton').addEventListener('click', function() {
         // Clear OTP ID but keep registration data
         sessionStorage.removeItem('otpId');
+        localStorage.removeItem('otpCooldownEnd');
         window.location.href = '/Auth/Register';
     });
 });

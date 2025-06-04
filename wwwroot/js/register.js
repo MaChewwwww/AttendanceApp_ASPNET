@@ -607,6 +607,9 @@ async function sendOTPAndProceed(photoData) {
     try {
         const registrationData = JSON.parse(sessionStorage.getItem('registrationData') || '{}');
         
+        // Store face image for potential resend
+        sessionStorage.setItem('faceImage', photoData);
+        
         // Send OTP
         const otpResult = await sendRegistrationOTP(registrationData, photoData);
         
@@ -891,6 +894,7 @@ function displayCapturedPhoto(photoData) {
 // Global function to reset registration form
 window.resetRegistrationForm = function() {
     sessionStorage.removeItem('registrationData');
+    sessionStorage.removeItem('faceImage'); // Clear stored face image
     if (form) {
         form.reset();
         hideErrors();
