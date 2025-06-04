@@ -308,6 +308,9 @@
                 // Set a flag in localStorage to indicate we've switched to login
                 localStorage.setItem('switchedToLogin', 'true');
                 
+                // Reset registration forms if they exist
+                resetAllRegistrationForms();
+                
                 // Scroll to top of modal
                 scrollToTop();
                 
@@ -328,6 +331,9 @@
                 // Show login, hide register
                 loginSection.classList.remove('hidden');
                 registerSection.classList.add('hidden');
+                
+                // Clear login form as well
+                resetLoginForm();
             }
             
             function showRegister() {
@@ -400,6 +406,60 @@
                 sessionStorage.removeItem('otpId');
                 sessionStorage.removeItem('faceImage');
                 localStorage.removeItem('otpCooldownEnd');
+                localStorage.removeItem('registrationCompleted');
+            }
+            
+            function resetAllRegistrationForms() {
+                // Reset registration form if it exists
+                if (window.resetRegistrationForm && typeof window.resetRegistrationForm === 'function') {
+                    window.resetRegistrationForm();
+                }
+                
+                // Reset any step 2 or step 3 data
+                const photoPreview = document.getElementById('photoPreview');
+                if (photoPreview) {
+                    photoPreview.innerHTML = `
+                        <div class="text-center">
+                            <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+                            </svg>
+                            <p class="text-gray-500 text-sm mb-2">No photo captured yet</p>
+                            <p class="text-gray-400 text-xs">Click the button below to take your photo</p>
+                        </div>
+                    `;
+                }
+                
+                // Reset OTP inputs if they exist
+                const otpInputs = document.querySelectorAll('[id^="otp"]');
+                otpInputs.forEach(input => {
+                    if (input) input.value = '';
+                });
+                
+                // Hide any success/error messages
+                const successMessages = document.querySelectorAll('[id*="successMessage"], [id*="SuccessMessage"]');
+                const errorMessages = document.querySelectorAll('[id*="validationMessages"], [id*="ErrorMessage"]');
+                
+                successMessages.forEach(msg => {
+                    if (msg) msg.classList.add('hidden');
+                });
+                
+                errorMessages.forEach(msg => {
+                    if (msg) msg.classList.add('hidden');
+                });
+            }
+            
+            function resetLoginForm() {
+                // Reset login form
+                const loginForm = loginSection.querySelector('form');
+                if (loginForm) {
+                    loginForm.reset();
+                }
+                
+                // Clear any login error messages
+                const loginErrors = loginSection.querySelectorAll('.text-red-600, .bg-red-50');
+                loginErrors.forEach(error => {
+                    error.classList.add('hidden');
+                });
             }
             
             function resetRegistrationToStep1() {
@@ -410,16 +470,56 @@
                 window.location.href = '/Auth/Register';
             }
             
+            // Make showLogin available globally for child windows/iframes
+            window.switchToLogin = showLogin;
+            
             loginTab.addEventListener('click', showLogin);
             registerTab.addEventListener('click', showRegister);
+            
+            // Listen for registration completion event
+            window.addEventListener('registrationCompleted', function(event) {
+                console.log('Registration completed event received:', event.detail);
+                localStorage.setItem('registrationCompleted', 'true');
+                
+                // Clear all registration data
+                clearAllRegistrationData();
+                
+                // Reset to step 1 first, then switch to login
+                resetRegistrationToStep1();
+                
+                // Switch to login with success message
+                setTimeout(() => {
+                    showLoginSuccessMessage(event.detail.message || 'Registration completed successfully! Please login with your credentials.');
+                    showLogin();
+                }, 100);
+            });
+            
+            // Listen for document-level event as well
+            document.addEventListener('registrationCompleted', function(event) {
+                console.log('Document registration completed event received:', event.detail);
+                localStorage.setItem('registrationCompleted', 'true');
+                
+                // Clear all registration data
+                clearAllRegistrationData();
+                
+                // Reset to step 1 first, then switch to login
+                resetRegistrationToStep1();
+                
+                // Switch to login with success message
+                setTimeout(() => {
+                    showLoginSuccessMessage(event.detail.message || 'Registration completed successfully! Please login with your credentials.');
+                    showLogin();
+                }, 100);
+            });
             
             // Initialize with proper data checking
             initializeView();
         });
         
-        // New initialization function that checks for login switch
+        // New initialization function that checks for login switch and registration completion
         function initializeView() {
             const switchedToLogin = localStorage.getItem('switchedToLogin');
+            const registrationCompleted = localStorage.getItem('registrationCompleted');
             const hasRegistrationData = sessionStorage.getItem('registrationData') || 
                                       sessionStorage.getItem('otpId') || 
                                       sessionStorage.getItem('faceImage');
@@ -427,11 +527,47 @@
             // Get current page URL to avoid infinite redirects
             const currentPath = window.location.pathname.toLowerCase();
             
-            // If user previously switched to login, or if there's no registration data, start fresh
-            if (switchedToLogin || !hasRegistrationData) {
-                // Clear everything and show register step 1
+            // If registration was just completed, switch to login and clear everything
+            if (registrationCompleted) {
+                localStorage.removeItem('registrationCompleted');
+                clearAllRegistrationData();
+                
+                // Reset registration form to step 1 first
+                resetRegistrationToStep1();
+                
+                // Show success message on login tab and switch
+                setTimeout(() => {
+                    showLoginSuccessMessage('Registration completed successfully! Please login with your credentials.');
+                    showLogin();
+                }, 500);
+                
+                return;
+            }
+            
+            // If user previously switched to login, clear everything and show register step 1
+            if (switchedToLogin) {
                 clearAllRegistrationData();
                 localStorage.removeItem('switchedToLogin');
+                
+                // Reset registration form to step 1
+                resetRegistrationToStep1();
+                
+                // Only redirect if we're not already on the register page
+                if (currentPath !== '/auth/register') {
+                    window.location.href = '/Auth/Register';
+                    return;
+                }
+                
+                showRegister();
+                return;
+            }
+            
+            // If there's no registration data at all, start fresh
+            if (!hasRegistrationData) {
+                clearAllRegistrationData();
+                
+                // Reset registration form to step 1
+                resetRegistrationToStep1();
                 
                 // Only redirect if we're not already on the register page
                 if (currentPath !== '/auth/register') {
@@ -461,6 +597,66 @@
             // Default to register step 1 for any other case
             showRegister();
         }
+        
+        // Function to reset registration content back to step 1
+        function resetRegistrationToStep1() {
+            const registerSection = document.getElementById('registerSection');
+            if (!registerSection) return;
+            
+            const registerContent = registerSection.querySelector('.h-full');
+            if (!registerContent) return;
+            
+            // Check if we're currently showing step 2 or step 3 content
+            const isOnStep2Or3 = registerContent.innerHTML.includes('Face Recognition Setup') || 
+                                registerContent.innerHTML.includes('Email Verification') ||
+                                registerContent.innerHTML.includes('Step 2:') ||
+                                registerContent.innerHTML.includes('Step 3:');
+            
+            if (isOnStep2Or3) {
+                console.log('Resetting registration content to step 1');
+                
+                // Navigate back to step 1 (Register page) to reset content
+                window.location.href = '/Auth/Register';
+            }
+        }
+        
+        function showLoginSuccessMessage(message) {
+            // Create or show success message in login section
+            let successMsg = document.getElementById('loginSuccessMessage');
+            if (!successMsg) {
+                const loginContent = document.querySelector('#loginSection .max-w-md');
+                if (loginContent) {
+                    const successHTML = `
+                        <div id="loginSuccessMessage" class="mb-4 rounded-lg bg-green-50 border border-green-200 p-3">
+                            <div class="flex items-center">
+                                <svg class="w-4 h-4 text-green-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                </svg>
+                                <p class="text-sm font-medium text-green-800"></p>
+                            </div>
+                        </div>
+                    `;
+                    loginContent.insertAdjacentHTML('afterbegin', successHTML);
+                    successMsg = document.getElementById('loginSuccessMessage');
+                }
+            }
+            
+            if (successMsg) {
+                successMsg.querySelector('p').textContent = message;
+                successMsg.classList.remove('hidden');
+                
+                // Auto-hide after 5 seconds
+                setTimeout(() => {
+                    successMsg.classList.add('hidden');
+                }, 5000);
+            }
+        }
+        
+        // Make functions globally available
+        window.showLogin = showLogin;
+        window.showLoginSuccessMessage = showLoginSuccessMessage;
+        window.clearAllRegistrationData = clearAllRegistrationData;
+        window.resetRegistrationToStep1 = resetRegistrationToStep1;
     </script>
 </body>
 </html>

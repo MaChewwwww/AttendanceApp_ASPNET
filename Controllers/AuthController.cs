@@ -281,5 +281,23 @@ namespace AttendanceApp_ASPNET.Controllers
                 });
             }
         }
+
+        [HttpPost]
+        public async Task<IActionResult> ResendRegistrationOTP([FromBody] JsonElement requestData)
+        {
+            try
+            {
+                // This can reuse the same SendRegistrationOTP endpoint
+                return await SendRegistrationOTP(requestData);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { 
+                    success = false, 
+                    message = $"Failed to resend OTP: {ex.Message}",
+                    otp_id = ""
+                });
+            }
+        }
     }
 }

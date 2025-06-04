@@ -889,6 +889,9 @@ function displayCapturedPhoto(photoData) {
 window.resetRegistrationForm = function() {
     sessionStorage.removeItem('registrationData');
     sessionStorage.removeItem('faceImage'); // Clear stored face image
+    sessionStorage.removeItem('otpId'); // Clear OTP ID
+    localStorage.removeItem('otpCooldownEnd'); // Clear cooldown
+    
     if (form) {
         form.reset();
         hideErrors();
@@ -903,13 +906,125 @@ window.resetRegistrationForm = function() {
             confirmPassword.classList.remove('border-red-300', 'border-green-300');
         }
         
+        // Reset password field styling
+        const passwordField = document.getElementById('password');
+        if (passwordField) {
+            passwordField.classList.remove('border-red-300', 'border-green-300');
+        }
+        
         setLoadingState(false);
+        
+        // Reset all form field styling
+        const allInputs = form.querySelectorAll('input, select, textarea');
+        allInputs.forEach(input => {
+            input.classList.remove('border-red-300', 'border-green-300', 'bg-red-50', 'bg-green-50');
+            input.classList.add('border-gray-300');
+        });
         
         // Smooth scroll to top after reset with delay
         setTimeout(() => {
             scrollToTopOfSection();
         }, 100);
+        
+        console.log('Registration form completely reset');
     }
+};
+
+// Enhanced function to completely reset all registration state
+window.resetAllRegistrationState = function() {
+    // Call the form reset
+    if (window.resetRegistrationForm) {
+        window.resetRegistrationForm();
+    }
+    
+    // Clear any camera modal state
+    if (window.cameraModal && window.cameraModal.close) {
+        window.cameraModal.close();
+    }
+    
+    // Close any open camera modals
+    if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+        cameraStream = null;
+    }
+    const cameraModal = document.getElementById('cameraModal');
+    if (cameraModal) {
+        cameraModal.classList.add('hidden');
+    }
+    
+    // Reset any step 2 photo preview
+    const photoPreview = document.getElementById('photoPreview');
+    if (photoPreview) {
+        photoPreview.innerHTML = `
+            <div class="text-center">
+                <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+                </svg>
+                <p class="text-gray-500 text-sm mb-2">No photo captured yet</p>
+                <p class="text-gray-400 text-xs">Click the button below to take your photo</p>
+            </div>
+        `;
+    }
+    
+    // Reset capture button if it exists
+    const captureBtn = document.getElementById('capturePhotoBtn');
+    if (captureBtn) {
+        captureBtn.innerHTML = `
+            <svg class="w-5 h-5 inline mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path>
+            </svg>
+            Take Photo
+        `;
+        captureBtn.classList.remove('bg-orange-600', 'hover:bg-orange-700');
+        captureBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+        captureBtn.disabled = false;
+    }
+    
+    // Reset continue button if it exists
+    const continueBtn = document.getElementById('continueButton') || document.getElementById('continueToFinalButton');
+    if (continueBtn) {
+        continueBtn.disabled = true;
+        const buttonText = document.getElementById('continueButtonText');
+        const spinner = document.getElementById('continueSpinner');
+        
+        if (buttonText) buttonText.textContent = 'Continue to Next Step';
+        if (spinner) spinner.classList.add('hidden');
+        
+        continueBtn.classList.remove('processing-glow', 'bg-green-600', 'hover:bg-green-700');
+        continueBtn.classList.add('bg-gradient-to-r', 'from-blue-600', 'to-indigo-600', 'hover:from-blue-700', 'hover:to-indigo-700');
+    }
+    
+    // Clear OTP inputs if they exist
+    const otpInputs = document.querySelectorAll('[id^="otp"]');
+    otpInputs.forEach(input => {
+        if (input) {
+            input.value = '';
+            input.classList.remove('border-red-300', 'border-green-300');
+            input.classList.add('border-gray-300');
+        }
+    });
+    
+    // Reset verify button if it exists
+    const verifyBtn = document.getElementById('verifyOtpBtn');
+    if (verifyBtn) {
+        verifyBtn.disabled = true;
+        const verifyText = document.getElementById('verifyButtonText');
+        const verifySpinner = document.getElementById('verifySpinner');
+        
+        if (verifyText) verifyText.textContent = 'Verify & Complete Registration';
+        if (verifySpinner) verifySpinner.classList.add('hidden');
+        
+        verifyBtn.classList.remove('bg-green-600', 'hover:bg-green-700', 'processing-glow');
+        verifyBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+    }
+    
+    // Hide all step 2 and step 3 messages
+    const step2Success = document.getElementById('step2SuccessMessage');
+    const step2Error = document.getElementById('step2ErrorMessage');
+    if (step2Success) step2Success.classList.add('hidden');
+    if (step2Error) step2Error.classList.add('hidden');
+    
+    console.log('All registration state completely reset');
 };
 
 // Initialize when DOM is loaded
@@ -922,6 +1037,17 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
     
+    // Check if we should reset to step 1 due to completion
+    const registrationCompleted = localStorage.getItem('registrationCompleted');
+    if (registrationCompleted) {
+        localStorage.removeItem('registrationCompleted');
+        
+        // Reset everything to step 1 state
+        window.resetAllRegistrationState();
+        
+        console.log('Registration was completed, form reset to step 1');
+    }
+
     // Password field event listeners
     if (document.getElementById("password")) {
         document.getElementById("password").addEventListener("input", function() {

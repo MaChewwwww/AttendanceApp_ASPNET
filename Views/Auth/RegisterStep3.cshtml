@@ -171,7 +171,8 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('OTP ID retrieved:', otpId);
     
     if (!otpId) {
-        console.warn('No OTP ID found, redirecting to registration');
+        console.warn('No OTP ID found, redirecting to step 1');
+        clearAllRegistrationData();
         window.location.href = '/Auth/Register';
         return;
     }
@@ -181,10 +182,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const verifyBtn = document.getElementById('verifyOtpBtn');
     const resendBtn = document.getElementById('resendOtpBtn');
     
-    // Check if elements exist before proceeding
-    if (!otpInputs.length || !verifyBtn) {
-        console.error('Required OTP elements not found');
-        return;
+    function getOTPValue() {
+        return Array.from(otpInputs).map(input => input.value).join('');
+    }
+    
+    function checkOTPComplete() {
+        const otpValue = getOTPValue();
+        verifyBtn.disabled = otpValue.length !== 6;
     }
     
     // Auto-focus and move to next input
@@ -224,13 +228,9 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    function checkOTPComplete() {
-        const allFilled = Array.from(otpInputs).every(input => input.value.length === 1);
-        verifyBtn.disabled = !allFilled;
-    }
-    
-    function getOTPValue() {
-        return Array.from(otpInputs).map(input => input.value).join('');
+    // Focus first input
+    if (otpInputs.length > 0) {
+        otpInputs[0].focus();
     }
     
     function displayError(message) {
@@ -269,11 +269,6 @@ document.addEventListener('DOMContentLoaded', function() {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
     
-    // Focus first input on load
-    if (otpInputs.length > 0) {
-        otpInputs[0].focus();
-    }
-    
     // Verify OTP button
     verifyBtn.addEventListener('click', async function() {
         const otpCode = getOTPValue();
@@ -294,22 +289,18 @@ document.addEventListener('DOMContentLoaded', function() {
             if (result.success) {
                 displaySuccess('Registration completed successfully! Redirecting to login...');
                 
-                // Clear all registration data
-                sessionStorage.removeItem('registrationData');
-                sessionStorage.removeItem('otpId');
-                sessionStorage.removeItem('faceImage');
-                localStorage.removeItem('otpCooldownEnd');
-                
                 // Show success animation
                 this.classList.add('bg-green-600', 'hover:bg-green-700');
                 document.getElementById('verifyButtonText').textContent = 'Registration Complete!';
                 
-                // Redirect to login after delay
+                // Clear all registration data and set completion flag
+                clearAllRegistrationData();
+                localStorage.setItem('registrationCompleted', 'true');
+                
+                // Wait for user to see success message then trigger login transition
                 setTimeout(() => {
-                    // Trigger the login tab to be selected and clear all data
-                    localStorage.setItem('switchedToLogin', 'true');
-                    window.location.href = '/Auth/Register'; // Will redirect to login due to flag
-                }, 3000);
+                    triggerLoginTransition();
+                }, 2000);
                 
             } else {
                 displayError(result.message || 'OTP verification failed. Please try again.');
@@ -336,6 +327,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
+    // Back button
+    document.getElementById('backButton').addEventListener('click', function() {
+        window.location.href = '/Auth/RegisterStep2';
+    });
+    
     // Resend OTP button event listener
     if (resendBtn) {
         resendBtn.addEventListener('click', function() {
@@ -344,15 +340,104 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
-    // Back button
-    document.getElementById('backButton').addEventListener('click', function() {
-        // Clear OTP ID but keep registration data
-        sessionStorage.removeItem('otpId');
-        localStorage.removeItem('otpCooldownEnd');
-        window.location.href = '/Auth/Register';
-    });
 });
+
+// Function to clear all registration data
+function clearAllRegistrationData() {
+    sessionStorage.removeItem('registrationData');
+    sessionStorage.removeItem('otpId');
+    sessionStorage.removeItem('faceImage');
+    localStorage.removeItem('otpCooldownEnd');
+    
+    console.log('All registration data cleared from step 3');
+}
+
+// Function to trigger login transition with animation
+function triggerLoginTransition() {
+    console.log('Triggering login transition...');
+    
+    // Set the registration completion flag
+    localStorage.setItem('registrationCompleted', 'true');
+    
+    // Clear registration data
+    clearAllRegistrationData();
+    
+    // Try to call parent window functions directly (these should be available from the layout)
+    try {
+        // Method 1: Call the layout's showLogin function directly
+        if (typeof window.showLogin === 'function') {
+            console.log('Calling window.showLogin directly');
+            setTimeout(() => {
+                window.showLoginSuccessMessage('Registration completed successfully! Please login with your credentials.');
+                window.showLogin();
+            }, 100);
+            return;
+        }
+        
+        // Method 2: Access the layout functions through window
+        if (window.parent && typeof window.parent.showLogin === 'function') {
+            console.log('Calling parent.showLogin');
+            setTimeout(() => {
+                window.parent.showLoginSuccessMessage('Registration completed successfully! Please login with your credentials.');
+                window.parent.showLogin();
+            }, 100);
+            return;
+        }
+        
+        // Method 3: Try to find and click the login tab directly
+        const loginTab = document.getElementById('loginTab') || 
+                        parent.document.getElementById('loginTab') ||
+                        window.parent.document.getElementById('loginTab');
+        
+        if (loginTab) {
+            console.log('Clicking login tab directly');
+            setTimeout(() => {
+                loginTab.click();
+                // Show success message after switching
+                setTimeout(() => {
+                    if (typeof window.showLoginSuccessMessage === 'function') {
+                        window.showLoginSuccessMessage('Registration completed successfully! Please login with your credentials.');
+                    }
+                }, 200);
+            }, 100);
+            return;
+        }
+        
+        // Method 4: Dispatch custom event for the layout to handle
+        console.log('Dispatching custom event');
+        const completionEvent = new CustomEvent('registrationCompleted', {
+            detail: { 
+                message: 'Registration completed successfully! Please login with your credentials.',
+                timestamp: Date.now()
+            },
+            bubbles: true,
+            cancelable: true
+        });
+        
+        // Dispatch on multiple targets to ensure it's caught
+        document.dispatchEvent(completionEvent);
+        window.dispatchEvent(completionEvent);
+        
+        if (window.parent && window.parent.document) {
+            window.parent.document.dispatchEvent(completionEvent);
+            window.parent.dispatchEvent(completionEvent);
+        }
+        
+        // Wait for event handlers to process, then redirect as fallback
+        setTimeout(() => {
+            console.log('Event handlers should have processed, redirecting as fallback');
+            window.location.href = '/Auth/Register';
+        }, 300);
+        
+    } catch (error) {
+        console.error('Error in login transition:', error);
+        
+        // Ultimate fallback - just redirect and let the layout handle it
+        setTimeout(() => {
+            window.location.href = '/Auth/Register';
+        }, 100);
+    }
+}
 
 // Function to verify OTP and complete registration
 async function verifyOTPAndCompleteRegistration(otpId, otpCode) {
@@ -398,7 +483,7 @@ async function verifyOTPAndCompleteRegistration(otpId, otpCode) {
         
         return {
             success: result.success || false,
-            message: result.message || 'OTP verification completed',
+            message: result.message || 'Registration verification completed',
             user: result.user || null
         };
         
@@ -412,53 +497,47 @@ async function verifyOTPAndCompleteRegistration(otpId, otpCode) {
 
 // Resend OTP functionality
 async function resendOTP() {
+    const resendBtn = document.getElementById('resendOtpBtn');
+    const registrationData = JSON.parse(sessionStorage.getItem('registrationData') || '{}');
+    const faceImage = sessionStorage.getItem('faceImage');
+    
+    if (!registrationData || !faceImage) {
+        displayError('Missing registration data. Please start over.');
+        setTimeout(() => {
+            window.location.href = '/Auth/Register';
+        }, 2000);
+        return;
+    }
+    
+    // Disable button and show loading
+    resendBtn.disabled = true;
+    resendBtn.textContent = 'Sending...';
+    
     try {
-        const registrationData = JSON.parse(sessionStorage.getItem('registrationData') || '{}');
-        const faceImage = sessionStorage.getItem('faceImage');
-        
-        if (!registrationData.email || !faceImage) {
-            displayError('Missing registration data. Please start over.');
-            return;
-        }
-        
-        // Set loading state for resend button
-        const resendBtn = document.getElementById('resendOtpBtn');
-        const originalText = resendBtn.innerHTML;
-        resendBtn.innerHTML = 'Sending...';
-        resendBtn.disabled = true;
-        resendBtn.classList.add('opacity-50', 'cursor-not-allowed');
-        
-        // Call resend OTP API
         const result = await sendResendOTP(registrationData, faceImage);
         
         if (result.success) {
-            displaySuccess('Verification code sent successfully!');
-            
             // Update OTP ID if provided
             if (result.otp_id) {
                 sessionStorage.setItem('otpId', result.otp_id);
             }
             
-            // Start cooldown timer
-            startResendCooldown(300); // 5 minutes
-        } else {
-            displayError(result.message || 'Failed to resend verification code.');
+            displaySuccess(result.message || 'Verification code sent successfully!');
             
-            // Reset button state on error
-            resendBtn.innerHTML = originalText;
+            // Start cooldown timer
+            startResendCooldown(60); // 60 seconds cooldown
+            
+        } else {
+            displayError(result.message || 'Failed to resend verification code. Please try again.');
             resendBtn.disabled = false;
-            resendBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            resendBtn.textContent = 'Resend Code';
         }
         
     } catch (error) {
         console.error('Resend OTP failed:', error);
         displayError('Failed to resend verification code. Please try again.');
-        
-        // Reset button state on error
-        const resendBtn = document.getElementById('resendOtpBtn');
-        resendBtn.innerHTML = 'Resend Code';
         resendBtn.disabled = false;
-        resendBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        resendBtn.textContent = 'Resend Code';
     }
 }
 
@@ -523,25 +602,24 @@ function startResendCooldown(seconds) {
     const resendBtn = document.getElementById('resendOtpBtn');
     let timeLeft = seconds;
     
-    function updateTimer() {
-        const minutes = Math.floor(timeLeft / 60);
-        const remainingSeconds = timeLeft % 60;
-        const timeString = `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-        
-        resendBtn.innerHTML = `<span style="text-decoration: line-through;">Resend Code</span> (${timeString})`;
-        resendBtn.disabled = true;
-        resendBtn.classList.add('opacity-50', 'cursor-not-allowed', 'text-gray-500');
-        
-        if (timeLeft > 0) {
-            timeLeft--;
-            setTimeout(updateTimer, 1000);
-        } else {
-            resendBtn.innerHTML = 'Resend Code';
-            resendBtn.disabled = false;
-            resendBtn.classList.remove('opacity-50', 'cursor-not-allowed', 'text-gray-500');
-        }
-    }
+    // Store cooldown end time
+    const cooldownEnd = Date.now() + (seconds * 1000);
+    localStorage.setItem('otpCooldownEnd', cooldownEnd.toString());
     
-    updateTimer();
+    const countdown = setInterval(() => {
+        resendBtn.textContent = `Resend Code (${timeLeft}s)`;
+        resendBtn.disabled = true;
+        resendBtn.classList.add('strikethrough-animate', 'active');
+        
+        timeLeft--;
+        
+        if (timeLeft < 0) {
+            clearInterval(countdown);
+            resendBtn.textContent = 'Resend Code';
+            resendBtn.disabled = false;
+            resendBtn.classList.remove('strikethrough-animate', 'active');
+            localStorage.removeItem('otpCooldownEnd');
+        }
+    }, 1000);
 }
 </script>
