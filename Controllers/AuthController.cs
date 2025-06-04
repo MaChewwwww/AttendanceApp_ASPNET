@@ -132,5 +132,91 @@ namespace AttendanceApp_ASPNET.Controllers
                 });
             }
         }
+
+        [HttpPost]
+        public async Task<IActionResult> SendRegistrationOTP([FromBody] JsonElement requestData)
+        {
+            try
+            {
+                // Extract registration data and face image
+                var registrationData = requestData.GetProperty("registration_data");
+                var faceImage = requestData.GetProperty("face_image").GetString() ?? "";
+
+                // Convert registration data to the format expected by Python API
+                var registrationDataObject = new
+                {
+                    first_name = registrationData.GetProperty("first_name").GetString() ?? "",
+                    last_name = registrationData.GetProperty("last_name").GetString() ?? "",
+                    birthday = registrationData.GetProperty("birthday").GetString() ?? "",
+                    contact_number = registrationData.GetProperty("contact_number").GetString() ?? "",
+                    student_number = registrationData.GetProperty("student_number").GetString() ?? "",
+                    email = registrationData.GetProperty("email").GetString() ?? "",
+                    password = registrationData.GetProperty("password").GetString() ?? ""
+                };
+
+                var otpRequestData = new
+                {
+                    registration_data = registrationDataObject,
+                    face_image = faceImage
+                };
+
+                var result = await _apiService.SendRegistrationOTPAsync(otpRequestData);
+                
+                // Parse the API response
+                var apiResponse = JsonSerializer.Deserialize<JsonElement>(result);
+                
+                bool success = false;
+                string message = "Failed to send OTP";
+                string otpId = "";
+                
+                if (apiResponse.TryGetProperty("success", out var successProperty))
+                {
+                    success = successProperty.GetBoolean();
+                }
+                
+                if (apiResponse.TryGetProperty("message", out var messageProperty))
+                {
+                    message = messageProperty.GetString() ?? message;
+                }
+                
+                if (apiResponse.TryGetProperty("otp_id", out var otpIdProperty))
+                {
+                    // Handle both string and number types for otp_id
+                    if (otpIdProperty.ValueKind == JsonValueKind.String)
+                    {
+                        otpId = otpIdProperty.GetString() ?? "";
+                    }
+                    else if (otpIdProperty.ValueKind == JsonValueKind.Number)
+                    {
+                        otpId = otpIdProperty.GetInt64().ToString();
+                    }
+                    else
+                    {
+                        otpId = otpIdProperty.ToString();
+                    }
+                }
+                
+                var response = new { 
+                    success = success,
+                    message = message,
+                    otp_id = otpId
+                };
+                
+                return Json(response);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { 
+                    success = false, 
+                    message = $"Failed to send OTP: {ex.Message}",
+                    otp_id = ""
+                });
+            }
+        }
+
+        public IActionResult RegisterStep3()
+        {
+            return View();
+        }
     }
 }

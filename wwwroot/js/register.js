@@ -335,59 +335,6 @@ async function validateFaceWithAPI(faceImageData) {
     }
 }
 
-// Function to transition to Step 2 content
-function transitionToStep2() {
-    const registerSection = document.getElementById('registerSection');
-    const currentContent = registerSection.querySelector('.h-full');
-    
-    currentContent.classList.add('animate-slide-out-right');
-    
-    setTimeout(() => {
-        currentContent.innerHTML = createStep2HTML();
-        currentContent.classList.remove('animate-slide-out-right');
-        
-        // Smooth scroll to top after content change with delay
-        setTimeout(() => {
-            scrollToTopOfSection();
-        }, 100); // Small delay to ensure content is rendered
-        
-        initializeStep2();
-    }, 200);
-}
-
-// Function to scroll to top of the current section
-function scrollToTopOfSection() {
-    // Scroll the register section content to top smoothly
-    const registerSection = document.getElementById('registerSection');
-    const registerContent = registerSection.querySelector('.h-full');
-    
-    if (registerContent) {
-        registerContent.scrollTo({
-            top: 0,
-            behavior: 'smooth'
-        });
-    }
-    
-    // Also scroll main modal container to top smoothly
-    const mainModal = document.querySelector('.w-full.max-w-6xl.h-\\[700px\\]');
-    if (mainModal) {
-        mainModal.scrollTo({
-            top: 0,
-            behavior: 'smooth'
-        });
-    }
-    
-    // Smooth scroll window to ensure modal is in view
-    const modalContainer = document.querySelector('.flex.items-center.justify-center.min-h-screen');
-    if (modalContainer) {
-        modalContainer.scrollIntoView({ 
-            behavior: 'smooth', 
-            block: 'start',
-            inline: 'nearest'
-        });
-    }
-}
-
 // Create Step 2 HTML content
 function createStep2HTML() {
     return `
@@ -476,7 +423,7 @@ function createStep2HTML() {
                     Back to Step 1
                 </button>
                 <button id="continueToFinalButton" class="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-4 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled>
-                    <span id="continueButtonText">Complete Registration</span>
+                    <span id="continueButtonText">Continue to Next Step</span>
                     <svg id="continueSpinner" class="hidden animate-spin -mr-1 ml-2 h-4 w-4 text-white inline" fill="none" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -639,14 +586,197 @@ function initializeStep2() {
             return;
         }
         
+        // Set loading state
+        const continueBtn = document.getElementById('continueToFinalButton');
+        continueBtn.disabled = true;
+        document.getElementById('continueButtonText').textContent = 'Sending OTP...';
+        document.getElementById('continueSpinner').classList.remove('hidden');
+        
         // Smooth scroll to top before processing
         scrollToTopOfSection();
         
-        // Complete registration with delay
-        setTimeout(() => {
-            completeRegistration(capturedPhoto);
+        // Send OTP with delay
+        setTimeout(async () => {
+            await sendOTPAndProceed(capturedPhoto);
         }, 300);
     });
+}
+
+// Function to send OTP and proceed to step 3
+async function sendOTPAndProceed(photoData) {
+    try {
+        const registrationData = JSON.parse(sessionStorage.getItem('registrationData') || '{}');
+        
+        // Send OTP
+        const otpResult = await sendRegistrationOTP(registrationData, photoData);
+        
+        if (otpResult.success) {
+            // Store OTP ID for step 3
+            sessionStorage.setItem('otpId', otpResult.otp_id);
+            
+            showStep2SuccessMessage(otpResult.message || 'OTP sent successfully! Redirecting to verification...');
+            
+            // Smooth scroll to show success message
+            setTimeout(() => {
+                scrollToTopOfSection();
+            }, 200);
+            
+            // Navigate to step 3 after showing success
+            setTimeout(() => {
+                transitionToStep3(otpResult.otp_id);
+            }, 1500);
+            
+        } else {
+            showStep2ErrorMessage(otpResult.message || 'Failed to send OTP. Please try again.');
+            
+            // Reset button state
+            const continueBtn = document.getElementById('continueToFinalButton');
+            continueBtn.disabled = false;
+            document.getElementById('continueButtonText').textContent = 'Continue to Next Step';
+            document.getElementById('continueSpinner').classList.add('hidden');
+            
+            // Smooth scroll to show error message
+            setTimeout(() => {
+                scrollToTopOfSection();
+            }, 200);
+        }
+        
+    } catch (error) {
+        console.error('OTP sending failed:', error);
+        showStep2ErrorMessage('Failed to send OTP. Please try again.');
+        
+        // Reset button state
+        const continueBtn = document.getElementById('continueToFinalButton');
+        continueBtn.disabled = false;
+        document.getElementById('continueButtonText').textContent = 'Continue to Next Step';
+        document.getElementById('continueSpinner').classList.add('hidden');
+        
+        // Smooth scroll to show error message
+        setTimeout(() => {
+            scrollToTopOfSection();
+        }, 200);
+    }
+}
+
+// Function to transition to Step 3 content
+function transitionToStep3(otpId) {
+    const registerSection = document.getElementById('registerSection');
+    const currentContent = registerSection.querySelector('.h-full');
+    
+    currentContent.classList.add('animate-slide-out-right');
+    
+    setTimeout(() => {
+        window.location.href = '/Auth/RegisterStep3';
+    }, 200);
+}
+
+// Function to send OTP for registration
+async function sendRegistrationOTP(registrationData, faceImage) {
+    try {
+        const apiUrl = '/Auth/SendRegistrationOTP';
+        
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+        
+        const requestData = {
+            registration_data: registrationData,
+            face_image: faceImage
+        };
+        
+        const requestOptions = {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
+            body: JSON.stringify(requestData)
+        };
+        
+        if (token) {
+            requestOptions.headers["RequestVerificationToken"] = token;
+        }
+
+        const response = await fetch(apiUrl, requestOptions);
+        const responseText = await response.text();
+
+        if (!response.ok) {
+            return { 
+                success: false, 
+                message: `API Error ${response.status}: ${response.statusText}` 
+            };
+        }
+
+        let result;
+        try {
+            result = JSON.parse(responseText);
+        } catch (jsonError) {
+            return { success: false, message: 'Invalid response format from server' };
+        }
+        
+        return {
+            success: result.success || false,
+            message: result.message || 'OTP sending completed',
+            otp_id: result.otp_id || null
+        };
+        
+    } catch (error) {
+        return { 
+            success: false, 
+            message: `Network Error: ${error.message}` 
+        };
+    }
+}
+
+// Function to transition to Step 2 content
+function transitionToStep2() {
+    const registerSection = document.getElementById('registerSection');
+    const currentContent = registerSection.querySelector('.h-full');
+    
+    currentContent.classList.add('animate-slide-out-right');
+    
+    setTimeout(() => {
+        currentContent.innerHTML = createStep2HTML();
+        currentContent.classList.remove('animate-slide-out-right');
+        
+        // Smooth scroll to top after content change with delay
+        setTimeout(() => {
+            scrollToTopOfSection();
+        }, 100); // Small delay to ensure content is rendered
+        
+        initializeStep2();
+    }, 200);
+}
+
+// Function to scroll to top of the current section
+function scrollToTopOfSection() {
+    // Scroll the register section content to top smoothly
+    const registerSection = document.getElementById('registerSection');
+    const registerContent = registerSection.querySelector('.h-full');
+    
+    if (registerContent) {
+        registerContent.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    }
+    
+    // Also scroll main modal container to top smoothly
+    const mainModal = document.querySelector('.w-full.max-w-6xl.h-\\[700px\\]');
+    if (mainModal) {
+        mainModal.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    }
+    
+    // Smooth scroll window to ensure modal is in view
+    const modalContainer = document.querySelector('.flex.items-center.justify-center.min-h-screen');
+    if (modalContainer) {
+        modalContainer.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start',
+            inline: 'nearest'
+        });
+    }
 }
 
 // Create camera modal
@@ -756,29 +886,6 @@ function displayCapturedPhoto(photoData) {
     `;
     captureBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
     captureBtn.classList.add('bg-orange-600', 'hover:bg-orange-700');
-}
-
-function completeRegistration(photoData) {
-    const registrationData = JSON.parse(sessionStorage.getItem('registrationData') || '{}');
-    
-    // Set loading state
-    const continueBtn = document.getElementById('continueToFinalButton');
-    continueBtn.disabled = true;
-    document.getElementById('continueButtonText').textContent = 'Processing...';
-    document.getElementById('continueSpinner').classList.remove('hidden');
-    
-    // Simulate API call
-    setTimeout(() => {
-        sessionStorage.removeItem('registrationData');
-        alert('Registration completed successfully!');
-        
-        // Smooth scroll to top before switching to login
-        scrollToTopOfSection();
-        
-        setTimeout(() => {
-            document.getElementById('loginTab').click();
-        }, 800); // Increased delay for smooth transition
-    }, 2000);
 }
 
 // Global function to reset registration form
@@ -988,7 +1095,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('year').value = '1999';
         document.getElementById('contact_number').value = '09123456789';
         document.getElementById('student_number').value = 'STU2023001';
-        document.getElementById('email').value = 'juan.delacruz@iskolarngbayan.pup.edu.ph';
+        document.getElementById('email').value = 'johnmathewcparocha@iskolarngbayan.pup.edu.ph';
         document.getElementById('password').value = 'TestPass123!';
         document.getElementById('confirm_password').value = 'TestPass123!';
         document.getElementById('terms').checked = true;

@@ -8,6 +8,7 @@ namespace AttendanceApp_ASPNET.Services
     {
         Task<string> ValidateStudentRegistrationAsync(object formData);
         Task<string> ValidateFaceImageAsync(object faceData);
+        Task<string> SendRegistrationOTPAsync(object otpData);
         string GetApiKey();
         string GetApiBaseUrl();
     }
@@ -98,6 +99,35 @@ namespace AttendanceApp_ASPNET.Services
             catch (Exception ex)
             {
                 throw new Exception($"Face validation failed: {ex.Message}", ex);
+            }
+        }
+
+        public async Task<string> SendRegistrationOTPAsync(object otpData)
+        {
+            try
+            {
+                var apiUrl = $"{_apiBaseUrl}/registerStudent/send-otp";
+                
+                var json = JsonSerializer.Serialize(otpData);
+                var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                
+                _httpClient.DefaultRequestHeaders.Clear();
+                _httpClient.DefaultRequestHeaders.Add("AttendanceApp-API-Key", _apiKey);
+                _httpClient.DefaultRequestHeaders.Add("User-Agent", "AttendanceApp-ASPNET/1.0");
+                
+                var response = await _httpClient.PostAsync(apiUrl, content);
+                var responseContent = await response.Content.ReadAsStringAsync();
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new Exception($"OTP API returned {response.StatusCode}: {responseContent}");
+                }
+                
+                return responseContent;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Send OTP failed: {ex.Message}", ex);
             }
         }
     }
