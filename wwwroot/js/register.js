@@ -347,6 +347,8 @@ function createStep2HTML() {
                     <div class="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">2</div>
                     <div class="w-12 h-1 bg-gray-300 rounded"></div>
                     <div class="w-6 h-6 bg-gray-300 rounded-full flex items-center justify-center text-gray-500 text-xs font-semibold">3</div>
+                    <div class="w-12 h-1 bg-gray-300 rounded"></div>
+                    <div class="w-6 h-6 bg-gray-300 rounded-full flex items-center justify-center text-gray-500 text-xs font-semibold">4</div>
                 </div>
                 <div class="text-center mt-2 text-xs text-gray-600">Step 2: Face Recognition Setup</div>
             </div>
