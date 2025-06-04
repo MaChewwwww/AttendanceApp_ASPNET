@@ -363,31 +363,106 @@ async function verifyOTPAndCompleteRegistration(otpId, otpCode) {
         const response = await fetch(apiUrl, requestOptions);
         const responseText = await response.text();
 
-        if (!response.ok) {
-            return { 
-                success: false, 
-                message: `API Error ${response.status}: ${response.statusText}` 
-            };
-        }
-
+        // Parse response
         let result;
         try {
             result = JSON.parse(responseText);
         } catch (jsonError) {
-            return { success: false, message: 'Invalid response format from server' };
+            console.error('JSON Parse Error:', jsonError);
+            return { 
+                success: false, 
+                message: 'Invalid response from server. Please try again.' 
+            };
+        }
+
+        // Handle different HTTP status codes
+        if (!response.ok) {
+            let errorMessage = 'Verification failed. Please try again.';
+            
+            // Parse error message from API response
+            if (result && result.message) {
+                errorMessage = result.message;
+            } else if (result && result.error) {
+                errorMessage = result.error;
+            } else if (result && result.errors && Array.isArray(result.errors) && result.errors.length > 0) {
+                errorMessage = result.errors[0];
+            } else if (result && typeof result === 'string') {
+                errorMessage = result;
+            }
+            
+            // Map specific error cases to user-friendly messages
+            if (errorMessage.toLowerCase().includes('invalid') && errorMessage.toLowerCase().includes('otp')) {
+                errorMessage = 'Invalid verification code. Please check your code and try again.';
+            } else if (errorMessage.toLowerCase().includes('expired')) {
+                errorMessage = 'Verification code has expired. Please request a new code.';
+            } else if (errorMessage.toLowerCase().includes('attempts') || errorMessage.toLowerCase().includes('limit')) {
+                errorMessage = 'Too many failed attempts. Please request a new verification code.';
+            } else if (response.status === 400) {
+                errorMessage = 'Invalid verification code. Please check your input and try again.';
+            } else if (response.status === 404) {
+                errorMessage = 'Verification session not found. Please start the registration process again.';
+            } else if (response.status === 429) {
+                errorMessage = 'Too many requests. Please wait a moment and try again.';
+            } else if (response.status >= 500) {
+                errorMessage = 'Server error occurred. Please try again later.';
+            }
+            
+            return { 
+                success: false, 
+                message: errorMessage 
+            };
         }
         
-        return {
-            success: result.success || false,
-            message: result.message || 'Registration verification completed',
-            user: result.user || null
-        };
+        // Handle successful response
+        if (result.success === true || result.success === 'true') {
+            return {
+                success: true,
+                message: result.message || 'Registration completed successfully!',
+                user: result.user || null
+            };
+        } else {
+            // Handle API returning success: false
+            let errorMessage = 'Verification failed. Please try again.';
+            
+            if (result.message) {
+                errorMessage = result.message;
+                
+                // Map specific error messages to user-friendly ones
+                if (errorMessage.toLowerCase().includes('invalid') && errorMessage.toLowerCase().includes('otp')) {
+                    errorMessage = 'Invalid verification code. Please check your code and try again.';
+                } else if (errorMessage.toLowerCase().includes('expired')) {
+                    errorMessage = 'Verification code has expired. Please request a new code.';
+                } else if (errorMessage.toLowerCase().includes('attempts')) {
+                    errorMessage = 'Too many failed attempts. Please request a new verification code.';
+                }
+            }
+            
+            return {
+                success: false,
+                message: errorMessage
+            };
+        }
         
     } catch (error) {
-        return { 
-            success: false, 
-            message: `Network Error: ${error.message}` 
-        };
+        console.error('Network/Request Error:', error);
+        
+        // Handle network errors
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            return { 
+                success: false, 
+                message: 'Network error. Please check your connection and try again.' 
+            };
+        } else if (error.name === 'AbortError') {
+            return { 
+                success: false, 
+                message: 'Request timeout. Please try again.' 
+            };
+        } else {
+            return { 
+                success: false, 
+                message: 'An unexpected error occurred. Please try again.' 
+            };
+        }
     }
 }
 
@@ -439,7 +514,6 @@ async function resendOTP() {
 
 // Function to call resend OTP API
 async function sendResendOTP(registrationData, faceImage) {
-    // ...existing code...
     try {
         const apiUrl = '/Auth/SendRegistrationOTP';
         
@@ -466,30 +540,56 @@ async function sendResendOTP(registrationData, faceImage) {
         const response = await fetch(apiUrl, requestOptions);
         const responseText = await response.text();
 
-        if (!response.ok) {
-            return { 
-                success: false, 
-                message: `API Error ${response.status}: ${response.statusText}` 
-            };
-        }
-
+        // Parse response
         let result;
         try {
             result = JSON.parse(responseText);
         } catch (jsonError) {
-            return { success: false, message: 'Invalid response format from server' };
+            console.error('JSON Parse Error:', jsonError);
+            return { 
+                success: false, 
+                message: 'Invalid response from server. Please try again.' 
+            };
+        }
+
+        // Handle different HTTP status codes
+        if (!response.ok) {
+            let errorMessage = 'Failed to resend verification code. Please try again.';
+            
+            // Parse error message from API response
+            if (result && result.message) {
+                errorMessage = result.message;
+            } else if (result && result.error) {
+                errorMessage = result.error;
+            } else if (result && result.errors && Array.isArray(result.errors) && result.errors.length > 0) {
+                errorMessage = result.errors[0];
+            }
+            
+            // Map specific error cases to user-friendly messages
+            if (response.status === 429) {
+                errorMessage = 'Please wait before requesting another code.';
+            } else if (response.status >= 500) {
+                errorMessage = 'Server error occurred. Please try again later.';
+            }
+            
+            return { 
+                success: false, 
+                message: errorMessage 
+            };
         }
         
+        // Handle successful response
         return {
             success: result.success || false,
-            message: result.message || 'OTP resend completed',
+            message: result.message || 'Verification code sent successfully!',
             otp_id: result.otp_id || null
         };
         
     } catch (error) {
+        console.error('Network/Request Error:', error);
         return { 
             success: false, 
-            message: `Network Error: ${error.message}` 
+            message: 'Network error. Please check your connection and try again.' 
         };
     }
 }
