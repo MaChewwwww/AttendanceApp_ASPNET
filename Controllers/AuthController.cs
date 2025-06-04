@@ -223,5 +223,63 @@ namespace AttendanceApp_ASPNET.Controllers
         {
             return View();
         }
+
+        [HttpPost]
+        public async Task<IActionResult> VerifyOTPAndCompleteRegistration([FromBody] JsonElement requestData)
+        {
+            try
+            {
+                // Extract OTP ID and OTP code
+                var otpId = requestData.GetProperty("otp_id").GetString() ?? "";
+                var otpCode = requestData.GetProperty("otp_code").GetString() ?? "";
+
+                // Convert to the format expected by Python API
+                var verifyOtpData = new
+                {
+                    otp_id = otpId,
+                    otp_code = otpCode
+                };
+
+                var result = await _apiService.VerifyOTPAndCompleteRegistrationAsync(verifyOtpData);
+                
+                // Parse the API response
+                var apiResponse = JsonSerializer.Deserialize<JsonElement>(result);
+                
+                bool success = false;
+                string message = "Registration failed";
+                JsonElement userInfo = default;
+                
+                if (apiResponse.TryGetProperty("status", out var statusProperty))
+                {
+                    success = statusProperty.GetString() == "success";
+                }
+                
+                if (apiResponse.TryGetProperty("message", out var messageProperty))
+                {
+                    message = messageProperty.GetString() ?? message;
+                }
+                
+                if (apiResponse.TryGetProperty("user", out var userProperty))
+                {
+                    userInfo = userProperty;
+                }
+                
+                var response = new { 
+                    success = success,
+                    message = message,
+                    user = userInfo.ValueKind != JsonValueKind.Undefined ? userInfo : (object?)null
+                };
+                
+                return Json(response);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { 
+                    success = false, 
+                    message = $"Failed to verify OTP and complete registration: {ex.Message}",
+                    user = (object?)null
+                });
+            }
+        }
     }
 }

@@ -48,8 +48,7 @@
             </div>
             <h2 class="text-xl font-bold text-gray-800 mb-2">Email Verification</h2>
             <p class="text-gray-600 text-sm mb-6">
-                We've sent a verification code to your email address.<br>
-                Please enter the 6-digit code below to complete your registration.
+                Enter the 6-digit verification code sent to your email address
             </p>
         </div>
 
@@ -61,21 +60,19 @@
             
             <!-- OTP Input Fields -->
             <div class="flex justify-center space-x-3 mb-4">
-                <input type="text" id="otp1" class="w-12 h-12 text-center text-lg font-semibold border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors" maxlength="1" pattern="[0-9]">
-                <input type="text" id="otp2" class="w-12 h-12 text-center text-lg font-semibold border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors" maxlength="1" pattern="[0-9]">
-                <input type="text" id="otp3" class="w-12 h-12 text-center text-lg font-semibold border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors" maxlength="1" pattern="[0-9]">
-                <input type="text" id="otp4" class="w-12 h-12 text-center text-lg font-semibold border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors" maxlength="1" pattern="[0-9]">
-                <input type="text" id="otp5" class="w-12 h-12 text-center text-lg font-semibold border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors" maxlength="1" pattern="[0-9]">
-                <input type="text" id="otp6" class="w-12 h-12 text-center text-lg font-semibold border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors" maxlength="1" pattern="[0-9]">
+                <input type="text" id="otp1" maxlength="1" class="w-12 h-12 text-center border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-lg font-semibold" />
+                <input type="text" id="otp2" maxlength="1" class="w-12 h-12 text-center border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-lg font-semibold" />
+                <input type="text" id="otp3" maxlength="1" class="w-12 h-12 text-center border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-lg font-semibold" />
+                <input type="text" id="otp4" maxlength="1" class="w-12 h-12 text-center border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-lg font-semibold" />
+                <input type="text" id="otp5" maxlength="1" class="w-12 h-12 text-center border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-lg font-semibold" />
+                <input type="text" id="otp6" maxlength="1" class="w-12 h-12 text-center border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-lg font-semibold" />
             </div>
             
             <!-- Resend OTP -->
             <div class="text-center">
-                <p class="text-xs text-gray-600 mb-2">Didn't receive the code?</p>
-                <button id="resendOtpBtn" class="text-sm text-green-600 hover:text-green-700 font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 rounded px-2 py-1">
+                <button id="resendOtpBtn" class="text-green-600 hover:text-green-700 text-sm font-medium underline transition-colors">
                     Resend Code
                 </button>
-                <span id="resendTimer" class="text-xs text-gray-500 ml-2 hidden"></span>
             </div>
         </div>
 
@@ -99,12 +96,12 @@
                 <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
             </svg>
             <div>
-                <h4 class="text-sm font-medium text-blue-800 mb-2">Verification Tips:</h4>
+                <h4 class="text-sm font-medium text-blue-800 mb-2">Important Notes:</h4>
                 <ul class="text-xs text-blue-700 space-y-1">
-                    <li>• The verification code expires in 15 minutes</li>
-                    <li>• Check your spam/junk folder if you don't see the email</li>
-                    <li>• Make sure you entered the correct email address</li>
-                    <li>• You can request a new code if needed</li>
+                    <li>• Check your email inbox and spam folder for the verification code</li>
+                    <li>• The code will expire in 10 minutes</li>
+                    <li>• If you don't receive the code, click "Resend Code"</li>
+                    <li>• Make sure to complete registration within the time limit</li>
                 </ul>
             </div>
         </div>
@@ -272,185 +269,9 @@ document.addEventListener('DOMContentLoaded', function() {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
     
-    // Resend OTP functionality with 5-minute cooldown
-    async function resendOTP() {
-        try {
-            // Set loading state for resend button
-            const originalText = resendBtn.innerHTML;
-            resendBtn.innerHTML = 'Sending...';
-            resendBtn.disabled = true;
-            resendBtn.classList.add('opacity-50', 'cursor-not-allowed');
-            
-            // Get stored registration data
-            const registrationData = JSON.parse(sessionStorage.getItem('registrationData') || '{}');
-            
-            if (!registrationData.email) {
-                throw new Error('Registration data not found');
-            }
-            
-            // Call resend OTP API
-            const result = await sendResendOTP(registrationData);
-            
-            if (result.success) {
-                // Update OTP ID if provided
-                if (result.otp_id) {
-                    sessionStorage.setItem('otpId', result.otp_id);
-                }
-                
-                displaySuccess(result.message || 'New verification code sent to your email.');
-                
-                // Clear current OTP inputs
-                otpInputs.forEach(input => {
-                    input.value = '';
-                });
-                checkOTPComplete();
-                
-                // Focus first input
-                otpInputs[0].focus();
-                
-                // Start 5-minute cooldown with strikethrough styling
-                startResendCooldown(300); // 5 minutes = 300 seconds
-                
-            } else {
-                displayError(result.message || 'Failed to resend verification code. Please try again.');
-                // Reset button state on failure
-                resendBtn.innerHTML = originalText;
-                resendBtn.disabled = false;
-                resendBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-            }
-            
-        } catch (error) {
-            console.error('Resend OTP failed:', error);
-            displayError('Failed to resend verification code. Please try again.');
-            
-            // Reset button state on error
-            resendBtn.innerHTML = 'Resend Code';
-            resendBtn.disabled = false;
-            resendBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-        }
-    }
-    
-    // Function to call resend OTP API
-    async function sendResendOTP(registrationData) {
-        try {
-            const apiUrl = '/Auth/SendRegistrationOTP';
-            
-            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
-            
-            const requestData = {
-                registration_data: registrationData,
-                face_image: sessionStorage.getItem('faceImage') || '' // Get stored face image
-            };
-            
-            const requestOptions = {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Accept": "application/json"
-                },
-                body: JSON.stringify(requestData)
-            };
-            
-            if (token) {
-                requestOptions.headers["RequestVerificationToken"] = token;
-            }
-
-            const response = await fetch(apiUrl, requestOptions);
-            const responseText = await response.text();
-
-            if (!response.ok) {
-                return { 
-                    success: false, 
-                    message: `API Error ${response.status}: ${response.statusText}` 
-                };
-            }
-
-            let result;
-            try {
-                result = JSON.parse(responseText);
-            } catch (jsonError) {
-                return { success: false, message: 'Invalid response format from server' };
-            }
-            
-            return {
-                success: result.success || false,
-                message: result.message || 'OTP resent successfully',
-                otp_id: result.otp_id || null
-            };
-            
-        } catch (error) {
-            return { 
-                success: false, 
-                message: `Network Error: ${error.message}` 
-            };
-        }
-    }
-    
-    // Cooldown timer functionality with strikethrough styling
-    function startResendCooldown(seconds) {
-        storeCooldownEnd(seconds);
-        let timeLeft = seconds;
-        
-        function updateTimer() {
-            const minutes = Math.floor(timeLeft / 60);
-            const remainingSeconds = timeLeft % 60;
-            const timeString = `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-            
-            // Apply strikethrough styling and show countdown
-            resendBtn.innerHTML = `<span style="text-decoration: line-through;">Resend Code</span> (${timeString})`;
-            resendBtn.disabled = true;
-            resendBtn.classList.add('opacity-50', 'cursor-not-allowed', 'text-gray-500');
-            resendBtn.classList.remove('text-green-600', 'hover:text-green-700');
-            
-            if (timeLeft > 0) {
-                timeLeft--;
-                setTimeout(updateTimer, 1000);
-            } else {
-                // Cooldown finished - restore original styling
-                resendBtn.innerHTML = 'Resend Code';
-                resendBtn.disabled = false;
-                resendBtn.classList.remove('opacity-50', 'cursor-not-allowed', 'text-gray-500');
-                resendBtn.classList.add('text-green-600', 'hover:text-green-700');
-                localStorage.removeItem('otpCooldownEnd');
-            }
-        }
-        
-        updateTimer();
-    }
-    
-    // Check if there's an existing cooldown from localStorage
-    function checkExistingCooldown() {
-        const cooldownEnd = localStorage.getItem('otpCooldownEnd');
-        if (cooldownEnd) {
-            const now = Date.now();
-            const endTime = parseInt(cooldownEnd);
-            
-            if (now < endTime) {
-                // Still in cooldown
-                const remainingSeconds = Math.ceil((endTime - now) / 1000);
-                startResendCooldown(remainingSeconds);
-                return true;
-            } else {
-                // Cooldown expired, remove from storage
-                localStorage.removeItem('otpCooldownEnd');
-            }
-        }
-        return false;
-    }
-    
-    // Store cooldown end time in localStorage
-    function storeCooldownEnd(seconds) {
-        const endTime = Date.now() + (seconds * 1000);
-        localStorage.setItem('otpCooldownEnd', endTime.toString());
-    }
-    
     // Focus first input on load
-    otpInputs[0].focus();
-    
-    // Check for existing cooldown on page load
-    if (!checkExistingCooldown()) {
-        // Set initial resend button text
-        resendBtn.innerHTML = 'Resend Code';
+    if (otpInputs.length > 0) {
+        otpInputs[0].focus();
     }
     
     // Verify OTP button
@@ -467,24 +288,42 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('verifySpinner').classList.remove('hidden');
         
         try {
-            // TODO: Call verify OTP API
-            console.log('Verifying OTP:', otpCode, 'with OTP ID:', otpId);
+            // Call verify OTP API
+            const result = await verifyOTPAndCompleteRegistration(otpId, otpCode);
             
-            // Simulate API call for now
-            setTimeout(() => {
+            if (result.success) {
                 displaySuccess('Registration completed successfully! Redirecting to login...');
                 
-                // Clear session storage and cooldown
+                // Clear all registration data
                 sessionStorage.removeItem('registrationData');
                 sessionStorage.removeItem('otpId');
                 sessionStorage.removeItem('faceImage');
                 localStorage.removeItem('otpCooldownEnd');
                 
+                // Show success animation
+                this.classList.add('bg-green-600', 'hover:bg-green-700');
+                document.getElementById('verifyButtonText').textContent = 'Registration Complete!';
+                
                 // Redirect to login after delay
                 setTimeout(() => {
-                    document.getElementById('loginTab')?.click();
-                }, 2000);
-            }, 1000);
+                    // Trigger the login tab to be selected and clear all data
+                    localStorage.setItem('switchedToLogin', 'true');
+                    window.location.href = '/Auth/Register'; // Will redirect to login due to flag
+                }, 3000);
+                
+            } else {
+                displayError(result.message || 'OTP verification failed. Please try again.');
+                
+                // Reset button state
+                this.disabled = false;
+                document.getElementById('verifyButtonText').textContent = 'Verify & Complete Registration';
+                document.getElementById('verifySpinner').classList.add('hidden');
+                
+                // Clear OTP inputs for retry
+                otpInputs.forEach(input => input.value = '');
+                otpInputs[0].focus();
+                checkOTPComplete();
+            }
             
         } catch (error) {
             console.error('OTP verification failed:', error);
@@ -498,11 +337,13 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Resend OTP button event listener
-    resendBtn.addEventListener('click', function() {
-        if (!this.disabled) {
-            resendOTP();
-        }
-    });
+    if (resendBtn) {
+        resendBtn.addEventListener('click', function() {
+            if (!this.disabled) {
+                resendOTP();
+            }
+        });
+    }
     
     // Back button
     document.getElementById('backButton').addEventListener('click', function() {
@@ -512,4 +353,195 @@ document.addEventListener('DOMContentLoaded', function() {
         window.location.href = '/Auth/Register';
     });
 });
+
+// Function to verify OTP and complete registration
+async function verifyOTPAndCompleteRegistration(otpId, otpCode) {
+    try {
+        const apiUrl = '/Auth/VerifyOTPAndCompleteRegistration';
+        
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+        
+        const requestData = {
+            otp_id: otpId,
+            otp_code: otpCode
+        };
+        
+        const requestOptions = {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
+            body: JSON.stringify(requestData)
+        };
+        
+        if (token) {
+            requestOptions.headers["RequestVerificationToken"] = token;
+        }
+
+        const response = await fetch(apiUrl, requestOptions);
+        const responseText = await response.text();
+
+        if (!response.ok) {
+            return { 
+                success: false, 
+                message: `API Error ${response.status}: ${response.statusText}` 
+            };
+        }
+
+        let result;
+        try {
+            result = JSON.parse(responseText);
+        } catch (jsonError) {
+            return { success: false, message: 'Invalid response format from server' };
+        }
+        
+        return {
+            success: result.success || false,
+            message: result.message || 'OTP verification completed',
+            user: result.user || null
+        };
+        
+    } catch (error) {
+        return { 
+            success: false, 
+            message: `Network Error: ${error.message}` 
+        };
+    }
+}
+
+// Resend OTP functionality
+async function resendOTP() {
+    try {
+        const registrationData = JSON.parse(sessionStorage.getItem('registrationData') || '{}');
+        const faceImage = sessionStorage.getItem('faceImage');
+        
+        if (!registrationData.email || !faceImage) {
+            displayError('Missing registration data. Please start over.');
+            return;
+        }
+        
+        // Set loading state for resend button
+        const resendBtn = document.getElementById('resendOtpBtn');
+        const originalText = resendBtn.innerHTML;
+        resendBtn.innerHTML = 'Sending...';
+        resendBtn.disabled = true;
+        resendBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        
+        // Call resend OTP API
+        const result = await sendResendOTP(registrationData, faceImage);
+        
+        if (result.success) {
+            displaySuccess('Verification code sent successfully!');
+            
+            // Update OTP ID if provided
+            if (result.otp_id) {
+                sessionStorage.setItem('otpId', result.otp_id);
+            }
+            
+            // Start cooldown timer
+            startResendCooldown(300); // 5 minutes
+        } else {
+            displayError(result.message || 'Failed to resend verification code.');
+            
+            // Reset button state on error
+            resendBtn.innerHTML = originalText;
+            resendBtn.disabled = false;
+            resendBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+        
+    } catch (error) {
+        console.error('Resend OTP failed:', error);
+        displayError('Failed to resend verification code. Please try again.');
+        
+        // Reset button state on error
+        const resendBtn = document.getElementById('resendOtpBtn');
+        resendBtn.innerHTML = 'Resend Code';
+        resendBtn.disabled = false;
+        resendBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
+}
+
+// Function to call resend OTP API
+async function sendResendOTP(registrationData, faceImage) {
+    try {
+        const apiUrl = '/Auth/SendRegistrationOTP';
+        
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+        
+        const requestData = {
+            registration_data: registrationData,
+            face_image: faceImage
+        };
+        
+        const requestOptions = {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
+            body: JSON.stringify(requestData)
+        };
+        
+        if (token) {
+            requestOptions.headers["RequestVerificationToken"] = token;
+        }
+
+        const response = await fetch(apiUrl, requestOptions);
+        const responseText = await response.text();
+
+        if (!response.ok) {
+            return { 
+                success: false, 
+                message: `API Error ${response.status}: ${response.statusText}` 
+            };
+        }
+
+        let result;
+        try {
+            result = JSON.parse(responseText);
+        } catch (jsonError) {
+            return { success: false, message: 'Invalid response format from server' };
+        }
+        
+        return {
+            success: result.success || false,
+            message: result.message || 'OTP resend completed',
+            otp_id: result.otp_id || null
+        };
+        
+    } catch (error) {
+        return { 
+            success: false, 
+            message: `Network Error: ${error.message}` 
+        };
+    }
+}
+
+// Cooldown timer functionality
+function startResendCooldown(seconds) {
+    const resendBtn = document.getElementById('resendOtpBtn');
+    let timeLeft = seconds;
+    
+    function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const remainingSeconds = timeLeft % 60;
+        const timeString = `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+        
+        resendBtn.innerHTML = `<span style="text-decoration: line-through;">Resend Code</span> (${timeString})`;
+        resendBtn.disabled = true;
+        resendBtn.classList.add('opacity-50', 'cursor-not-allowed', 'text-gray-500');
+        
+        if (timeLeft > 0) {
+            timeLeft--;
+            setTimeout(updateTimer, 1000);
+        } else {
+            resendBtn.innerHTML = 'Resend Code';
+            resendBtn.disabled = false;
+            resendBtn.classList.remove('opacity-50', 'cursor-not-allowed', 'text-gray-500');
+        }
+    }
+    
+    updateTimer();
+}
 </script>

@@ -9,6 +9,7 @@ namespace AttendanceApp_ASPNET.Services
         Task<string> ValidateStudentRegistrationAsync(object formData);
         Task<string> ValidateFaceImageAsync(object faceData);
         Task<string> SendRegistrationOTPAsync(object otpData);
+        Task<string> VerifyOTPAndCompleteRegistrationAsync(object verifyData);
         string GetApiKey();
         string GetApiBaseUrl();
     }
@@ -128,6 +129,35 @@ namespace AttendanceApp_ASPNET.Services
             catch (Exception ex)
             {
                 throw new Exception($"Send OTP failed: {ex.Message}", ex);
+            }
+        }
+
+        public async Task<string> VerifyOTPAndCompleteRegistrationAsync(object verifyData)
+        {
+            try
+            {
+                var apiUrl = $"{_apiBaseUrl}/registerStudent/verify-registration";
+                
+                var json = JsonSerializer.Serialize(verifyData);
+                var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                
+                _httpClient.DefaultRequestHeaders.Clear();
+                _httpClient.DefaultRequestHeaders.Add("AttendanceApp-API-Key", _apiKey);
+                _httpClient.DefaultRequestHeaders.Add("User-Agent", "AttendanceApp-ASPNET/1.0");
+                
+                var response = await _httpClient.PostAsync(apiUrl, content);
+                var responseContent = await response.Content.ReadAsStringAsync();
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new Exception($"Verify OTP API returned {response.StatusCode}: {responseContent}");
+                }
+                
+                return responseContent;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Verify OTP and complete registration failed: {ex.Message}", ex);
             }
         }
     }
