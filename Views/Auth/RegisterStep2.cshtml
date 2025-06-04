@@ -116,11 +116,31 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Check if user switched to login (which would clear data)
+    const switchedToLogin = localStorage.getItem('switchedToLogin');
+    if (switchedToLogin) {
+        console.warn('User switched to login, redirecting to registration');
+        localStorage.removeItem('switchedToLogin');
+        sessionStorage.removeItem('registrationData');
+        sessionStorage.removeItem('otpId');
+        sessionStorage.removeItem('faceImage');
+        localStorage.removeItem('otpCooldownEnd');
+        window.location.href = '/Auth/Register';
+        return;
+    }
+    
     let capturedPhoto = null;
     
     // Retrieve stored form data from session/localStorage if needed
     const registrationData = JSON.parse(sessionStorage.getItem('registrationData') || '{}');
     console.log('Retrieved registration data:', registrationData);
+    
+    // Check if we have registration data, if not redirect to step 1
+    if (!registrationData || Object.keys(registrationData).length === 0) {
+        console.warn('No registration data found, redirecting to step 1');
+        window.location.href = '/Auth/Register';
+        return;
+    }
     
     // Photo capture functionality
     document.getElementById('capturePhotoBtn').addEventListener('click', function() {
@@ -223,7 +243,7 @@ document.addEventListener('DOMContentLoaded', function() {
             showProcessingMessage('Sending verification code to your email...');
             
             // Add a small delay for better UX
-            await new Promise(resolve => setTimeout(resolve, 500));
+            await new Promise(resolve => setTimeout(resolve, 0));
             
             // Step 3: Send OTP
             const otpResult = await sendOTP(registrationData, capturedPhoto);
@@ -244,7 +264,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Wait longer for success message to be fully displayed and read, then scroll
                 setTimeout(() => {
                     smoothScrollToTop();
-                }, 100); // Increased delay to 400ms for better UX
+                }, 0); // Increased delay to 400ms for better UX
                 
                 // Wait even longer to let user see the success message before transition
                 await new Promise(resolve => setTimeout(resolve, 2000)); // Increased to 2 seconds

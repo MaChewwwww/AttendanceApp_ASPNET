@@ -214,6 +214,11 @@ namespace AttendanceApp_ASPNET.Controllers
             }
         }
 
+        public IActionResult RegisterStep2()
+        {
+            return View();
+        }
+
         public IActionResult RegisterStep3()
         {
             return View();

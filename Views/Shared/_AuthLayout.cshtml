@@ -302,8 +302,11 @@
                 
                 currentView = 'login';
                 
-                // Reset registration to step 1 and clear forms
-                resetRegistrationToStep1();
+                // Clear ALL registration data when switching to login
+                clearAllRegistrationData();
+                
+                // Set a flag in localStorage to indicate we've switched to login
+                localStorage.setItem('switchedToLogin', 'true');
                 
                 // Scroll to top of modal
                 scrollToTop();
@@ -331,6 +334,9 @@
                 if (currentView === 'register') return;
                 
                 currentView = 'register';
+                
+                // Clear the login switch flag
+                localStorage.removeItem('switchedToLogin');
                 
                 // Scroll to top of modal
                 scrollToTop();
@@ -388,111 +394,73 @@
                 });
             }
             
+            function clearAllRegistrationData() {
+                // Clear all registration-related data
+                sessionStorage.removeItem('registrationData');
+                sessionStorage.removeItem('otpId');
+                sessionStorage.removeItem('faceImage');
+                localStorage.removeItem('otpCooldownEnd');
+            }
+            
             function resetRegistrationToStep1() {
                 // Clear session storage
-                sessionStorage.removeItem('registrationData');
+                clearAllRegistrationData();
                 
-                // Check if we're currently on step 2
-                const registerContent = registerSection.querySelector('.h-full');
-                const isOnStep2 = registerContent && !registerContent.querySelector('#registrationForm');
-                
-                if (isOnStep2) {
-                    // We're on step 2, restore step 1 content immediately
-                    restoreStep1Content();
-                } else {
-                    // We're on step 1, just clear the form
-                    clearRegistrationForm();
-                }
+                // Always navigate to the register page instead of trying to restore content
+                window.location.href = '/Auth/Register';
             }
             
-            function restoreStep1Content() {
-                // Restore step 1 by fetching the register page content
-                fetch('/Auth/Register')
-                    .then(response => response.text())
-                    .then(html => {
-                        // Extract the register content from the response
-                        const parser = new DOMParser();
-                        const doc = parser.parseFromString(html, 'text/html');
-                        const step1Content = doc.querySelector('.p-6');
-                        
-                        if (step1Content) {
-                            // Replace current content with step 1
-                            const registerContent = registerSection.querySelector('.h-full');
-                            registerContent.innerHTML = step1Content.outerHTML;
-                            
-                            // Smooth scroll to top after content restoration with delay
-                            setTimeout(() => {
-                                scrollToTop();
-                                clearRegistrationForm();
-                                
-                                // Re-load the register.js script to reinitialize functionality
-                                const existingScript = document.querySelector('script[src*="register.js"]');
-                                if (existingScript) {
-                                    existingScript.remove();
-                                }
-                                
-                                const script = document.createElement('script');
-                                script.src = '/js/register.js?' + new Date().getTime(); // Cache bust
-                                document.head.appendChild(script);
-                            }, 300);
-                        }
-                    })
-                    .catch(error => {
-                        // Fallback: just clear session storage
-                        sessionStorage.removeItem('registrationData');
-                    });
-            }
-            
-            function clearRegistrationForm() {
-                // Clear all form fields if form exists
-                const form = document.getElementById('registrationForm');
-                if (form) {
-                    form.reset();
-                    
-                    // Clear validation messages
-                    const validationMessages = document.getElementById('validationMessages');
-                    const successMessage = document.getElementById('successMessage');
-                    const errorList = document.getElementById('errorList');
-                    
-                    if (validationMessages) validationMessages.classList.add('hidden');
-                    if (successMessage) successMessage.classList.add('hidden');
-                    if (errorList) errorList.innerHTML = '';
-                    
-                    // Hide password strength indicator
-                    const passwordStrength = document.getElementById('passwordStrength');
-                    if (passwordStrength) passwordStrength.classList.add('hidden');
-                    
-                    // Reset password field borders
-                    const confirmPassword = document.getElementById('confirm_password');
-                    if (confirmPassword) {
-                        confirmPassword.classList.remove('border-red-300', 'border-green-300');
-                    }
-                    
-                    // Reset submit button state
-                    const submitButton = document.getElementById('submitButton');
-                    const buttonText = document.getElementById('buttonText');
-                    const buttonSpinner = document.getElementById('buttonSpinner');
-                    
-                    if (submitButton) {
-                        submitButton.disabled = false;
-                        submitButton.classList.remove('opacity-75');
-                    }
-                    if (buttonText) buttonText.textContent = 'Continue to Next Step';
-                    if (buttonSpinner) buttonSpinner.classList.add('hidden');
-                    
-                    // Call the global reset function if available
-                    if (window.resetRegistrationForm) {
-                        window.resetRegistrationForm();
-                    }
-                }
-            }
-
             loginTab.addEventListener('click', showLogin);
             registerTab.addEventListener('click', showRegister);
             
-            // Initialize with register view
-            showRegister();
+            // Initialize with proper data checking
+            initializeView();
         });
+        
+        // New initialization function that checks for login switch
+        function initializeView() {
+            const switchedToLogin = localStorage.getItem('switchedToLogin');
+            const hasRegistrationData = sessionStorage.getItem('registrationData') || 
+                                      sessionStorage.getItem('otpId') || 
+                                      sessionStorage.getItem('faceImage');
+            
+            // Get current page URL to avoid infinite redirects
+            const currentPath = window.location.pathname.toLowerCase();
+            
+            // If user previously switched to login, or if there's no registration data, start fresh
+            if (switchedToLogin || !hasRegistrationData) {
+                // Clear everything and show register step 1
+                clearAllRegistrationData();
+                localStorage.removeItem('switchedToLogin');
+                
+                // Only redirect if we're not already on the register page
+                if (currentPath !== '/auth/register') {
+                    window.location.href = '/Auth/Register';
+                    return;
+                }
+                
+                showRegister();
+                return;
+            }
+            
+            // If we have registration data and haven't switched to login, restore the state
+            const otpId = sessionStorage.getItem('otpId');
+            if (otpId && currentPath !== '/auth/registerstep3') {
+                // User was on step 3, redirect there
+                window.location.href = '/Auth/RegisterStep3';
+                return;
+            }
+            
+            const registrationData = sessionStorage.getItem('registrationData');
+            if (registrationData && currentPath !== '/auth/registerstep2' && !otpId) {
+                // User was on step 2, redirect there
+                window.location.href = '/Auth/RegisterStep2';
+                return;
+            }
+            
+            // Default to register step 1 for any other case
+            showRegister();
+        }
     </script>
 </body>
 </html>

@@ -156,15 +156,26 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Check if user switched to login (which would clear data)
+    const switchedToLogin = localStorage.getItem('switchedToLogin');
+    if (switchedToLogin) {
+        console.warn('User switched to login, redirecting to registration');
+        localStorage.removeItem('switchedToLogin');
+        sessionStorage.removeItem('registrationData');
+        sessionStorage.removeItem('otpId');
+        sessionStorage.removeItem('faceImage');
+        localStorage.removeItem('otpCooldownEnd');
+        window.location.href = '/Auth/Register';
+        return;
+    }
+    
     // Get OTP ID from session storage
     const otpId = sessionStorage.getItem('otpId');
     console.log('OTP ID retrieved:', otpId);
     
     if (!otpId) {
         console.warn('No OTP ID found, redirecting to registration');
-        setTimeout(() => {
-            window.location.href = '/Auth/Register';
-        }, 2000);
+        window.location.href = '/Auth/Register';
         return;
     }
     
@@ -172,6 +183,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const otpInputs = document.querySelectorAll('[id^="otp"]');
     const verifyBtn = document.getElementById('verifyOtpBtn');
     const resendBtn = document.getElementById('resendOtpBtn');
+    
+    // Check if elements exist before proceeding
+    if (!otpInputs.length || !verifyBtn) {
+        console.error('Required OTP elements not found');
+        return;
+    }
     
     // Auto-focus and move to next input
     otpInputs.forEach((input, index) => {
