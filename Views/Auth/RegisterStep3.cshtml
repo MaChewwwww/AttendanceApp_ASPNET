@@ -12,6 +12,8 @@
             <div class="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">✓</div>
             <div class="w-12 h-1 bg-blue-600 rounded"></div>
             <div class="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">3</div>
+            <div class="w-12 h-1 bg-gray-300 rounded"></div>
+            <div class="w-6 h-6 bg-gray-300 rounded-full flex items-center justify-center text-gray-500 text-xs font-semibold">4</div>
         </div>
         <div class="text-center mt-2 text-xs text-gray-600">Step 3: Email Verification</div>
     </div>
@@ -118,39 +120,6 @@
     </div>
 </div>
 
-<style>
-    /* Custom styles for OTP verification */
-    .processing-glow {
-        position: relative;
-        overflow: hidden;
-    }
-
-    .processing-glow::after {
-        content: '';
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        width: 300%;
-        height: 300%;
-        background: rgba(255, 255, 255, 0.3);
-        border-radius: 50%;
-        transform: translate(-50%, -50%) scale(0);
-        animation: glow-animation 1.5s ease-out infinite;
-    }
-
-    @@keyframes glow-animation {
-        0% {
-            transform: translate(-50%, -50%) scale(0);
-        }
-        50% {
-            transform: translate(-50%, -50%) scale(1);
-        }
-        100% {
-            transform: translate(-50%, -50%) scale(0);
-        }
-    }
-</style>
-
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Check if user switched to login (which would clear data)
@@ -166,13 +135,30 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
     
-    // Get OTP ID from session storage
+    // Get required data
     const otpId = sessionStorage.getItem('otpId');
-    console.log('OTP ID retrieved:', otpId);
+    const registrationData = sessionStorage.getItem('registrationData');
+    const faceImage = sessionStorage.getItem('faceImage');
     
-    if (!otpId) {
-        console.warn('No OTP ID found, redirecting to step 1');
-        clearAllRegistrationData();
+    console.log('OTP ID retrieved:', otpId);
+    console.log('Has registration data:', !!registrationData);
+    console.log('Has face image:', !!faceImage);
+    
+    // Strict validation: all required data must be present
+    if (!otpId || !registrationData || !faceImage) {
+        console.warn('Missing required data for step 3:', {
+            hasOtpId: !!otpId,
+            hasRegistrationData: !!registrationData,
+            hasFaceImage: !!faceImage
+        });
+        
+        // Clear all data to ensure clean state
+        sessionStorage.removeItem('registrationData');
+        sessionStorage.removeItem('otpId');
+        sessionStorage.removeItem('faceImage');
+        localStorage.removeItem('otpCooldownEnd');
+        
+        // Redirect to step 1
         window.location.href = '/Auth/Register';
         return;
     }
@@ -287,19 +273,15 @@ document.addEventListener('DOMContentLoaded', function() {
             const result = await verifyOTPAndCompleteRegistration(otpId, otpCode);
             
             if (result.success) {
-                displaySuccess('Registration completed successfully! Redirecting to login...');
+                displaySuccess('Registration completed successfully! Redirecting...');
                 
                 // Show success animation
                 this.classList.add('bg-green-600', 'hover:bg-green-700');
                 document.getElementById('verifyButtonText').textContent = 'Registration Complete!';
                 
-                // Clear all registration data and set completion flag
-                clearAllRegistrationData();
-                localStorage.setItem('registrationCompleted', 'true');
-                
-                // Wait for user to see success message then trigger login transition
+                // Wait for user to see success message then redirect to step 4
                 setTimeout(() => {
-                    triggerLoginTransition();
+                    window.location.href = '/Auth/RegisterStep4';
                 }, 2000);
                 
             } else {
@@ -340,104 +322,18 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-});
-
-// Function to clear all registration data
-function clearAllRegistrationData() {
-    sessionStorage.removeItem('registrationData');
-    sessionStorage.removeItem('otpId');
-    sessionStorage.removeItem('faceImage');
-    localStorage.removeItem('otpCooldownEnd');
     
-    console.log('All registration data cleared from step 3');
-}
-
-// Function to trigger login transition with animation
-function triggerLoginTransition() {
-    console.log('Triggering login transition...');
-    
-    // Set the registration completion flag
-    localStorage.setItem('registrationCompleted', 'true');
-    
-    // Clear registration data
-    clearAllRegistrationData();
-    
-    // Try to call parent window functions directly (these should be available from the layout)
-    try {
-        // Method 1: Call the layout's showLogin function directly
-        if (typeof window.showLogin === 'function') {
-            console.log('Calling window.showLogin directly');
-            setTimeout(() => {
-                window.showLoginSuccessMessage('Registration completed successfully! Please login with your credentials.');
-                window.showLogin();
-            }, 100);
-            return;
+    // Check for existing cooldown
+    const cooldownEnd = localStorage.getItem('otpCooldownEnd');
+    if (cooldownEnd) {
+        const timeLeft = Math.ceil((parseInt(cooldownEnd) - Date.now()) / 1000);
+        if (timeLeft > 0) {
+            startResendCooldown(timeLeft);
+        } else {
+            localStorage.removeItem('otpCooldownEnd');
         }
-        
-        // Method 2: Access the layout functions through window
-        if (window.parent && typeof window.parent.showLogin === 'function') {
-            console.log('Calling parent.showLogin');
-            setTimeout(() => {
-                window.parent.showLoginSuccessMessage('Registration completed successfully! Please login with your credentials.');
-                window.parent.showLogin();
-            }, 100);
-            return;
-        }
-        
-        // Method 3: Try to find and click the login tab directly
-        const loginTab = document.getElementById('loginTab') || 
-                        parent.document.getElementById('loginTab') ||
-                        window.parent.document.getElementById('loginTab');
-        
-        if (loginTab) {
-            console.log('Clicking login tab directly');
-            setTimeout(() => {
-                loginTab.click();
-                // Show success message after switching
-                setTimeout(() => {
-                    if (typeof window.showLoginSuccessMessage === 'function') {
-                        window.showLoginSuccessMessage('Registration completed successfully! Please login with your credentials.');
-                    }
-                }, 200);
-            }, 100);
-            return;
-        }
-        
-        // Method 4: Dispatch custom event for the layout to handle
-        console.log('Dispatching custom event');
-        const completionEvent = new CustomEvent('registrationCompleted', {
-            detail: { 
-                message: 'Registration completed successfully! Please login with your credentials.',
-                timestamp: Date.now()
-            },
-            bubbles: true,
-            cancelable: true
-        });
-        
-        // Dispatch on multiple targets to ensure it's caught
-        document.dispatchEvent(completionEvent);
-        window.dispatchEvent(completionEvent);
-        
-        if (window.parent && window.parent.document) {
-            window.parent.document.dispatchEvent(completionEvent);
-            window.parent.dispatchEvent(completionEvent);
-        }
-        
-        // Wait for event handlers to process, then redirect as fallback
-        setTimeout(() => {
-            console.log('Event handlers should have processed, redirecting as fallback');
-            window.location.href = '/Auth/Register';
-        }, 300);
-        
-    } catch (error) {
-        console.error('Error in login transition:', error);
-        
-        // Ultimate fallback - just redirect and let the layout handle it
-        setTimeout(() => {
-            window.location.href = '/Auth/Register';
-        }, 100);
     }
-}
+});
 
 // Function to verify OTP and complete registration
 async function verifyOTPAndCompleteRegistration(otpId, otpCode) {
@@ -543,6 +439,7 @@ async function resendOTP() {
 
 // Function to call resend OTP API
 async function sendResendOTP(registrationData, faceImage) {
+    // ...existing code...
     try {
         const apiUrl = '/Auth/SendRegistrationOTP';
         
@@ -599,6 +496,7 @@ async function sendResendOTP(registrationData, faceImage) {
 
 // Cooldown timer functionality
 function startResendCooldown(seconds) {
+    // ...existing code...
     const resendBtn = document.getElementById('resendOtpBtn');
     let timeLeft = seconds;
     

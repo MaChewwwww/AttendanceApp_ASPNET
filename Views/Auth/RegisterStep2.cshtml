@@ -12,6 +12,8 @@
             <div class="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">2</div>
             <div class="w-12 h-1 bg-gray-300 rounded"></div>
             <div class="w-6 h-6 bg-gray-300 rounded-full flex items-center justify-center text-gray-500 text-xs font-semibold">3</div>
+            <div class="w-12 h-1 bg-gray-300 rounded"></div>
+            <div class="w-6 h-6 bg-gray-300 rounded-full flex items-center justify-center text-gray-500 text-xs font-semibold">4</div>
         </div>
         <div class="text-center mt-2 text-xs text-gray-600">Step 2: Face Recognition Setup</div>
     </div>
@@ -100,7 +102,7 @@
             Back to Step 1
         </button>
         <button id="continueButton" class="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-4 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled>
-            <span id="continueButtonText">Continue to Final Step</span>
+            <span id="continueButtonText">Continue to Step 3</span>
             <svg id="continueSpinner" class="hidden animate-spin -mr-1 ml-2 h-4 w-4 text-white inline" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -272,8 +274,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Final state before transition
                 await animateTextChange(buttonText, 'Redirecting...');
                 
-                // Remove the client-side animation since we're doing server-side navigation
-                // Navigate directly to step 3 without slide-out animation
+                // Navigate to step 3 directly without slide-out animation
                 window.location.href = '/Auth/RegisterStep3';
                 
             } else {

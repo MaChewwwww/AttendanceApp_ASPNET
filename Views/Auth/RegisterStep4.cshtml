@@ -1,0 +1,156 @@
+@{
+    Layout = "_AuthLayout";
+    ViewData["Title"] = "Registration Complete";
+}
+
+<div class="p-6 h-full animate-slide-in-right">
+    <!-- Progress Indicator -->
+    <div class="mb-6">
+        <div class="flex items-center justify-center space-x-2">
+            <div class="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">✓</div>
+            <div class="w-12 h-1 bg-green-600 rounded"></div>
+            <div class="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">✓</div>
+            <div class="w-12 h-1 bg-green-600 rounded"></div>
+            <div class="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">✓</div>
+            <div class="w-12 h-1 bg-green-600 rounded"></div>
+            <div class="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">✓</div>
+        </div>
+        <div class="text-center mt-2 text-xs text-gray-600">Registration Complete!</div>
+    </div>
+
+    <!-- Success Animation Section -->
+    <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-8 mb-6 text-center">
+        <!-- Success Icon with Animation -->
+        <div class="mx-auto w-24 h-24 bg-green-600 rounded-full flex items-center justify-center mb-6 animate-bounce">
+            <svg class="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+            </svg>
+        </div>
+
+        <h2 class="text-2xl font-bold text-gray-800 mb-3">Registration Successful!</h2>
+        
+        <div class="space-y-3 text-gray-600 mb-6">
+            <p class="text-lg">🎉 Welcome to AttendanceApp!</p>
+            <p class="text-sm">Your account has been created successfully.</p>
+            <p class="text-sm">You can now use the app to track your attendance with facial recognition.</p>
+        </div>
+
+        <!-- Success Features -->
+        <div class="bg-white rounded-lg p-4 mb-6 shadow-sm">
+            <h3 class="text-sm font-semibold text-gray-800 mb-3">What's Next?</h3>
+            <div class="grid grid-cols-1 gap-3 text-xs text-gray-600">
+                <div class="flex items-center space-x-2">
+                    <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span>Your face has been registered for attendance tracking</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span>Your student information has been verified</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span>You can now sign in to access the attendance system</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- App Features Preview -->
+    <div class="bg-blue-50 rounded-lg p-4 border border-blue-200 mb-6">
+        <div class="flex items-start">
+            <svg class="w-5 h-5 text-blue-400 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+            </svg>
+            <div>
+                <h4 class="text-sm font-medium text-blue-800 mb-2">Ready to Use AttendanceApp</h4>
+                <ul class="text-xs text-blue-700 space-y-1">
+                    <li>• Quick facial recognition attendance marking</li>
+                    <li>• Real-time attendance tracking and reports</li>
+                    <li>• Secure and automated attendance management</li>
+                    <li>• Easy access to your attendance history</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="space-y-3">
+        <!-- Primary Action - Go to Login -->
+        <button id="goToLoginBtn" class="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 px-4 rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all duration-200 font-medium text-sm btn-smooth">
+            <svg class="w-5 h-5 inline mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+            </svg>
+            Sign In to Your Account
+        </button>
+
+        <!-- Secondary Action - Back to Register for New Account -->
+        <button id="backToRegisterBtn" class="w-full bg-gray-200 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-300 transition-colors font-medium text-sm">
+            <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+            </svg>
+            Register Another Account
+        </button>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Clear all registration data since registration is complete
+    sessionStorage.removeItem('registrationData');
+    sessionStorage.removeItem('otpId');
+    sessionStorage.removeItem('faceImage');
+    localStorage.removeItem('otpCooldownEnd');
+    
+    // Set completion flag
+    localStorage.setItem('registrationCompleted', 'true');
+    
+    // Go to login button
+    document.getElementById('goToLoginBtn').addEventListener('click', function() {
+        // Trigger transition to login with success message
+        setTimeout(() => {
+            // Try to access layout functions
+            if (typeof window.showLogin === 'function') {
+                window.showLoginSuccessMessage('Registration completed successfully! Please sign in with your credentials.');
+                window.showLogin();
+            } else if (window.parent && typeof window.parent.showLogin === 'function') {
+                window.parent.showLoginSuccessMessage('Registration completed successfully! Please sign in with your credentials.');
+                window.parent.showLogin();
+            } else {
+                // Fallback - click login tab directly
+                const loginTab = document.getElementById('loginTab') || 
+                                parent.document?.getElementById('loginTab') ||
+                                window.parent?.document?.getElementById('loginTab');
+                
+                if (loginTab) {
+                    loginTab.click();
+                    // Show success message after switching
+                    setTimeout(() => {
+                        if (typeof window.showLoginSuccessMessage === 'function') {
+                            window.showLoginSuccessMessage('Registration completed successfully! Please sign in with your credentials.');
+                        }
+                    }, 200);
+                } else {
+                    // Ultimate fallback
+                    window.location.href = '/Auth/Login';
+                }
+            }
+        }, 100);
+    });
+    
+    // Back to register button - starts fresh registration
+    document.getElementById('backToRegisterBtn').addEventListener('click', function() {
+        // Clear completion flag and redirect to fresh registration
+        localStorage.removeItem('registrationCompleted');
+        
+        // Navigate to register step 1
+        window.location.href = '/Auth/Register';
+    });
+    
+    // Auto-scroll to top
+    setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 100);
+    
+    console.log('Registration completion page loaded successfully');
+});
+</script>

@@ -532,28 +532,23 @@
                 localStorage.removeItem('registrationCompleted');
                 clearAllRegistrationData();
                 
-                // Reset registration form to step 1 first
-                resetRegistrationToStep1();
-                
                 // Show success message on login tab and switch
                 setTimeout(() => {
-                    showLoginSuccessMessage('Registration completed successfully! Please login with your credentials.');
+                    showLoginSuccessMessage('Registration completed successfully! Please sign in with your credentials.');
                     showLogin();
-                }, 500);
+                }, 100);
                 
                 return;
             }
             
-            // If user previously switched to login, clear everything and show register step 1
+            // If user previously switched to login, clear everything and force redirect to step 1
             if (switchedToLogin) {
                 clearAllRegistrationData();
                 localStorage.removeItem('switchedToLogin');
                 
-                // Reset registration form to step 1
-                resetRegistrationToStep1();
-                
-                // Only redirect if we're not already on the register page
+                // Force redirect to step 1 regardless of current path
                 if (currentPath !== '/auth/register') {
+                    console.log('User switched to login, forcing redirect to step 1');
                     window.location.href = '/Auth/Register';
                     return;
                 }
@@ -566,9 +561,6 @@
             if (!hasRegistrationData) {
                 clearAllRegistrationData();
                 
-                // Reset registration form to step 1
-                resetRegistrationToStep1();
-                
                 // Only redirect if we're not already on the register page
                 if (currentPath !== '/auth/register') {
                     window.location.href = '/Auth/Register';
@@ -579,16 +571,57 @@
                 return;
             }
             
+            // Check for invalid state: user on step 2/3 but missing required data
+            if (currentPath === '/auth/registerstep2') {
+                const registrationData = sessionStorage.getItem('registrationData');
+                if (!registrationData) {
+                    console.warn('No registration data found for step 2, redirecting to step 1');
+                    clearAllRegistrationData();
+                    window.location.href = '/Auth/Register';
+                    return;
+                }
+            }
+            
+            if (currentPath === '/auth/registerstep3') {
+                // Step 3 needs OTP ID, registration data, and face image
+                const otpId = sessionStorage.getItem('otpId');
+                const registrationData = sessionStorage.getItem('registrationData');
+                const faceImage = sessionStorage.getItem('faceImage');
+                
+                if (!otpId || !registrationData || !faceImage) {
+                    console.warn('Missing required data for step 3, redirecting to step 1');
+                    clearAllRegistrationData();
+                    window.location.href = '/Auth/Register';
+                    return;
+                }
+            }
+            
+            if (currentPath === '/auth/registerstep4') {
+                // Step 4 is the success page, clear all data and show success
+                clearAllRegistrationData();
+                localStorage.setItem('registrationCompleted', 'true');
+                showRegister();
+                return;
+            }
+            
             // If we have registration data and haven't switched to login, restore the state
             const otpId = sessionStorage.getItem('otpId');
-            if (otpId && currentPath !== '/auth/registerstep3') {
+            const faceImage = sessionStorage.getItem('faceImage');
+            const registrationData = sessionStorage.getItem('registrationData');
+            
+            if (otpId && faceImage && registrationData && currentPath !== '/auth/registerstep3') {
                 // User was on step 3, redirect there
                 window.location.href = '/Auth/RegisterStep3';
                 return;
             }
             
-            const registrationData = sessionStorage.getItem('registrationData');
-            if (registrationData && currentPath !== '/auth/registerstep2' && !otpId) {
+            if (faceImage && registrationData && !otpId && currentPath !== '/auth/registerstep2') {
+                // User was on step 2, redirect there
+                window.location.href = '/Auth/RegisterStep2';
+                return;
+            }
+            
+            if (registrationData && !faceImage && !otpId && currentPath !== '/auth/registerstep2') {
                 // User was on step 2, redirect there
                 window.location.href = '/Auth/RegisterStep2';
                 return;

@@ -224,6 +224,11 @@ namespace AttendanceApp_ASPNET.Controllers
             return View();
         }
 
+        public IActionResult RegisterStep4()
+        {
+            return View();
+        }
+
         [HttpPost]
         public async Task<IActionResult> VerifyOTPAndCompleteRegistration([FromBody] JsonElement requestData)
         {
