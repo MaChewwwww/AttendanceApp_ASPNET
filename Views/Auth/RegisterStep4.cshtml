@@ -106,14 +106,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Go to login button
     document.getElementById('goToLoginBtn').addEventListener('click', function() {
-        // Trigger transition to login with success message
+        // Simple transition to login without success message
         setTimeout(() => {
             // Try to access layout functions
             if (typeof window.showLogin === 'function') {
-                window.showLoginSuccessMessage('Registration completed successfully! Please sign in with your credentials.');
                 window.showLogin();
             } else if (window.parent && typeof window.parent.showLogin === 'function') {
-                window.parent.showLoginSuccessMessage('Registration completed successfully! Please sign in with your credentials.');
                 window.parent.showLogin();
             } else {
                 // Fallback - click login tab directly
@@ -123,12 +121,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 if (loginTab) {
                     loginTab.click();
-                    // Show success message after switching
-                    setTimeout(() => {
-                        if (typeof window.showLoginSuccessMessage === 'function') {
-                            window.showLoginSuccessMessage('Registration completed successfully! Please sign in with your credentials.');
-                        }
-                    }, 200);
                 } else {
                     // Ultimate fallback
                     window.location.href = '/Auth/Login';

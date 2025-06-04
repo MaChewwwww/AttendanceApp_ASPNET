@@ -15,16 +15,6 @@
         <p class="text-gray-600 text-sm">Sign in to access your attendance dashboard</p>
     </div>
 
-    <!-- Success Message -->
-    <div id="loginSuccessMessage" class="hidden mb-4 rounded-lg bg-green-50 border border-green-200 p-3 animate-slide-down">
-        <div class="flex items-center">
-            <svg class="w-4 h-4 text-green-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-6-2a1 1 0 11-2 0 1 1 0 012 0z" clip-rule="evenodd"></path>
-            </svg>
-            <p class="text-sm font-medium text-green-800"></p>
-        </div>
-    </div>
-
     <!-- Error Message -->
     <div id="loginErrorMessage" class="hidden mb-4 rounded-lg bg-red-50 border border-red-200 p-3 animate-slide-down">
         <div class="flex items-center">
@@ -86,7 +76,7 @@
         </div>
     </div>
 
-    <!-- Face Recognition Login (Optional Feature) -->
+    <!-- Face Recognition Login -->
     <div class="mt-6">
         <button type="button" id="faceLoginBtn" class="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 rounded-lg font-semibold hover:from-green-700 hover:to-emerald-700 transition-all duration-200 btn-smooth">
             <svg class="w-5 h-5 inline mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -157,7 +147,6 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Hide previous messages
             document.getElementById('loginErrorMessage')?.classList.add('hidden');
-            document.getElementById('loginSuccessMessage')?.classList.add('hidden');
             
             try {
                 // Simulate login API call
@@ -169,12 +158,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 if (email && password) {
                     // Success simulation
-                    showLoginSuccess('Login successful! Redirecting to dashboard...');
+                    loginButtonText.textContent = 'Login Successful!';
+                    loginButton.classList.add('bg-green-600', 'hover:bg-green-700');
                     
                     // Simulate redirect to dashboard
                     setTimeout(() => {
                         alert('Redirecting to attendance dashboard...');
-                    }, 2000);
+                    }, 1000);
                 } else {
                     showLoginError('Please enter both email and password.');
                 }
@@ -182,12 +172,15 @@ document.addEventListener('DOMContentLoaded', function() {
             } catch (error) {
                 showLoginError('Login failed. Please try again.');
             } finally {
-                // Reset loading state
-                setTimeout(() => {
-                    loginButton.disabled = false;
-                    loginButtonText.textContent = 'Sign In';
-                    loginSpinner.classList.add('hidden');
-                }, 1000);
+                // Reset loading state only if not successful
+                if (!email || !password) {
+                    setTimeout(() => {
+                        loginButton.disabled = false;
+                        loginButtonText.textContent = 'Sign In';
+                        loginSpinner.classList.add('hidden');
+                        loginButton.classList.remove('bg-green-600', 'hover:bg-green-700');
+                    }, 1000);
+                }
             }
         });
     }
@@ -197,19 +190,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (errorMessage) {
             errorMessage.querySelector('p').textContent = message;
             errorMessage.classList.remove('hidden');
-        }
-        
-        // Scroll to show message
-        setTimeout(() => {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }, 100);
-    }
-    
-    function showLoginSuccess(message) {
-        const successMessage = document.getElementById('loginSuccessMessage');
-        if (successMessage) {
-            successMessage.querySelector('p').textContent = message;
-            successMessage.classList.remove('hidden');
         }
         
         // Scroll to show message

@@ -487,9 +487,8 @@
                 // Reset to step 1 first, then switch to login
                 resetRegistrationToStep1();
                 
-                // Switch to login with success message
+                // Switch to login without success message
                 setTimeout(() => {
-                    showLoginSuccessMessage(event.detail.message || 'Registration completed successfully! Please login with your credentials.');
                     showLogin();
                 }, 100);
             });
@@ -505,9 +504,8 @@
                 // Reset to step 1 first, then switch to login
                 resetRegistrationToStep1();
                 
-                // Switch to login with success message
+                // Switch to login without success message
                 setTimeout(() => {
-                    showLoginSuccessMessage(event.detail.message || 'Registration completed successfully! Please login with your credentials.');
                     showLogin();
                 }, 100);
             });
@@ -532,9 +530,8 @@
                 localStorage.removeItem('registrationCompleted');
                 clearAllRegistrationData();
                 
-                // Show success message on login tab and switch
+                // Simply switch to login without success message
                 setTimeout(() => {
-                    showLoginSuccessMessage('Registration completed successfully! Please sign in with your credentials.');
                     showLogin();
                 }, 100);
                 
@@ -654,35 +651,8 @@
         }
         
         function showLoginSuccessMessage(message) {
-            // Create or show success message in login section
-            let successMsg = document.getElementById('loginSuccessMessage');
-            if (!successMsg) {
-                const loginContent = document.querySelector('#loginSection .max-w-md');
-                if (loginContent) {
-                    const successHTML = `
-                        <div id="loginSuccessMessage" class="mb-4 rounded-lg bg-green-50 border border-green-200 p-3">
-                            <div class="flex items-center">
-                                <svg class="w-4 h-4 text-green-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                                </svg>
-                                <p class="text-sm font-medium text-green-800"></p>
-                            </div>
-                        </div>
-                    `;
-                    loginContent.insertAdjacentHTML('afterbegin', successHTML);
-                    successMsg = document.getElementById('loginSuccessMessage');
-                }
-            }
-            
-            if (successMsg) {
-                successMsg.querySelector('p').textContent = message;
-                successMsg.classList.remove('hidden');
-                
-                // Auto-hide after 5 seconds
-                setTimeout(() => {
-                    successMsg.classList.add('hidden');
-                }, 5000);
-            }
+            // This function is no longer needed since step 4 handles success
+            console.log('Success message (deprecated):', message);
         }
         
         // Make functions globally available
