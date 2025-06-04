@@ -23,9 +23,6 @@ namespace AttendanceApp_ASPNET.Controllers
         {
             try
             {
-                Console.WriteLine("=== ValidateRegistration Controller Called ===");
-                Console.WriteLine($"Received form data: {formData}");
-                
                 // Convert JsonElement to object for API call - matching Python model structure
                 var formDataObject = new
                 {
@@ -39,11 +36,7 @@ namespace AttendanceApp_ASPNET.Controllers
                     // Note: We don't send confirm_password and terms to Python API
                 };
 
-                Console.WriteLine($"Calling API service with: {System.Text.Json.JsonSerializer.Serialize(formDataObject)}");
-                
                 var result = await _apiService.ValidateStudentRegistrationAsync(formDataObject);
-                
-                Console.WriteLine($"API service returned: {result}");
                 
                 // Parse the API response
                 var apiResponse = JsonSerializer.Deserialize<JsonElement>(result);
@@ -77,15 +70,10 @@ namespace AttendanceApp_ASPNET.Controllers
                     errors = errors
                 };
                 
-                Console.WriteLine($"Returning response: {System.Text.Json.JsonSerializer.Serialize(response)}");
-                
                 return Json(response);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error in ValidateRegistration: {ex.Message}");
-                Console.WriteLine($"Stack trace: {ex.StackTrace}");
-                
                 return Json(new { 
                     success = false, 
                     message = "Validation failed",
@@ -104,19 +92,13 @@ namespace AttendanceApp_ASPNET.Controllers
         {
             try
             {
-                Console.WriteLine("=== ValidateFaceImage Controller Called ===");
-                
                 // Convert JsonElement to object for API call
                 var faceDataObject = new
                 {
                     face_image = faceData.GetProperty("face_image").GetString() ?? ""
                 };
 
-                Console.WriteLine("Calling face validation API service...");
-                
                 var result = await _apiService.ValidateFaceImageAsync(faceDataObject);
-                
-                Console.WriteLine($"Face validation API service returned: {result}");
                 
                 // Parse the API response
                 var apiResponse = JsonSerializer.Deserialize<JsonElement>(result);
@@ -140,15 +122,10 @@ namespace AttendanceApp_ASPNET.Controllers
                     message = message
                 };
                 
-                Console.WriteLine($"Returning face validation response: {System.Text.Json.JsonSerializer.Serialize(response)}");
-                
                 return Json(response);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error in ValidateFaceImage: {ex.Message}");
-                Console.WriteLine($"Stack trace: {ex.StackTrace}");
-                
                 return Json(new { 
                     success = false, 
                     message = $"Face validation failed: {ex.Message}" 

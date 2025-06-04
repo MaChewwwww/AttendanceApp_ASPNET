@@ -1,13 +1,27 @@
 ﻿// Configuration - Uses ASP.NET Core backend API
 
+// Check if form elements exist before declaring (avoid redeclaration)
+let form, validationMessages, successMessage, errorList, submitButton, buttonText, buttonSpinner;
+
+// Initialize form elements when DOM loads
+function initializeFormElements() {
+    form = document.getElementById("registrationForm");
+    validationMessages = document.getElementById("validationMessages");
+    successMessage = document.getElementById("successMessage");
+    errorList = document.getElementById("errorList");
+    submitButton = document.getElementById("submitButton");
+    buttonText = document.getElementById("buttonText");
+    buttonSpinner = document.getElementById("buttonSpinner");
+}
+
 // Select form elements
-const form = document.getElementById("registrationForm");
-const validationMessages = document.getElementById("validationMessages");
-const successMessage = document.getElementById("successMessage");
-const errorList = document.getElementById("errorList");
-const submitButton = document.getElementById("submitButton");
-const buttonText = document.getElementById("buttonText");
-const buttonSpinner = document.getElementById("buttonSpinner");
+// const form = document.getElementById("registrationForm");
+// const validationMessages = document.getElementById("validationMessages");
+// const successMessage = document.getElementById("successMessage");
+// const errorList = document.getElementById("errorList");
+// const submitButton = document.getElementById("submitButton");
+// const buttonText = document.getElementById("buttonText");
+// const buttonSpinner = document.getElementById("buttonSpinner");
 
 // Utility function to display validation errors
 function displayErrors(errors) {
@@ -205,15 +219,11 @@ function setLoadingState(loading) {
 
 // Function to send form data to the API for validation
 async function validateWithAPI(formData) {
-    console.log('=== API Validation Started ===');
-    console.log('Sending data to API:', formData);
-    
     try {
         const apiUrl = '/Auth/ValidateRegistration';
         
         // Get anti-forgery token
         const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
-        console.log('Anti-forgery token:', token ? 'Found' : 'Not found');
         
         const requestOptions = {
             method: "POST",
@@ -229,20 +239,10 @@ async function validateWithAPI(formData) {
             requestOptions.headers["RequestVerificationToken"] = token;
         }
 
-        console.log('Making API request to:', apiUrl);
-        console.log('Request body:', JSON.stringify(formData));
-
         const response = await fetch(apiUrl, requestOptions);
-        
-        console.log('Response received:');
-        console.log('- Status:', response.status);
-        console.log('- Status Text:', response.statusText);
-        
         const responseText = await response.text();
-        console.log('Raw response text:', responseText);
 
         if (!response.ok) {
-            console.error('API Error:', response.status, response.statusText);
             return { 
                 success: false, 
                 errors: [`API Error ${response.status}: ${response.statusText} - ${responseText}`] 
@@ -252,10 +252,7 @@ async function validateWithAPI(formData) {
         let result;
         try {
             result = JSON.parse(responseText);
-            console.log('Parsed API result:', result);
         } catch (jsonError) {
-            console.error('JSON Parse Error:', jsonError);
-            console.error('Response text that failed to parse:', responseText);
             return { success: false, errors: ['Invalid response format from server'] };
         }
         
@@ -273,15 +270,10 @@ async function validateWithAPI(formData) {
                 message: result.message || ''
             };
         } else {
-            console.warn('Unexpected response format:', result);
             return { success: false, errors: ['Unexpected response format'] };
         }
         
     } catch (error) {
-        console.error('API Validation Network Error:', error);
-        console.error('Error type:', error.constructor.name);
-        console.error('Error message:', error.message);
-        
         return { 
             success: false, 
             errors: [`Network Error: ${error.message}`] 
@@ -291,8 +283,6 @@ async function validateWithAPI(formData) {
 
 // Function to validate face image with API
 async function validateFaceWithAPI(faceImageData) {
-    console.log('=== Face Validation Started ===');
-    
     try {
         const apiUrl = '/Auth/ValidateFaceImage';
         
@@ -315,19 +305,10 @@ async function validateFaceWithAPI(faceImageData) {
             requestOptions.headers["RequestVerificationToken"] = token;
         }
 
-        console.log('Making face validation API request to:', apiUrl);
-
         const response = await fetch(apiUrl, requestOptions);
-        
-        console.log('Face validation response received:');
-        console.log('- Status:', response.status);
-        console.log('- Status Text:', response.statusText);
-        
         const responseText = await response.text();
-        console.log('Face validation raw response:', responseText);
 
         if (!response.ok) {
-            console.error('Face validation API Error:', response.status, response.statusText);
             return { 
                 success: false, 
                 message: `API Error ${response.status}: ${response.statusText}` 
@@ -337,9 +318,7 @@ async function validateFaceWithAPI(faceImageData) {
         let result;
         try {
             result = JSON.parse(responseText);
-            console.log('Parsed face validation result:', result);
         } catch (jsonError) {
-            console.error('Face validation JSON Parse Error:', jsonError);
             return { success: false, message: 'Invalid response format from server' };
         }
         
@@ -349,7 +328,6 @@ async function validateFaceWithAPI(faceImageData) {
         };
         
     } catch (error) {
-        console.error('Face validation network error:', error);
         return { 
             success: false, 
             message: `Network Error: ${error.message}` 
@@ -431,6 +409,8 @@ function createStep2HTML() {
                 <div class="flex items-center">
                     <svg class="w-4 h-4 text-green-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                    </svg>
+                    <p class="text-sm font-medium text-green-800">Face photo captured and validated successfully!</p>
                 </div>
             </div>
 
@@ -514,7 +494,14 @@ function createStep2HTML() {
 function showStep2SuccessMessage(message) {
     const successMessage = document.getElementById('step2SuccessMessage');
     if (successMessage) {
-        successMessage.querySelector('p').textContent = message;
+        // Find the paragraph element or create one if it doesn't exist
+        let messageP = successMessage.querySelector('p');
+        if (!messageP) {
+            messageP = document.createElement('p');
+            messageP.className = 'text-sm font-medium text-green-800';
+            successMessage.querySelector('.flex').appendChild(messageP);
+        }
+        messageP.textContent = message;
         successMessage.classList.remove('hidden');
     }
     
@@ -574,52 +561,64 @@ function initializeStep2() {
     createCameraModal();
     
     // Photo capture functionality with face validation
-    document.getElementById('capturePhotoBtn').addEventListener('click', function() {
-        openCameraModal(async function(photoData) {
-            // Show loading state on capture button
-            const captureBtn = document.getElementById('capturePhotoBtn');
-            const originalBtnText = captureBtn.innerHTML;
-            captureBtn.innerHTML = `
-                <svg class="animate-spin w-5 h-5 inline mr-2" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Validating Face...
-            `;
-            captureBtn.disabled = true;
-            
-            try {
-                // Validate face image with API
-                console.log('Starting face validation...');
-                const faceValidationResult = await validateFaceWithAPI(photoData);
+    const captureBtn = document.getElementById('capturePhotoBtn');
+    if (captureBtn) {
+        captureBtn.addEventListener('click', function() {
+            openCameraModal(async function(photoData) {
+                // Show loading state on capture button
+                const captureBtn = document.getElementById('capturePhotoBtn');
+                const originalBtnText = captureBtn.innerHTML;
+                captureBtn.innerHTML = `
+                    <svg class="animate-spin w-5 h-5 inline mr-2" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Validating Face...
+                `;
+                captureBtn.disabled = true;
                 
-                console.log('Face validation result:', faceValidationResult);
-                
-                if (faceValidationResult.success) {
-                    capturedPhoto = photoData;
-                    displayCapturedPhoto(photoData);
-                    document.getElementById('continueToFinalButton').disabled = false;
-                    showStep2SuccessMessage(faceValidationResult.message || 'Face photo captured and validated successfully!');
-                } else {
-                    showStep2ErrorMessage(faceValidationResult.message || 'Face validation failed. Please try again with a clearer photo.');
+                try {
+                    // Validate face image with API
+                    const faceValidationResult = await validateFaceWithAPI(photoData);
+                    
+                    if (faceValidationResult.success) {
+                        capturedPhoto = photoData;
+                        displayCapturedPhoto(photoData);
+                        document.getElementById('continueToFinalButton').disabled = false;
+                        showStep2SuccessMessage(faceValidationResult.message || 'Face photo captured and validated successfully!');
+                        
+                        // Reset capture button to retake state
+                        captureBtn.innerHTML = `
+                            <svg class="w-5 h-5 inline mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"></path>
+                            </svg>
+                            Retake Photo
+                        `;
+                        captureBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                        captureBtn.classList.add('bg-orange-600', 'hover:bg-orange-700');
+                        captureBtn.disabled = false;
+                    } else {
+                        showStep2ErrorMessage(faceValidationResult.message || 'Face validation failed. Please try again with a clearer photo.');
+                        // Reset capture button to allow retry
+                        captureBtn.innerHTML = originalBtnText;
+                        captureBtn.disabled = false;
+                    }
+                } catch (error) {
+                    showStep2ErrorMessage('Face validation failed. Please try again.');
                     // Reset capture button to allow retry
                     captureBtn.innerHTML = originalBtnText;
                     captureBtn.disabled = false;
                 }
-            } catch (error) {
-                console.error('Face validation error:', error);
-                showStep2ErrorMessage('Face validation failed. Please try again.');
-                // Reset capture button to allow retry
-                captureBtn.innerHTML = originalBtnText;
-                captureBtn.disabled = false;
-            }
-            
-            // Smooth scroll to top to show result message
-            setTimeout(() => {
-                scrollToTopOfSection();
-            }, 200);
+                
+                // Smooth scroll to top to show result message
+                setTimeout(() => {
+                    scrollToTopOfSection();
+                }, 200);
+            });
         });
-    });
+    } else {
+        console.error('Capture button not found!');
+    }
     
     // Back to step 1
     document.getElementById('backToStep1Button').addEventListener('click', function() {
@@ -810,6 +809,14 @@ window.resetRegistrationForm = function() {
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize form elements first
+    initializeFormElements();
+    
+    // Only proceed if we're on step 1 (form exists)
+    if (!form) {
+        return;
+    }
+    
     // Password field event listeners
     if (document.getElementById("password")) {
         document.getElementById("password").addEventListener("input", function() {
@@ -896,8 +903,6 @@ document.addEventListener('DOMContentLoaded', function() {
         submitButton.addEventListener("click", async (event) => {
             event.preventDefault();
             
-            console.log('=== Form Submission Started ===');
-            
             setLoadingState(true);
             hideErrors();
 
@@ -918,17 +923,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     terms: form.terms.checked,
                 };
 
-                console.log('Form data prepared:', formData);
-
                 // Local validation first (including confirm_password and terms that API doesn't check)
                 const localErrors = [];
                 localErrors.push(...validateRequiredFields(formData));
                 localErrors.push(...validatePasswords(formData.password, formData.confirm_password));
                 
-                console.log('Local validation errors:', localErrors);
-                
                 if (localErrors.length > 0) {
-                    console.log('Local validation failed, showing errors');
                     displayErrors(localErrors);
                     setTimeout(() => {
                         scrollToTopOfSection();
@@ -936,21 +936,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
 
-                console.log('Local validation passed, calling API...');
-
                 // API validation (server-side + database checks)
                 const validationResult = await validateWithAPI(formData);
-                
-                console.log('API validation result:', validationResult);
 
                 if (!validationResult.success) {
-                    console.log('API validation failed, showing errors');
                     displayErrors(validationResult.errors || ['Unknown validation error']);
                     setTimeout(() => {
                         scrollToTopOfSection();
                     }, 100);
                 } else {
-                    console.log('API validation successful, proceeding to step 2');
                     showSuccess(validationResult.message || "Registration validation successful!");
                     sessionStorage.setItem('registrationData', JSON.stringify(formData));
                     
@@ -964,7 +958,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 
             } catch (error) {
-                console.error('Form submission error:', error);
                 displayErrors([`Unexpected error: ${error.message}`]);
                 setTimeout(() => {
                     scrollToTopOfSection();
@@ -986,7 +979,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Pre-fill test data
+    // Pre-fill test data (keep this for easier testing)
     if (document.getElementById('first_name')) {
         document.getElementById('first_name').value = 'Juan';
         document.getElementById('last_name').value = 'Dela Cruz';

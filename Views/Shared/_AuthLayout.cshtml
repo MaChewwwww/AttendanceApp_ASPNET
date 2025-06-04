@@ -376,12 +376,11 @@
                                 const script = document.createElement('script');
                                 script.src = '/js/register.js?' + new Date().getTime(); // Cache bust
                                 document.head.appendChild(script);
-                            }, 300); // Increased delay for smooth transition
+                            }, 300);
                         }
                     })
                     .catch(error => {
-                        console.error('Error restoring step 1:', error);
-                        // Fallback: just clear session storage and let user manually refresh if needed
+                        // Fallback: just clear session storage
                         sessionStorage.removeItem('registrationData');
                     });
             }

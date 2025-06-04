@@ -39,31 +39,20 @@ namespace AttendanceApp_ASPNET.Services
         {
             try
             {
-                var apiUrl = $"{_apiBaseUrl}/registerStudent/validate-fields";  // http://localhost:8000/registerStudent/validate-fields
-                
-                Console.WriteLine($"=== API Service Call ===");
-                Console.WriteLine($"API URL: {apiUrl}");
-                Console.WriteLine($"API Key: {(_apiKey != null && _apiKey.Length > 10 ? _apiKey.Substring(0, 10) + "..." : _apiKey ?? "null")}");
+                var apiUrl = $"{_apiBaseUrl}/registerStudent/validate-fields";
                 
                 var json = JsonSerializer.Serialize(formData);
-                Console.WriteLine($"Request body: {json}");
-                
                 var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
                 
                 _httpClient.DefaultRequestHeaders.Clear();
                 _httpClient.DefaultRequestHeaders.Add("AttendanceApp-API-Key", _apiKey);
                 _httpClient.DefaultRequestHeaders.Add("User-Agent", "AttendanceApp-ASPNET/1.0");
                 
-                Console.WriteLine("Sending HTTP request...");
                 var response = await _httpClient.PostAsync(apiUrl, content);
                 var responseContent = await response.Content.ReadAsStringAsync();
                 
-                Console.WriteLine($"Response status: {response.StatusCode}");
-                Console.WriteLine($"Response content: {responseContent}");
-                
                 if (!response.IsSuccessStatusCode)
                 {
-                    Console.WriteLine($"API returned error status: {response.StatusCode}");
                     throw new Exception($"API returned {response.StatusCode}: {responseContent}");
                 }
                 
@@ -71,17 +60,14 @@ namespace AttendanceApp_ASPNET.Services
             }
             catch (HttpRequestException httpEx)
             {
-                Console.WriteLine($"HTTP Request failed: {httpEx.Message}");
                 throw new Exception($"HTTP request failed: {httpEx.Message}", httpEx);
             }
             catch (TaskCanceledException tcEx)
             {
-                Console.WriteLine($"Request timeout: {tcEx.Message}");
                 throw new Exception($"Request timeout: {tcEx.Message}", tcEx);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"API call failed: {ex.Message}");
                 throw new Exception($"API validation failed: {ex.Message}", ex);
             }
         }
@@ -90,14 +76,9 @@ namespace AttendanceApp_ASPNET.Services
         {
             try
             {
-                var apiUrl = $"{_apiBaseUrl}/registerStudent/validate-face";  // http://localhost:8000/registerStudent/validate-face
-                
-                Console.WriteLine($"=== Face Validation API Call ===");
-                Console.WriteLine($"API URL: {apiUrl}");
+                var apiUrl = $"{_apiBaseUrl}/registerStudent/validate-face";
                 
                 var json = JsonSerializer.Serialize(faceData);
-                Console.WriteLine($"Face validation request sent");
-                
                 var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
                 
                 _httpClient.DefaultRequestHeaders.Clear();
@@ -106,9 +87,6 @@ namespace AttendanceApp_ASPNET.Services
                 
                 var response = await _httpClient.PostAsync(apiUrl, content);
                 var responseContent = await response.Content.ReadAsStringAsync();
-                
-                Console.WriteLine($"Face validation response status: {response.StatusCode}");
-                Console.WriteLine($"Face validation response: {responseContent}");
                 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -119,7 +97,6 @@ namespace AttendanceApp_ASPNET.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Face validation API call failed: {ex.Message}");
                 throw new Exception($"Face validation failed: {ex.Message}", ex);
             }
         }
