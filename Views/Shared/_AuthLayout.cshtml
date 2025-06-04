@@ -103,6 +103,64 @@
         .animate-fade-in {
             animation: fadeIn 0.3s ease-out;
         }
+        
+        /* Smooth processing states */
+        .processing-glow {
+            animation: processingGlow 2s ease-in-out infinite;
+        }
+        
+        @@keyframes processingGlow {
+            0%, 100% { 
+                box-shadow: 0 0 5px rgba(59, 130, 246, 0.3);
+            }
+            50% { 
+                box-shadow: 0 0 20px rgba(59, 130, 246, 0.6);
+            }
+        }
+        
+        /* Smooth transitions for all interactive elements */
+        .transition-smooth {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        /* Enhanced button animations */
+        .btn-smooth {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateZ(0);
+        }
+        
+        .btn-smooth:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .btn-smooth:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Strikethrough animation for resend button */
+        .strikethrough-animate {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .strikethrough-animate::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: currentColor;
+            transform: translateY(-50%) scaleX(0);
+            transform-origin: left;
+            transition: transform 0.3s ease-in-out;
+        }
+        
+        .strikethrough-animate.active::after {
+            transform: translateY(-50%) scaleX(1);
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen overflow-hidden">

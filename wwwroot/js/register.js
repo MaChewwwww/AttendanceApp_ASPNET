@@ -589,16 +589,19 @@ function initializeStep2() {
         // Set loading state
         const continueBtn = document.getElementById('continueToFinalButton');
         continueBtn.disabled = true;
-        document.getElementById('continueButtonText').textContent = 'Sending OTP...';
+        document.getElementById('continueButtonText').textContent = 'Processing...';
         document.getElementById('continueSpinner').classList.remove('hidden');
         
-        // Smooth scroll to top before processing
-        scrollToTopOfSection();
+        // Add processing glow effect
+        continueBtn.classList.add('processing-glow');
         
-        // Send OTP with delay
+        // Show initial processing message
+        showStep2SuccessMessage('Preparing to send verification code...');
+        
+        // Wait a moment before starting the OTP process to show the processing state
         setTimeout(async () => {
             await sendOTPAndProceed(capturedPhoto);
-        }, 300);
+        }, 500); // Small delay to show processing state
     });
 }
 
@@ -610,6 +613,9 @@ async function sendOTPAndProceed(photoData) {
         // Store face image for potential resend
         sessionStorage.setItem('faceImage', photoData);
         
+        // Show processing message first
+        showStep2SuccessMessage('Sending verification code to your email...');
+        
         // Send OTP
         const otpResult = await sendRegistrationOTP(registrationData, photoData);
         
@@ -619,15 +625,15 @@ async function sendOTPAndProceed(photoData) {
             
             showStep2SuccessMessage(otpResult.message || 'OTP sent successfully! Redirecting to verification...');
             
-            // Smooth scroll to show success message
+            // Wait longer before scrolling to let user read the success message
             setTimeout(() => {
                 scrollToTopOfSection();
-            }, 200);
+            }, 800); // Increased delay to 800ms
             
-            // Navigate to step 3 after showing success
+            // Navigate to step 3 directly without client-side animation
             setTimeout(() => {
-                transitionToStep3(otpResult.otp_id);
-            }, 1500);
+                window.location.href = '/Auth/RegisterStep3';
+            }, 2500); // Increased to 2.5 seconds
             
         } else {
             showStep2ErrorMessage(otpResult.message || 'Failed to send OTP. Please try again.');
@@ -638,10 +644,10 @@ async function sendOTPAndProceed(photoData) {
             document.getElementById('continueButtonText').textContent = 'Continue to Next Step';
             document.getElementById('continueSpinner').classList.add('hidden');
             
-            // Smooth scroll to show error message
+            // Scroll to show error message with delay
             setTimeout(() => {
                 scrollToTopOfSection();
-            }, 200);
+            }, 400); // Slight delay for error messages too
         }
         
     } catch (error) {
@@ -654,23 +660,11 @@ async function sendOTPAndProceed(photoData) {
         document.getElementById('continueButtonText').textContent = 'Continue to Next Step';
         document.getElementById('continueSpinner').classList.add('hidden');
         
-        // Smooth scroll to show error message
+        // Scroll to show error message with delay
         setTimeout(() => {
             scrollToTopOfSection();
-        }, 200);
+        }, 400);
     }
-}
-
-// Function to transition to Step 3 content
-function transitionToStep3(otpId) {
-    const registerSection = document.getElementById('registerSection');
-    const currentContent = registerSection.querySelector('.h-full');
-    
-    currentContent.classList.add('animate-slide-out-right');
-    
-    setTimeout(() => {
-        window.location.href = '/Auth/RegisterStep3';
-    }, 200);
 }
 
 // Function to send OTP for registration

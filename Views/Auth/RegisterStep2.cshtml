@@ -148,65 +148,211 @@ document.addEventListener('DOMContentLoaded', function() {
         captureBtn.classList.add('bg-orange-600', 'hover:bg-orange-700');
     }
     
-    function showSuccessMessage() {
-        document.getElementById('successMessage').classList.remove('hidden');
+    function showSuccessMessage(message) {
+        const successMessage = document.getElementById('successMessage');
+        if (successMessage) {
+            const messageP = successMessage.querySelector('p');
+            
+            // Immediate update for success message
+            messageP.textContent = message;
+            successMessage.classList.remove('hidden');
+        }
         document.getElementById('validationMessages').classList.add('hidden');
+    }
+    
+    function showErrorMessage(message) {
+        const validationMessages = document.getElementById('validationMessages');
+        const errorList = document.getElementById('errorList');
+        
+        if (errorList && validationMessages) {
+            errorList.innerHTML = `<li>${message}</li>`;
+            validationMessages.classList.remove('hidden');
+        }
+        
+        document.getElementById('successMessage').classList.add('hidden');
     }
     
     // Navigation
     document.getElementById('backButton').addEventListener('click', function() {
-        // Add slide-out animation and navigate back
-        document.querySelector('.animate-slide-in-right').classList.add('animate-slide-out-left');
+        // Add smooth fade-out animation
+        const container = document.querySelector('.animate-slide-in-right');
+        container.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+        container.style.transform = 'translateX(-100%)';
+        container.style.opacity = '0';
         
         setTimeout(() => {
             window.location.href = '/Auth/Register';
-        }, 300);
+        }, 400);
     });
     
-    document.getElementById('continueButton').addEventListener('click', function() {
+    document.getElementById('continueButton').addEventListener('click', async function() {
         if (!capturedPhoto) {
-            alert('Please capture your photo first.');
+            showErrorMessage('Please capture your photo first.');
             return;
         }
         
-        // Set loading state
-        this.disabled = true;
-        document.getElementById('continueButtonText').textContent = 'Processing...';
-        document.getElementById('continueSpinner').classList.remove('hidden');
+        // Set initial loading state
+        const continueBtn = this;
+        const buttonText = document.getElementById('continueButtonText');
+        const spinner = document.getElementById('continueSpinner');
         
-        // Complete registration with both form data and photo
-        completeRegistration();
-    });
-    
-    async function completeRegistration() {
+        continueBtn.disabled = true;
+        buttonText.textContent = 'Processing...';
+        spinner.classList.remove('hidden');
+        
+        // Add processing glow effect to the button
+        continueBtn.classList.add('processing-glow');
+        
+        // Show processing message
+        showProcessingMessage('Validating your photo...');
+        
         try {
-            const completeRegistrationData = {
-                ...registrationData,
-                face_photo: capturedPhoto
-            };
+            // Step 1: Validate face image first
+            const faceValidationResult = await validateFaceImage(capturedPhoto);
             
-            console.log('Completing registration with data:', completeRegistrationData);
+            if (!faceValidationResult.success) {
+                showErrorMessage(faceValidationResult.message || 'Face validation failed. Please try again with a clearer photo.');
+                resetButtonState(continueBtn, buttonText, spinner);
+                // Scroll to show error after message is set
+                setTimeout(() => smoothScrollToTop(), 100);
+                return;
+            }
             
-            // Here you would call your final registration API
-            // For now, simulate success and redirect
-            setTimeout(() => {
-                // Clear stored data
-                sessionStorage.removeItem('registrationData');
-                alert('Registration completed successfully!');
-                window.location.href = '/Auth/Login';
-            }, 2000);
+            // Step 2: Update UI for OTP sending with smooth transition
+            await animateTextChange(buttonText, 'Sending verification code...');
+            showProcessingMessage('Sending verification code to your email...');
+            
+            // Add a small delay for better UX
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Step 3: Send OTP
+            const otpResult = await sendOTP(registrationData, capturedPhoto);
+            
+            if (otpResult.success) {
+                // Store data for next step
+                sessionStorage.setItem('otpId', otpResult.otp_id);
+                sessionStorage.setItem('faceImage', capturedPhoto);
+                
+                // Show success with animation
+                await animateTextChange(buttonText, 'Verification code sent!');
+                showSuccessMessage('Verification code sent successfully!');
+                
+                // Success animation on button
+                continueBtn.classList.remove('processing-glow');
+                continueBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+                
+                // Wait longer for success message to be fully displayed and read, then scroll
+                setTimeout(() => {
+                    smoothScrollToTop();
+                }, 100); // Increased delay to 400ms for better UX
+                
+                // Wait even longer to let user see the success message before transition
+                await new Promise(resolve => setTimeout(resolve, 2000)); // Increased to 2 seconds
+                
+                // Final state before transition
+                await animateTextChange(buttonText, 'Redirecting...');
+                
+                // Remove the client-side animation since we're doing server-side navigation
+                // Navigate directly to step 3 without slide-out animation
+                window.location.href = '/Auth/RegisterStep3';
+                
+            } else {
+                showErrorMessage(otpResult.message || 'Failed to send verification code. Please try again.');
+                resetButtonState(continueBtn, buttonText, spinner);
+                // Scroll to show error after message is set with longer delay
+                setTimeout(() => smoothScrollToTop(), 300); // Increased delay for errors too
+            }
             
         } catch (error) {
-            console.error('Registration completion failed:', error);
-            
-            // Reset button state
-            const continueBtn = document.getElementById('continueButton');
-            continueBtn.disabled = false;
-            document.getElementById('continueButtonText').textContent = 'Continue to Final Step';
-            document.getElementById('continueSpinner').classList.add('hidden');
-            
-            alert('Registration failed. Please try again.');
+            console.error('Process failed:', error);
+            showErrorMessage('An error occurred. Please try again.');
+            resetButtonState(continueBtn, buttonText, spinner);
+            // Scroll to show error after message is set with longer delay
+            setTimeout(() => smoothScrollToTop(), 300); // Increased delay for errors too
         }
+    });
+    
+    // Smooth scroll to top function
+    function smoothScrollToTop() {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    }
+    
+    // Animate text change with optional delay
+    async function animateTextChange(element, newText, delay = 0) {
+        if (delay > 0) {
+            await new Promise(resolve => setTimeout(resolve, delay));
+        }
+        element.textContent = newText;
+    }
+    
+    // Dummy functions for validation and OTP sending (replace with real implementations)
+    async function validateFaceImage(imageData) {
+        console.log('Validating face image...', imageData);
+        // Simulate an API call for face image validation
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        return { success: true };
+    }
+    
+    async function sendOTP(registrationData, faceImage) {
+        console.log('Sending OTP with data:', registrationData, faceImage);
+        // Simulate an API call for sending OTP
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        return { success: true, otp_id: '123456' };
+    }
+    
+    // Processing message display (simple implementation)
+    function showProcessingMessage(message) {
+        const processingMessage = document.getElementById('processingMessage');
+        if (processingMessage) {
+            processingMessage.textContent = message;
+            processingMessage.classList.remove('hidden');
+        }
+    }
+    
+    // Reset button state after failure
+    function resetButtonState(button, textElement, spinner) {
+        button.disabled = false;
+        textElement.textContent = 'Continue to Final Step';
+        spinner.classList.add('hidden');
+        button.classList.remove('processing-glow', 'bg-green-600', 'hover:bg-green-700');
+        // Reset button to initial state
+        button.classList.add('bg-gradient-to-r', 'from-blue-600', 'to-indigo-600', 'hover:from-blue-700', 'hover:to-indigo-700');
     }
 });
 </script>
+
+<style>
+/* Add any additional custom styles here */
+.processing-glow {
+    position: relative;
+    overflow: hidden;
+}
+
+.processing-glow::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 300%;
+    height: 300%;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    animation: glow-animation 1.5s ease-out infinite;
+}
+
+@@keyframes glow-animation {
+    0% {
+        transform: translate(-50%, -50%) scale(0);
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1);
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(0);
+    }
+}
+</style>

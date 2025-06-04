@@ -72,7 +72,7 @@
             <!-- Resend OTP -->
             <div class="text-center">
                 <p class="text-xs text-gray-600 mb-2">Didn't receive the code?</p>
-                <button id="resendOtpBtn" class="text-sm text-green-600 hover:text-green-700 font-medium underline">
+                <button id="resendOtpBtn" class="text-sm text-green-600 hover:text-green-700 font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 rounded px-2 py-1">
                     Resend Code
                 </button>
                 <span id="resendTimer" class="text-xs text-gray-500 ml-2 hidden"></span>
@@ -101,7 +101,7 @@
             <div>
                 <h4 class="text-sm font-medium text-blue-800 mb-2">Verification Tips:</h4>
                 <ul class="text-xs text-blue-700 space-y-1">
-                    <li>• The verification code expires in 10 minutes</li>
+                    <li>• The verification code expires in 15 minutes</li>
                     <li>• Check your spam/junk folder if you don't see the email</li>
                     <li>• Make sure you entered the correct email address</li>
                     <li>• You can request a new code if needed</li>
@@ -120,6 +120,39 @@
         </button>
     </div>
 </div>
+
+<style>
+    /* Custom styles for OTP verification */
+    .processing-glow {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .processing-glow::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 300%;
+        height: 300%;
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        transform: translate(-50%, -50%) scale(0);
+        animation: glow-animation 1.5s ease-out infinite;
+    }
+
+    @@keyframes glow-animation {
+        0% {
+            transform: translate(-50%, -50%) scale(0);
+        }
+        50% {
+            transform: translate(-50%, -50%) scale(1);
+        }
+        100% {
+            transform: translate(-50%, -50%) scale(0);
+        }
+    }
+</style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -229,6 +262,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const originalText = resendBtn.innerHTML;
             resendBtn.innerHTML = 'Sending...';
             resendBtn.disabled = true;
+            resendBtn.classList.add('opacity-50', 'cursor-not-allowed');
             
             // Get stored registration data
             const registrationData = JSON.parse(sessionStorage.getItem('registrationData') || '{}');
@@ -257,7 +291,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Focus first input
                 otpInputs[0].focus();
                 
-                // Start 5-minute cooldown
+                // Start 5-minute cooldown with strikethrough styling
                 startResendCooldown(300); // 5 minutes = 300 seconds
                 
             } else {
@@ -265,6 +299,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Reset button state on failure
                 resendBtn.innerHTML = originalText;
                 resendBtn.disabled = false;
+                resendBtn.classList.remove('opacity-50', 'cursor-not-allowed');
             }
             
         } catch (error) {
@@ -274,6 +309,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Reset button state on error
             resendBtn.innerHTML = 'Resend Code';
             resendBtn.disabled = false;
+            resendBtn.classList.remove('opacity-50', 'cursor-not-allowed');
         }
     }
     
@@ -333,7 +369,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Cooldown timer functionality
+    // Cooldown timer functionality with strikethrough styling
     function startResendCooldown(seconds) {
         storeCooldownEnd(seconds);
         let timeLeft = seconds;
@@ -343,16 +379,21 @@ document.addEventListener('DOMContentLoaded', function() {
             const remainingSeconds = timeLeft % 60;
             const timeString = `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
             
-            resendBtn.innerHTML = `Resend Code (${timeString})`;
+            // Apply strikethrough styling and show countdown
+            resendBtn.innerHTML = `<span style="text-decoration: line-through;">Resend Code</span> (${timeString})`;
             resendBtn.disabled = true;
+            resendBtn.classList.add('opacity-50', 'cursor-not-allowed', 'text-gray-500');
+            resendBtn.classList.remove('text-green-600', 'hover:text-green-700');
             
             if (timeLeft > 0) {
                 timeLeft--;
                 setTimeout(updateTimer, 1000);
             } else {
-                // Cooldown finished
+                // Cooldown finished - restore original styling
                 resendBtn.innerHTML = 'Resend Code';
                 resendBtn.disabled = false;
+                resendBtn.classList.remove('opacity-50', 'cursor-not-allowed', 'text-gray-500');
+                resendBtn.classList.add('text-green-600', 'hover:text-green-700');
                 localStorage.removeItem('otpCooldownEnd');
             }
         }
@@ -390,7 +431,10 @@ document.addEventListener('DOMContentLoaded', function() {
     otpInputs[0].focus();
     
     // Check for existing cooldown on page load
-    checkExistingCooldown();
+    if (!checkExistingCooldown()) {
+        // Set initial resend button text
+        resendBtn.innerHTML = 'Resend Code';
+    }
     
     // Verify OTP button
     verifyBtn.addEventListener('click', async function() {
@@ -416,6 +460,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Clear session storage and cooldown
                 sessionStorage.removeItem('registrationData');
                 sessionStorage.removeItem('otpId');
+                sessionStorage.removeItem('faceImage');
                 localStorage.removeItem('otpCooldownEnd');
                 
                 // Redirect to login after delay
