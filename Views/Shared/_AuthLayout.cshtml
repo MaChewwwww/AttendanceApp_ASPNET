@@ -302,6 +302,10 @@
                 
                 currentView = 'login';
                 
+                // Check if user is currently on step 3 and handle specially
+                const currentPath = window.location.pathname.toLowerCase();
+                const isOnStep3 = currentPath === '/auth/registerstep3';
+                
                 // Clear ALL registration data when switching to login
                 clearAllRegistrationData();
                 
@@ -310,6 +314,18 @@
                 
                 // Reset registration forms if they exist
                 resetAllRegistrationForms();
+                
+                // If user was on step 3, clear step 3 specific data and mark for step 1 reset
+                if (isOnStep3) {
+                    console.log('User on step 3 switching to login, marking for step 1 reset');
+                    // Clear step 3 specific data
+                    sessionStorage.removeItem('otpId');
+                    sessionStorage.removeItem('faceImage');
+                    localStorage.removeItem('otpCooldownEnd');
+                    
+                    // Set flag to reset register content to step 1
+                    localStorage.setItem('resetToStep1', 'true');
+                }
                 
                 // Scroll to top of modal
                 scrollToTop();
@@ -341,8 +357,40 @@
                 
                 currentView = 'register';
                 
+                // Check if we need to reset to step 1
+                const resetToStep1 = localStorage.getItem('resetToStep1');
+                const switchedToLogin = localStorage.getItem('switchedToLogin');
+                
                 // Clear the login switch flag
                 localStorage.removeItem('switchedToLogin');
+                localStorage.removeItem('resetToStep1');
+                
+                // If we need to reset to step 1, load step 1 content dynamically
+                if (resetToStep1 || switchedToLogin) {
+                    console.log('Resetting register content to step 1 dynamically');
+                    
+                    // Clear all registration data
+                    clearAllRegistrationData();
+                    
+                    // Load step 1 content dynamically instead of redirecting
+                    loadStep1Content();
+                } else {
+                    // Check current register content and reset if needed
+                    const registerContent = registerSection.querySelector('.h-full');
+                    if (registerContent) {
+                        const isOnStep2Or3 = registerContent.innerHTML.includes('Face Recognition Setup') || 
+                                            registerContent.innerHTML.includes('Email Verification') ||
+                                            registerContent.innerHTML.includes('Step 2:') ||
+                                            registerContent.innerHTML.includes('Step 3:') ||
+                                            registerContent.innerHTML.includes('Registration Complete');
+                        
+                        if (isOnStep2Or3) {
+                            console.log('Current content is not step 1, loading step 1 content');
+                            clearAllRegistrationData();
+                            loadStep1Content();
+                        }
+                    }
+                }
                 
                 // Scroll to top of modal
                 scrollToTop();
@@ -517,13 +565,28 @@
         // New initialization function that checks for login switch and registration completion
         function initializeView() {
             const switchedToLogin = localStorage.getItem('switchedToLogin');
+            const resetToStep1 = localStorage.getItem('resetToStep1');
             const registrationCompleted = localStorage.getItem('registrationCompleted');
+            const registrationCancelled = localStorage.getItem('registrationCancelled');
             const hasRegistrationData = sessionStorage.getItem('registrationData') || 
                                       sessionStorage.getItem('otpId') || 
                                       sessionStorage.getItem('faceImage');
             
             // Get current page URL to avoid infinite redirects
             const currentPath = window.location.pathname.toLowerCase();
+            
+            // If registration was cancelled, clear everything and show login
+            if (registrationCancelled) {
+                localStorage.removeItem('registrationCancelled');
+                clearAllRegistrationData();
+                
+                // Force switch to login
+                setTimeout(() => {
+                    showLogin();
+                }, 100);
+                
+                return;
+            }
             
             // If registration was just completed, switch to login and clear everything
             if (registrationCompleted) {
@@ -538,18 +601,20 @@
                 return;
             }
             
-            // If user previously switched to login, clear everything and force redirect to step 1
-            if (switchedToLogin) {
+            // If user previously switched to login from step 3 or needs reset, clear everything and force redirect to step 1
+            if (switchedToLogin || resetToStep1) {
                 clearAllRegistrationData();
                 localStorage.removeItem('switchedToLogin');
+                localStorage.removeItem('resetToStep1');
                 
                 // Force redirect to step 1 regardless of current path
                 if (currentPath !== '/auth/register') {
-                    console.log('User switched to login, forcing redirect to step 1');
+                    console.log('User switched to login or needs reset, forcing redirect to step 1');
                     window.location.href = '/Auth/Register';
                     return;
                 }
                 
+                // If already on register page, just show the register tab
                 showRegister();
                 return;
             }
@@ -568,25 +633,25 @@
                 return;
             }
             
-            // Check for invalid state: user on step 2/3 but missing required data
-            if (currentPath === '/auth/registerstep2') {
+            // Prevent access to step 3 after cancellation or login switch
+            if (currentPath === '/auth/registerstep3') {
+                const otpId = sessionStorage.getItem('otpId');
                 const registrationData = sessionStorage.getItem('registrationData');
-                if (!registrationData) {
-                    console.warn('No registration data found for step 2, redirecting to step 1');
+                const faceImage = sessionStorage.getItem('faceImage');
+                
+                if (!otpId || !registrationData || !faceImage) {
+                    console.warn('Missing required data for step 3 or access denied after cancellation, redirecting to step 1');
                     clearAllRegistrationData();
                     window.location.href = '/Auth/Register';
                     return;
                 }
             }
             
-            if (currentPath === '/auth/registerstep3') {
-                // Step 3 needs OTP ID, registration data, and face image
-                const otpId = sessionStorage.getItem('otpId');
+            // Check for invalid state: user on step 2/3 but missing required data
+            if (currentPath === '/auth/registerstep2') {
                 const registrationData = sessionStorage.getItem('registrationData');
-                const faceImage = sessionStorage.getItem('faceImage');
-                
-                if (!otpId || !registrationData || !faceImage) {
-                    console.warn('Missing required data for step 3, redirecting to step 1');
+                if (!registrationData) {
+                    console.warn('No registration data found for step 2, redirecting to step 1');
                     clearAllRegistrationData();
                     window.location.href = '/Auth/Register';
                     return;
@@ -660,6 +725,383 @@
         window.showLoginSuccessMessage = showLoginSuccessMessage;
         window.clearAllRegistrationData = clearAllRegistrationData;
         window.resetRegistrationToStep1 = resetRegistrationToStep1;
+        
+        function showRegister() {
+                if (currentView === 'register') return;
+                
+                currentView = 'register';
+                
+                // Check if we need to reset to step 1
+                const resetToStep1 = localStorage.getItem('resetToStep1');
+                const switchedToLogin = localStorage.getItem('switchedToLogin');
+                
+                // Clear the login switch flag
+                localStorage.removeItem('switchedToLogin');
+                localStorage.removeItem('resetToStep1');
+                
+                // If we need to reset to step 1, load step 1 content dynamically
+                if (resetToStep1 || switchedToLogin) {
+                    console.log('Resetting register content to step 1 dynamically');
+                    
+                    // Clear all registration data
+                    clearAllRegistrationData();
+                    
+                    // Load step 1 content dynamically instead of redirecting
+                    loadStep1Content();
+                } else {
+                    // Check current register content and reset if needed
+                    const registerContent = registerSection.querySelector('.h-full');
+                    if (registerContent) {
+                        const isOnStep2Or3 = registerContent.innerHTML.includes('Face Recognition Setup') || 
+                                            registerContent.innerHTML.includes('Email Verification') ||
+                                            registerContent.innerHTML.includes('Step 2:') ||
+                                            registerContent.innerHTML.includes('Step 3:') ||
+                                            registerContent.innerHTML.includes('Registration Complete');
+                        
+                        if (isOnStep2Or3) {
+                            console.log('Current content is not step 1, loading step 1 content');
+                            clearAllRegistrationData();
+                            loadStep1Content();
+                        }
+                    }
+                }
+                
+                // Scroll to top of modal
+                scrollToTop();
+                
+                // Update tabs
+                registerTab.classList.add('border-blue-600', 'bg-blue-50');
+                registerTab.querySelector('span').classList.remove('text-gray-600');
+                registerTab.querySelector('span').classList.add('text-blue-600');
+                registerTab.classList.remove('border-transparent');
+                
+                loginTab.classList.remove('border-blue-600', 'bg-blue-50');
+                loginTab.querySelector('span').classList.remove('text-blue-600');
+                loginTab.querySelector('span').classList.add('text-gray-600');
+                loginTab.classList.add('border-transparent');
+                
+                // Slide panel to cover login (move left to original position)
+                slidingPanel.style.transform = 'translateX(0%)';
+                
+                // Show register, hide login
+                registerSection.classList.remove('hidden');
+                loginSection.classList.add('hidden');
+            }
+            
+            // Function to dynamically load step 1 content
+        function loadStep1Content() {
+            const registerContent = registerSection.querySelector('.h-full');
+            if (!registerContent) return;
+            
+            // Add fade-out animation
+            registerContent.style.transition = 'opacity 0.3s ease-out';
+            registerContent.style.opacity = '0';
+            
+            setTimeout(() => {
+                // Replace content with step 1 HTML
+                registerContent.innerHTML = getStep1HTML();
+                
+                // Fade-in animation
+                registerContent.style.opacity = '1';
+                
+                // Reinitialize step 1 functionality
+                setTimeout(() => {
+                    initializeStep1();
+                }, 100);
+                
+            }, 300);
+        }
+        
+        // Function to get step 1 HTML content
+        function getStep1HTML() {
+            return `
+                <div class="p-6 h-full">
+                    <!-- Progress Indicator -->
+                    <div class="mb-6">
+                        <div class="flex items-center justify-center space-x-2">
+                            <div class="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">1</div>
+                            <div class="w-12 h-1 bg-gray-300 rounded"></div>
+                            <div class="w-6 h-6 bg-gray-300 rounded-full flex items-center justify-center text-gray-500 text-xs font-semibold">2</div>
+                            <div class="w-12 h-1 bg-gray-300 rounded"></div>
+                            <div class="w-6 h-6 bg-gray-300 rounded-full flex items-center justify-center text-gray-500 text-xs font-semibold">3</div>
+                            <div class="w-12 h-1 bg-gray-300 rounded"></div>
+                            <div class="w-6 h-6 bg-gray-300 rounded-full flex items-center justify-center text-gray-500 text-xs font-semibold">4</div>
+                        </div>
+                        <div class="text-center mt-2 text-xs text-gray-600">Step 1: Personal Information</div>
+                    </div>
+
+                    <!-- Validation Messages -->
+                    <div id="validationMessages" class="hidden mb-4 rounded-lg bg-red-50 border border-red-200 p-3 animate-slide-down">
+                        <div class="flex items-center">
+                            <svg class="w-4 h-4 text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                            </svg>
+                            <h3 class="text-sm font-medium text-red-800">Please fix the following errors:</h3>
+                        </div>
+                        <ul id="errorList" class="mt-2 text-xs text-red-700 list-disc pl-5"></ul>
+                    </div>
+
+                    <!-- Success Message -->
+                    <div id="successMessage" class="hidden mb-4 rounded-lg bg-green-50 border border-green-200 p-3 animate-slide-down">
+                        <div class="flex items-center">
+                            <svg class="w-4 h-4 text-green-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <p class="text-sm font-medium text-green-800">Form validation successful!</p>
+                        </div>
+                    </div>
+
+                    <form id="registrationForm" class="space-y-3">
+                        <!-- Personal Information Section -->
+                        <div class="bg-gray-50 rounded-lg p-3">
+                            <h3 class="text-sm font-semibold text-gray-800 mb-3 flex items-center">
+                                <svg class="w-4 h-4 text-blue-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+                                </svg>
+                                Personal Information
+                            </h3>
+                            <div class="grid grid-cols-2 gap-3">
+                                <!-- First Name -->
+                                <div class="group">
+                                    <label for="first_name" class="block text-xs font-medium text-gray-700 mb-1">
+                                        First Name <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="text" id="first_name" name="first_name" placeholder="First name" required
+                                           class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400">
+                                </div>
+
+                                <!-- Last Name -->
+                                <div class="group">
+                                    <label for="last_name" class="block text-xs font-medium text-gray-700 mb-1">
+                                        Last Name <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="text" id="last_name" name="last_name" placeholder="Last name" required
+                                           class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Date of Birth Section -->
+                        <div class="bg-gray-50 rounded-lg p-3">
+                            <h3 class="text-sm font-semibold text-gray-800 mb-3 flex items-center">
+                                <svg class="w-4 h-4 text-blue-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"></path>
+                                </svg>
+                                Date of Birth
+                            </h3>
+                            <div class="grid grid-cols-3 gap-3">
+                                <div>
+                                    <label for="day" class="block text-xs font-medium text-gray-700 mb-1">
+                                        Day <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="number" id="day" name="day" placeholder="DD" min="1" max="31" required
+                                           class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 text-center">
+                                </div>
+                                <div>
+                                    <label for="month" class="block text-xs font-medium text-gray-700 mb-1">
+                                        Month <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="number" id="month" name="month" placeholder="MM" min="1" max="12" required
+                                           class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 text-center">
+                                </div>
+                                <div>
+                                    <label for="year" class="block text-xs font-medium text-gray-700 mb-1">
+                                        Year <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="number" id="year" name="year" placeholder="YYYY" min="1900" required
+                                           class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 text-center">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Contact Information Section -->
+                        <div class="bg-gray-50 rounded-lg p-3">
+                            <h3 class="text-sm font-semibold text-gray-800 mb-3 flex items-center">
+                                <svg class="w-4 h-4 text-blue-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path>
+                                    <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path>
+                                </svg>
+                                Contact Information
+                            </h3>
+                            <div class="space-y-3">
+                                <!-- Contact Number -->
+                                <div>
+                                    <label for="contact_number" class="block text-xs font-medium text-gray-700 mb-1">
+                                        Contact Number <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="tel" id="contact_number" name="contact_number" placeholder="09******** (11 digits)" required
+                                           class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400">
+                                </div>
+
+                                <!-- Student Number -->
+                                <div>
+                                    <label for="student_number" class="block text-xs font-medium text-gray-700 mb-1">
+                                        Student Number <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="text" id="student_number" name="student_number" placeholder="STU123456" required
+                                           class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400">
+                                </div>
+
+                                <!-- Email -->
+                                <div>
+                                    <label for="email" class="block text-xs font-medium text-gray-700 mb-1">
+                                        Email Address <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="email" id="email" name="email" placeholder="yourname@iskolarngbayan.pup.edu.ph" required
+                                           class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Security Section -->
+                        <div class="bg-gray-50 rounded-lg p-3">
+                            <h3 class="text-sm font-semibold text-gray-800 mb-3 flex items-center">
+                                <svg class="w-4 h-4 text-blue-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path>
+                                </svg>
+                                Security Information
+                            </h3>
+                            <div class="space-y-3">
+                                <!-- Password -->
+                                <div class="relative">
+                                    <label for="password" class="block text-xs font-medium text-gray-700 mb-1">
+                                        Password <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="password" id="password" name="password" placeholder="Min 6 chars, 1 upper, 1 lower, 1 special" required
+                                           class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 pr-10">
+                                    <button type="button" id="togglePassword" class="absolute right-3 top-7 text-gray-400 hover:text-gray-600">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+
+                                <!-- Confirm Password -->
+                                <div class="relative">
+                                    <label for="confirm_password" class="block text-xs font-medium text-gray-700 mb-1">
+                                        Confirm Password <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="password" id="confirm_password" name="confirm_password" placeholder="Confirm your password" required
+                                           class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 pr-10">
+                                    <button type="button" id="toggleConfirmPassword" class="absolute right-3 top-7 text-gray-400 hover:text-gray-600">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Password Strength Indicator -->
+                            <div id="passwordStrength" class="mt-3 hidden">
+                                <div class="text-xs font-medium text-gray-700 mb-1">Password Strength:</div>
+                                <div class="flex space-x-1">
+                                    <div id="strength1" class="h-1.5 w-1/4 rounded bg-gray-200"></div>
+                                    <div id="strength2" class="h-1.5 w-1/4 rounded bg-gray-200"></div>
+                                    <div id="strength3" class="h-1.5 w-1/4 rounded bg-gray-200"></div>
+                                    <div id="strength4" class="h-1.5 w-1/4 rounded bg-gray-200"></div>
+                                </div>
+                                <div id="strengthText" class="text-xs text-gray-600 mt-1"></div>
+                            </div>
+                        </div>
+
+                        <!-- Terms and Conditions -->
+                        <div class="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                            <div class="flex items-start">
+                                <input type="checkbox" id="terms" name="terms" required
+                                       class="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 transition-colors">
+                                <label for="terms" class="ml-3 text-xs text-gray-700">
+                                    I agree to the <a href="#" class="text-blue-600 hover:text-blue-800 underline font-medium">Terms and Conditions</a> 
+                                    and <a href="#" class="text-blue-600 hover:text-blue-800 underline font-medium">Privacy Policy</a>
+                                    <span class="text-red-500">*</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="pt-3">
+                            <button type="button" id="submitButton"
+                                    class="w-full rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 text-sm text-white font-semibold shadow-lg hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transform transition-all duration-200 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
+                                <span id="buttonText">Continue to Next Step</span>
+                                <svg id="buttonSpinner" class="hidden animate-spin -mr-1 ml-2 h-4 w-4 text-white inline" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <svg class="inline ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Help Text -->
+                    <div class="mt-3 text-center">
+                        <p class="text-xs text-gray-600">
+                            Already have an account? 
+                            <button id="switchToLogin" class="text-blue-600 hover:text-blue-800 font-medium underline cursor-pointer">Sign in here</button>
+                        </p>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Function to initialize step 1 functionality after content is loaded
+        function initializeStep1() {
+            // Reinitialize form elements
+            initializeFormElements();
+            
+            // Password toggle functionality
+            const togglePassword = document.getElementById('togglePassword');
+            const toggleConfirmPassword = document.getElementById('toggleConfirmPassword');
+            const passwordField = document.getElementById('password');
+            const confirmPasswordField = document.getElementById('confirm_password');
+            
+            if (togglePassword && passwordField) {
+                togglePassword.addEventListener('click', function() {
+                    const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
+                    passwordField.setAttribute('type', type);
+                });
+            }
+            
+            if (toggleConfirmPassword && confirmPasswordField) {
+                toggleConfirmPassword.addEventListener('click', function() {
+                    const type = confirmPasswordField.getAttribute('type') === 'password' ? 'text' : 'password';
+                    confirmPasswordField.setAttribute('type', type);
+                });
+            }
+            
+            // Password strength checker
+            if (passwordField) {
+                passwordField.addEventListener('input', function() {
+                    if (typeof checkPasswordStrength === 'function') {
+                        checkPasswordStrength(this.value);
+                    }
+                });
+            }
+            
+            // Form submission
+            const submitButton = document.getElementById('submitButton');
+            if (submitButton) {
+                submitButton.addEventListener('click', async function() {
+                    // Use existing registration logic from register.js
+                    if (typeof validateWithAPI === 'function') {
+                        // Form validation and submission logic would go here
+                        console.log('Form submission for step 1');
+                    }
+                });
+            }
+            
+            // Switch to login functionality
+            const switchToLogin = document.getElementById('switchToLogin');
+            if (switchToLogin) {
+                switchToLogin.addEventListener('click', function() {
+                    showLogin();
+                });
+            }
+            
+            console.log('Step 1 functionality reinitialized');
+        }
     </script>
 </body>
 </html>

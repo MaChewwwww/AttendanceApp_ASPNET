@@ -311,17 +311,99 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Dummy functions for validation and OTP sending (replace with real implementations)
     async function validateFaceImage(imageData) {
-        console.log('Validating face image...', imageData);
-        // Simulate an API call for face image validation
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        return { success: true };
+        try {
+            const apiUrl = '/Auth/ValidateFaceImage';
+            
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+            
+            const requestData = {
+                face_image: imageData
+            };
+            
+            const requestOptions = {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
+                },
+                body: JSON.stringify(requestData)
+            };
+            
+            if (token) {
+                requestOptions.headers["RequestVerificationToken"] = token;
+            }
+
+            const response = await fetch(apiUrl, requestOptions);
+            const result = await response.json();
+
+            if (!response.ok) {
+                return { 
+                    success: false, 
+                    message: result.message || 'Face validation failed. Please try again.' 
+                };
+            }
+            
+            return {
+                success: result.success || true,
+                message: result.message || 'Face validation successful!'
+            };
+            
+        } catch (error) {
+            console.error('Face validation error:', error);
+            return { 
+                success: false, 
+                message: 'Face validation failed. Please try again.' 
+            };
+        }
     }
     
     async function sendOTP(registrationData, faceImage) {
-        console.log('Sending OTP with data:', registrationData, faceImage);
-        // Simulate an API call for sending OTP
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        return { success: true, otp_id: '123456' };
+        try {
+            const apiUrl = '/Auth/SendRegistrationOTP';
+            
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+            
+            const requestData = {
+                registration_data: registrationData,
+                face_image: faceImage
+            };
+            
+            const requestOptions = {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
+                },
+                body: JSON.stringify(requestData)
+            };
+            
+            if (token) {
+                requestOptions.headers["RequestVerificationToken"] = token;
+            }
+
+            const response = await fetch(apiUrl, requestOptions);
+            const result = await response.json();
+
+            if (!response.ok) {
+                return { 
+                    success: false, 
+                    message: result.message || 'Failed to send verification code. Please try again.' 
+                };
+            }
+            
+            return {
+                success: result.success || false,
+                message: result.message || 'Verification code sent successfully!',
+                otp_id: result.otp_id || null
+            };
+            
+        } catch (error) {
+            console.error('Send OTP error:', error);
+            return { 
+                success: false, 
+                message: 'Failed to send verification code. Please try again.' 
+            };
+        }
     }
     
     // Processing message display (simple implementation)
