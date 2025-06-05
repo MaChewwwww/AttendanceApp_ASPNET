@@ -170,7 +170,7 @@ function createNewPasswordModal() {
                         <ul class="text-sm text-green-700 space-y-1">
                             <li id="req-length" class="flex items-center">
                                 <span class="w-4 h-4 mr-2">•</span>
-                                At least 8 characters long
+                                At least 6 characters long
                             </li>
                             <li id="req-uppercase" class="flex items-center">
                                 <span class="w-4 h-4 mr-2">•</span>
@@ -351,7 +351,7 @@ function setupPasswordValidation() {
 }
 
 function validatePassword(password) {
-    const minLength = password.length >= 8;
+    const minLength = password.length >= 6;
     const hasUppercase = /[A-Z]/.test(password);
     const hasLowercase = /[a-z]/.test(password);
     const hasNumber = /[0-9]/.test(password);
@@ -428,7 +428,7 @@ function updatePasswordStrength(password) {
 
 function updatePasswordRequirements(password) {
     const requirements = [
-        { id: 'req-length', test: password.length >= 8 },
+        { id: 'req-length', test: password.length >= 6 },
         { id: 'req-uppercase', test: /[A-Z]/.test(password) },
         { id: 'req-lowercase', test: /[a-z]/.test(password) },
         { id: 'req-number', test: /[0-9]/.test(password) },
@@ -483,6 +483,61 @@ function resetPasswordRequirements() {
     });
 }
 
+// API function to reset password with token
+async function resetPasswordWithAPI(resetToken, newPassword) {
+    try {
+        const apiUrl = '/Auth/ResetPassword';
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+        
+        const requestData = {
+            reset_token: resetToken,
+            new_password: newPassword
+        };
+        
+        console.log('=== RESET PASSWORD DEBUG ===');
+        console.log('Reset token:', resetToken);
+        console.log('New password length:', newPassword.length);
+        console.log('============================');
+        
+        const requestOptions = {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "RequestVerificationToken": token
+            },
+            body: JSON.stringify(requestData)
+        };
+
+        const response = await fetch(apiUrl, requestOptions);
+        const responseText = await response.text();
+        
+        // Handle non-JSON responses gracefully
+        let result;
+        try {
+            result = JSON.parse(responseText);
+        } catch (parseError) {
+            console.error('Failed to parse API response:', responseText);
+            return { 
+                success: false, 
+                message: "Invalid server response. Please try again."
+            };
+        }
+        
+        return {
+            success: result.success || false,
+            message: result.message || 'Password reset failed'
+        };
+        
+    } catch (error) {
+        console.error('Reset password API error:', error);
+        return { 
+            success: false, 
+            message: "Network error. Please check your connection and try again."
+        };
+    }
+}
+
 // Update password function
 async function updatePassword() {
     const newPasswordInput = document.getElementById('newPassword');
@@ -509,6 +564,22 @@ async function updatePassword() {
         return;
     }
     
+    // Check if we have the reset token
+    if (!window.currentPasswordResetSessionId) {
+        showNewPasswordError('Password reset session expired. Please start the process again.');
+        setTimeout(() => {
+            closeNewPasswordModal();
+            setTimeout(() => {
+                if (typeof window.showForgotPasswordModal === 'function') {
+                    window.showForgotPasswordModal();
+                } else {
+                    window.location.href = '/Auth/Login';
+                }
+            }, 300);
+        }, 2000);
+        return;
+    }
+    
     // Set loading state
     const updateBtn = document.getElementById('updatePasswordBtn');
     const updateBtnText = document.getElementById('updatePasswordButtonText');
@@ -519,20 +590,159 @@ async function updatePassword() {
     updateSpinner.classList.remove('hidden');
     hideNewPasswordMessages();
     
+    // Add loading effect to inputs
+    newPasswordInput.disabled = true;
+    confirmPasswordInput.disabled = true;
+    newPasswordInput.classList.add('processing-glow');
+    confirmPasswordInput.classList.add('processing-glow');
+    
     try {
-        // TODO: Implement API call to update password
-        // This will be implemented when the backend endpoint is ready
+        // Call the API to reset password
+        const result = await resetPasswordWithAPI(window.currentPasswordResetSessionId, newPassword);
         
-        // For now, simulate success
-        setTimeout(() => {
-            showNewPasswordSuccess('Password updated successfully! You can now login with your new password.');
+        if (result.success) {
+            // Enhanced success flow
             
-            // Redirect to login after successful password update
+            // Step 1: Input success animation
+            setTimeout(() => {
+                newPasswordInput.classList.remove('processing-glow');
+                confirmPasswordInput.classList.remove('processing-glow');
+                newPasswordInput.classList.add('border-green-400', 'bg-green-50');
+                confirmPasswordInput.classList.add('border-green-400', 'bg-green-50');
+                newPasswordInput.style.borderColor = '#34d399';
+                confirmPasswordInput.style.borderColor = '#34d399';
+                newPasswordInput.style.backgroundColor = '#f0fdf4';
+                confirmPasswordInput.style.backgroundColor = '#f0fdf4';
+            }, 300);
+            
+            // Step 2: Button success animation
+            setTimeout(() => {
+                updateBtnText.textContent = 'Updated!';
+                updateSpinner.classList.add('hidden');
+                updateBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                updateBtn.classList.add('bg-green-500', 'hover:bg-green-600');
+                
+                // Add success icon to button
+                const successIcon = document.createElement('span');
+                successIcon.innerHTML = '✓';
+                successIcon.style.cssText = `
+                    display: inline-block;
+                    margin-left: 8px;
+                    font-size: 16px;
+                    font-weight: bold;
+                    animation: bounceIn 0.6s ease-out;
+                `;
+                updateBtnText.appendChild(successIcon);
+                
+                // Button pulse effect
+                updateBtn.style.animation = 'successPulse 0.8s ease-out';
+            }, 600);
+            
+            // Step 3: Success message with confetti
+            setTimeout(() => {
+                showNewPasswordSuccess(result.message || 'Password updated successfully! You can now login with your new password.');
+                
+                // Add confetti effect
+                if (typeof createSuccessParticles === 'function') {
+                    createSuccessParticles();
+                }
+            }, 900);
+            
+            // Step 4: Redirect to login
             setTimeout(() => {
                 closeNewPasswordModal();
                 
-                // Show success message and redirect to login
-                alert('Password updated successfully! Please login with your new password.');
+                // Clear all password reset data
+                window.currentPasswordResetSessionId = null;
+                window.newPasswordEmail = '';
+                window.currentForgotPasswordOtpId = null;
+                window.forgotPasswordEmail = '';
+                
+                // Show success message in a modal and redirect to login, with a slight delay and animations
+                setTimeout(() => {
+                    const modal = document.createElement('div');
+                    modal.id = 'passwordSuccessModal';
+                    modal.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 animate-fadeIn';
+                    modal.innerHTML = `
+                        <div id="successModalContent" class="bg-white rounded-lg shadow-xl p-8 max-w-sm w-full text-center scale-90 opacity-0 transition-all duration-400 relative">
+                            <!-- Close Icon -->
+                            <button id="successModalClose" aria-label="Close" class="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition-colors text-2xl leading-none focus:outline-none">
+                                &times;
+                            </button>
+                            <div class="mx-auto mb-4 w-16 h-16 flex items-center justify-center bg-green-100 rounded-full animate-bounceIn">
+                                <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                            </div>
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2 animate-fadeInDown">Password Updated!</h3>
+                            <p class="text-gray-600 mb-6 animate-fadeInDown" style="animation-delay:0.1s;">Your password was updated successfully. Please login with your new password.</p>
+                        </div>
+                    `;
+                    document.body.appendChild(modal);
+                    document.body.style.overflow = 'hidden';
+
+                    // Animate modal content in
+                    setTimeout(() => {
+                        const content = document.getElementById('successModalContent');
+                        if (content) {
+                            content.classList.remove('scale-90', 'opacity-0');
+                            content.classList.add('scale-100', 'opacity-100');
+                        }
+                    }, 10);
+
+                    // Function to close modal and redirect
+                    function closeSuccessModal() {
+                        const content = document.getElementById('successModalContent');
+                        if (content) {
+                            content.classList.remove('scale-100', 'opacity-100');
+                            content.classList.add('scale-90', 'opacity-0');
+                        }
+                        setTimeout(() => {
+                            if (modal.parentNode) modal.parentNode.removeChild(modal);
+                            document.body.style.overflow = 'auto';
+                            if (typeof window.showLogin === 'function') {
+                                window.showLogin();
+                            } else {
+                                window.location.href = '/Auth/Login';
+                            }
+                        }, 350);
+                    }
+
+                    // Close on close icon click
+                    document.getElementById('successModalClose').onclick = closeSuccessModal;
+
+                    // Auto-close after 3.5 seconds
+                    setTimeout(closeSuccessModal, 3500);
+
+                }, 400); // 400ms delay before showing the modal
+
+                // Add keyframes for custom animations if not already present
+                if (!document.getElementById('success-modal-animations')) {
+                    const style = document.createElement('style');
+                    style.id = 'success-modal-animations';
+                    style.innerHTML = `
+                        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+                        @keyframes fadeInDown { from { opacity: 0; transform: translateY(-20px);} to { opacity: 1; transform: translateY(0);} }
+                        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px);} to { opacity: 1; transform: translateY(0);} }
+                        @keyframes bounceIn {
+                            0% { transform: scale(0.7); opacity: 0; }
+                            60% { transform: scale(1.05); opacity: 1; }
+                            80% { transform: scale(0.95);}
+                            100% { transform: scale(1);}
+                        }
+                        .animate-fadeIn { animation: fadeIn 0.4s both; }
+                        .animate-fadeInDown { animation: fadeInDown 0.5s both; }
+                        .animate-fadeInUp { animation: fadeInUp 0.5s both; }
+                        .animate-bounceIn { animation: bounceIn 0.7s both; }
+                        .scale-90 { transform: scale(0.9); }
+                        .scale-100 { transform: scale(1); }
+                        .opacity-0 { opacity: 0; }
+                        .opacity-100 { opacity: 1; }
+                        .transition-all { transition: all 0.4s cubic-bezier(.4,0,.2,1); }
+                        .duration-400 { transition-duration: 0.4s; }
+                    `;
+                    document.head.appendChild(style);
+                }
                 
                 // If we're in the auth layout, switch to login tab
                 if (typeof window.showLogin === 'function') {
@@ -541,14 +751,81 @@ async function updatePassword() {
                     // Fallback: redirect to login page
                     window.location.href = '/Auth/Login';
                 }
-            }, 2000);
-        }, 1500);
+            }, 2500);
+            
+        } else {
+            // Handle API errors
+            const errorMessage = result.message || 'Failed to update password. Please try again.';
+            
+            // Different styling based on error type
+            if (errorMessage.includes('expired') || errorMessage.includes('session')) {
+                updateBtnText.textContent = 'Session Expired';
+                updateBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                updateBtn.classList.add('bg-yellow-600', 'hover:bg-yellow-700');
+            } else if (errorMessage.includes('validation') || errorMessage.includes('requirements')) {
+                updateBtnText.textContent = 'Invalid Password';
+                updateBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                updateBtn.classList.add('bg-orange-600', 'hover:bg-orange-700');
+            } else {
+                updateBtnText.textContent = 'Update Failed';
+                updateBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+                updateBtn.classList.add('bg-red-600', 'hover:bg-red-700');
+            }
+            
+            setTimeout(() => {
+                showNewPasswordError(errorMessage);
+                
+                // Reset form state after error
+                setTimeout(() => {
+                    newPasswordInput.disabled = false;
+                    confirmPasswordInput.disabled = false;
+                    newPasswordInput.classList.remove('processing-glow', 'border-green-400', 'bg-green-50');
+                    confirmPasswordInput.classList.remove('processing-glow', 'border-green-400', 'bg-green-50');
+                    newPasswordInput.style.borderColor = '';
+                    confirmPasswordInput.style.borderColor = '';
+                    newPasswordInput.style.backgroundColor = '';
+                    confirmPasswordInput.style.backgroundColor = '';
+                    
+                    updateBtn.disabled = false;
+                    updateBtnText.textContent = 'Update Password';
+                    updateSpinner.classList.add('hidden');
+                    updateBtn.classList.remove('bg-red-600', 'hover:bg-red-700', 'bg-yellow-600', 'hover:bg-yellow-700', 'bg-orange-600', 'hover:bg-orange-700');
+                    updateBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+                    updateBtn.style.animation = '';
+                    
+                    // Focus first input for retry
+                    newPasswordInput.focus();
+                }, 1500);
+            }, 400);
+        }
         
     } catch (error) {
-        showNewPasswordError('Failed to update password. Please try again.');
+        // Network error handling
+        updateBtnText.textContent = 'Connection Error';
+        updateBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+        updateBtn.classList.add('bg-red-600', 'hover:bg-red-700');
+        
+        setTimeout(() => {
+            showNewPasswordError('Failed to update password due to a network error. Please check your connection and try again.');
+            
+            // Reset everything after network error
+            setTimeout(() => {
+                newPasswordInput.disabled = false;
+                confirmPasswordInput.disabled = false;
+                newPasswordInput.classList.remove('processing-glow');
+                confirmPasswordInput.classList.remove('processing-glow');
+                
+                updateBtn.disabled = false;
+                updateBtnText.textContent = 'Update Password';
+                updateSpinner.classList.add('hidden');
+                updateBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
+                updateBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+                
+                newPasswordInput.focus();
+            }, 1000);
+        }, 400);
+        
         console.error('Password update error:', error);
-    } finally {
-        // Reset button state will be handled by success/error flows
     }
 }
 

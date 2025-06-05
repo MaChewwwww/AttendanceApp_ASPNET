@@ -1087,5 +1087,137 @@ namespace AttendanceApp_ASPNET.Controllers
                 });
             }
         }
+
+        [HttpPost]
+        public async Task<IActionResult> ResetPassword([FromBody] JsonElement requestData)
+        {
+            try
+            {
+                // Debug: Log the incoming request data
+                Console.WriteLine($"=== RESET PASSWORD CONTROLLER DEBUG ===");
+                Console.WriteLine($"Raw request data: {requestData.GetRawText()}");
+                
+                // Extract reset token and new password
+                string resetToken = "";
+                string newPassword = "";
+
+                if (requestData.TryGetProperty("reset_token", out var resetTokenProperty))
+                {
+                    resetToken = resetTokenProperty.GetString() ?? "";
+                    Console.WriteLine($"Reset token: {resetToken}");
+                }
+
+                if (requestData.TryGetProperty("new_password", out var newPasswordProperty))
+                {
+                    newPassword = newPasswordProperty.GetString() ?? "";
+                    Console.WriteLine($"New password length: {newPassword.Length}");
+                }
+
+                if (string.IsNullOrEmpty(resetToken))
+                {
+                    Console.WriteLine("Reset token is empty or null");
+                    return Json(new { 
+                        success = false, 
+                        message = "Reset token is required. Please try again."
+                    });
+                }
+
+                if (string.IsNullOrEmpty(newPassword))
+                {
+                    Console.WriteLine("New password is empty or null");
+                    return Json(new { 
+                        success = false, 
+                        message = "New password is required. Please try again."
+                    });
+                }
+
+                // Convert to the format expected by Python API
+                var resetPasswordData = new
+                {
+                    reset_token = resetToken,
+                    new_password = newPassword
+                };
+
+                Console.WriteLine($"Sending to Python API: reset_token={resetToken}, new_password.length={newPassword.Length}");
+                Console.WriteLine("=======================================");
+
+                var result = await _apiService.ResetPasswordWithTokenAsync(resetPasswordData);
+                
+                // Debug: Log the API response
+                Console.WriteLine($"=== API RESPONSE DEBUG ===");
+                Console.WriteLine($"Raw API response: {result}");
+                Console.WriteLine("==========================");
+                
+                // Parse the API response
+                var apiResponse = JsonSerializer.Deserialize<JsonElement>(result);
+                
+                bool success = false;
+                string message = "Password reset failed. Please try again.";
+                
+                if (apiResponse.TryGetProperty("success", out var successProperty))
+                {
+                    success = successProperty.GetBoolean();
+                }
+                
+                if (apiResponse.TryGetProperty("message", out var messageProperty))
+                {
+                    var apiMessage = messageProperty.GetString() ?? "";
+                    
+                    // Provide user-friendly messages based on API response
+                    if (!success)
+                    {
+                        if (apiMessage.Contains("expired", StringComparison.OrdinalIgnoreCase))
+                        {
+                            message = "Your password reset session has expired. Please request a new password reset.";
+                        }
+                        else if (apiMessage.Contains("invalid", StringComparison.OrdinalIgnoreCase) || 
+                                apiMessage.Contains("token", StringComparison.OrdinalIgnoreCase))
+                        {
+                            message = "Invalid reset session. Please request a new password reset.";
+                        }
+                        else if (apiMessage.Contains("used", StringComparison.OrdinalIgnoreCase))
+                        {
+                            message = "This password reset link has already been used. Please request a new one.";
+                        }
+                        else if (apiMessage.Contains("validation", StringComparison.OrdinalIgnoreCase) ||
+                                apiMessage.Contains("requirements", StringComparison.OrdinalIgnoreCase) ||
+                                apiMessage.Contains("password", StringComparison.OrdinalIgnoreCase))
+                        {
+                            message = apiMessage; // Show specific password validation errors
+                        }
+                        else if (apiMessage.Contains("User not found", StringComparison.OrdinalIgnoreCase) ||
+                                apiMessage.Contains("Account not found", StringComparison.OrdinalIgnoreCase))
+                        {
+                            message = "Account not found. Please contact support if you believe this is an error.";
+                        }
+                        else
+                        {
+                            message = "Password reset failed. Please try again.";
+                        }
+                    }
+                    else
+                    {
+                        message = "Password reset successfully. You can now log in with your new password.";
+                    }
+                }
+                
+                var response = new { 
+                    success = success,
+                    message = message
+                };
+                
+                return Json(response);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Password reset controller error: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                
+                return Json(new { 
+                    success = false, 
+                    message = "Unable to reset password at this time. Please try again."
+                });
+            }
+        }
     }
 }

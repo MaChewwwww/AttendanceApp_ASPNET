@@ -19,6 +19,7 @@ namespace AttendanceApp_ASPNET.Services
         Task<string> ValidateForgotPasswordEmailAsync(object emailData);
         Task<string> SendPasswordResetOTPAsync(object resetData);
         Task<string> VerifyPasswordResetOTPAsync(object verifyData);
+        Task<string> ResetPasswordWithTokenAsync(object resetData);
         string GetApiKey();
         string GetApiBaseUrl();
     }
@@ -379,6 +380,48 @@ namespace AttendanceApp_ASPNET.Services
             catch (Exception ex)
             {
                 throw new Exception($"Verify password reset OTP failed: {ex.Message}", ex);
+            }
+        }
+
+        public async Task<string> ResetPasswordWithTokenAsync(object resetData)
+        {
+            try
+            {
+                var apiUrl = $"{_apiBaseUrl}/forgotPassword/reset-password";
+                
+                var json = JsonSerializer.Serialize(resetData);
+                
+                // Debug: Log what we're sending
+                Console.WriteLine($"=== RESET PASSWORD API SERVICE DEBUG ===");
+                Console.WriteLine($"Sending to: {apiUrl}");
+                Console.WriteLine($"JSON payload: {json}");
+                Console.WriteLine("========================================");
+                
+                var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                
+                _httpClient.DefaultRequestHeaders.Clear();
+                _httpClient.DefaultRequestHeaders.Add("AttendanceApp-API-Key", _apiKey);
+                _httpClient.DefaultRequestHeaders.Add("User-Agent", "AttendanceApp-ASPNET/1.0");
+                
+                var response = await _httpClient.PostAsync(apiUrl, content);
+                var responseContent = await response.Content.ReadAsStringAsync();
+                
+                // Debug: Log the response
+                Console.WriteLine($"=== RESET PASSWORD API RESPONSE DEBUG ===");
+                Console.WriteLine($"Status: {response.StatusCode}");
+                Console.WriteLine($"Response: {responseContent}");
+                Console.WriteLine("==========================================");
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new Exception($"Reset password API returned {response.StatusCode}: {responseContent}");
+                }
+                
+                return responseContent;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Reset password with token failed: {ex.Message}", ex);
             }
         }
     }
