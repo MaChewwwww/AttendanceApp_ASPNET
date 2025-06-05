@@ -486,6 +486,9 @@
                             
                             // Re-initialize login form scripts after content is loaded
                             initializeLoginForm();
+                            
+                            // Load and execute all the login-related scripts
+                            loadLoginScripts();
                         } else {
                             // If we can't find the content, just show a simple message
                             loginContent.innerHTML = '<div class="text-center"><p class="text-gray-600">Please wait while login form loads...</p></div>';
@@ -506,12 +509,197 @@
                     });
             }
             
-            function initializeLoginForm() {
-                // Re-run login form initialization scripts
-                const loginScript = loginContent.querySelector('script');
-                if (loginScript) {
-                    eval(loginScript.textContent);
+            function loadLoginScripts() {
+                // Create and load all required login scripts
+                const scriptsToLoad = [
+                    '/js/Login.js',
+                    '/js/LoginOTP.js', 
+                    '/js/ForgotPassword.js',
+                    '/js/NewPassword.js'
+                ];
+                
+                // Remove any existing login scripts first
+                const existingScripts = document.querySelectorAll('script[data-login-script]');
+                existingScripts.forEach(script => script.remove());
+                
+                // Load each script sequentially
+                loadScriptsSequentially(scriptsToLoad, 0);
+            }
+            
+            function loadScriptsSequentially(scripts, index) {
+                if (index >= scripts.length) {
+                    // All scripts loaded, now initialize everything
+                    setTimeout(initializeAllLoginFunctions, 100);
+                    return;
                 }
+                
+                const script = document.createElement('script');
+                script.src = scripts[index];
+                script.setAttribute('data-login-script', 'true');
+                script.onload = () => {
+                    console.log(`Loaded script: ${scripts[index]}`);
+                    loadScriptsSequentially(scripts, index + 1);
+                };
+                script.onerror = () => {
+                    console.error(`Failed to load script: ${scripts[index]}`);
+                    loadScriptsSequentially(scripts, index + 1);
+                };
+                document.head.appendChild(script);
+            }
+            
+            function initializeAllLoginFunctions() {
+                console.log('Initializing all login functions...');
+                
+                // Wait a bit more for all scripts to be fully processed
+                setTimeout(() => {
+                    // Bind all the login event listeners
+                    bindLoginEventListeners();
+                    
+                    // Initialize OTP inputs if they exist
+                    if (typeof setupOTPInputs === 'function') {
+                        setupOTPInputs();
+                    }
+                    
+                    // Make sure all global functions are available
+                    ensureLoginFunctionsAvailable();
+                    
+                    console.log('Login functions initialization complete');
+                }, 200);
+            }
+            
+            function bindLoginEventListeners() {
+                // Bind login button
+                const loginBtn = document.getElementById('loginButton');
+                if (loginBtn) {
+                    // Remove any existing listeners first
+                    loginBtn.replaceWith(loginBtn.cloneNode(true));
+                    const newLoginBtn = document.getElementById('loginButton');
+                    
+                    newLoginBtn.addEventListener('click', function() {
+                        if (typeof performLogin === 'function') {
+                            performLogin();
+                        } else {
+                            console.error('performLogin function not available');
+                        }
+                    });
+                }
+                
+                // Bind forgot password button
+                const forgotPasswordBtns = document.querySelectorAll('[onclick*="showForgotPasswordModal"]');
+                forgotPasswordBtns.forEach(btn => {
+                    // Remove onclick attribute and add event listener
+                    btn.removeAttribute('onclick');
+                    btn.addEventListener('click', function() {
+                        if (typeof showForgotPasswordModal === 'function') {
+                            showForgotPasswordModal();
+                        } else {
+                            console.error('showForgotPasswordModal function not available');
+                        }
+                    });
+                });
+                
+                // Bind register button
+                const registerBtns = document.querySelectorAll('[onclick*="goToRegister"]');
+                registerBtns.forEach(btn => {
+                    btn.removeAttribute('onclick');
+                    btn.addEventListener('click', function() {
+                        showRegister();
+                    });
+                });
+                
+                // Bind password toggle
+                const passwordToggleBtns = document.querySelectorAll('[onclick*="togglePassword"]');
+                passwordToggleBtns.forEach(btn => {
+                    btn.removeAttribute('onclick');
+                    btn.addEventListener('click', function() {
+                        if (typeof togglePassword === 'function') {
+                            togglePassword();
+                        } else {
+                            // Fallback password toggle
+                            const passwordField = document.getElementById('loginPassword');
+                            if (passwordField) {
+                                const type = passwordField.type === 'password' ? 'text' : 'password';
+                                passwordField.type = type;
+                            }
+                        }
+                    });
+                });
+                
+                // Bind OTP modal buttons if they exist
+                const verifyOtpBtn = document.getElementById('verifyLoginOtpBtn');
+                if (verifyOtpBtn) {
+                    verifyOtpBtn.removeAttribute('onclick');
+                    verifyOtpBtn.addEventListener('click', function() {
+                        if (typeof verifyLoginOTP === 'function') {
+                            verifyLoginOTP();
+                        } else {
+                            console.error('verifyLoginOTP function not available');
+                        }
+                    });
+                }
+                
+                const resendOtpBtn = document.getElementById('resendLoginOtpBtn');
+                if (resendOtpBtn) {
+                    resendOtpBtn.removeAttribute('onclick');
+                    resendOtpBtn.addEventListener('click', function() {
+                        if (typeof resendLoginOTP === 'function') {
+                            resendLoginOTP();
+                        } else {
+                            console.error('resendLoginOTP function not available');
+                        }
+                    });
+                }
+                
+                // Bind close OTP modal buttons
+                const closeOtpBtns = document.querySelectorAll('[onclick*="closeOTPModal"]');
+                closeOtpBtns.forEach(btn => {
+                    btn.removeAttribute('onclick');
+                    btn.addEventListener('click', function() {
+                        if (typeof closeOTPModal === 'function') {
+                            closeOTPModal();
+                        } else {
+                            console.error('closeOTPModal function not available');
+                        }
+                    });
+                });
+                
+                console.log('All login event listeners bound successfully');
+            }
+            
+            function ensureLoginFunctionsAvailable() {
+                // Create fallback functions if the main ones aren't loaded
+                if (typeof window.performLogin !== 'function') {
+                    window.performLogin = function() {
+                        console.error('Login function not properly loaded');
+                        alert('Login system not ready. Please refresh the page.');
+                    };
+                }
+                
+                if (typeof window.showForgotPasswordModal !== 'function') {
+                    window.showForgotPasswordModal = function() {
+                        console.error('Forgot password function not properly loaded');
+                        alert('Forgot password system not ready. Please refresh the page.');
+                    };
+                }
+                
+                if (typeof window.togglePassword !== 'function') {
+                    window.togglePassword = function() {
+                        const passwordField = document.getElementById('loginPassword');
+                        if (passwordField) {
+                            const type = passwordField.type === 'password' ? 'text' : 'password';
+                            passwordField.type = type;
+                        }
+                    };
+                }
+                
+                // Make all functions globally available
+                window.goToRegister = showRegister;
+            }
+            
+            function initializeLoginForm() {
+                // This function is now primarily for compatibility
+                // The real initialization happens in initializeAllLoginFunctions
+                console.log('Legacy initializeLoginForm called - deferring to complete initialization');
             }
             
             function scrollToTop() {
