@@ -204,15 +204,17 @@ function checkPasswordStrength(password) {
 
 // Loading state management
 function setLoadingState(loading) {
+    if (!submitButton) return;
+    
     if (loading) {
         submitButton.disabled = true;
-        buttonText.textContent = "Validating...";
-        buttonSpinner.classList.remove("hidden");
+        if (buttonText) buttonText.textContent = "Validating...";
+        if (buttonSpinner) buttonSpinner.classList.remove("hidden");
         submitButton.classList.add("opacity-75");
     } else {
         submitButton.disabled = false;
-        buttonText.textContent = "Continue to Next Step";
-        buttonSpinner.classList.add("hidden");
+        if (buttonText) buttonText.textContent = "Continue to Next Step";
+        if (buttonSpinner) buttonSpinner.classList.add("hidden");
         submitButton.classList.remove("opacity-75");
     }
 }
@@ -584,89 +586,102 @@ function initializeStep2() {
     // Complete registration
     document.getElementById('continueToFinalButton').addEventListener('click', function() {
         if (!capturedPhoto) {
-            alert('Please capture your photo first.');
+            showStep2ErrorMessage('Please take a photo before continuing.');
             return;
         }
         
-        // Set loading state
-        const continueBtn = document.getElementById('continueToFinalButton');
-        continueBtn.disabled = true;
-        document.getElementById('continueButtonText').textContent = 'Processing...';
-        document.getElementById('continueSpinner').classList.remove('hidden');
+        // Set loading state for step 2 button
+        const continueBtn = this;
+        const buttonText = document.getElementById('continueButtonText');
+        const spinner = document.getElementById('continueSpinner');
         
-        // Add processing glow effect
-        continueBtn.classList.add('processing-glow');
+        continueBtn.disabled = true;
+        if (buttonText) buttonText.textContent = 'Processing...';
+        if (spinner) spinner.classList.remove('hidden');
+        
+        // Remove any existing processing glow and add it fresh
+        continueBtn.classList.remove('processing-glow');
+        setTimeout(() => continueBtn.classList.add('processing-glow'), 100);
         
         // Show initial processing message
         showStep2SuccessMessage('Preparing to send verification code...');
         
-        // Wait a moment before starting the OTP process to show the processing state
+        // Wait a moment before starting the OTP process
         setTimeout(async () => {
             await sendOTPAndProceed(capturedPhoto);
-        }, 500); // Small delay to show processing state
+        }, 500);
     });
 }
 
 // Function to send OTP and proceed to step 3
 async function sendOTPAndProceed(photoData) {
+    const continueBtn = document.getElementById('continueToFinalButton');
+    const buttonText = document.getElementById('continueButtonText');
+    const spinner = document.getElementById('continueSpinner');
+    
     try {
         const registrationData = JSON.parse(sessionStorage.getItem('registrationData') || '{}');
         
         // Store face image for potential resend
         sessionStorage.setItem('faceImage', photoData);
         
-        // Show processing message first
+        // Show processing message
         showStep2SuccessMessage('Sending verification code to your email...');
         
         // Send OTP
         const otpResult = await sendRegistrationOTP(registrationData, photoData);
         
         if (otpResult.success) {
-            // Store OTP ID for step 3
-            sessionStorage.setItem('otpId', otpResult.otp_id);
+            // Store OTP ID for verification
+            if (otpResult.otp_id) {
+                sessionStorage.setItem('otpId', otpResult.otp_id);
+            }
             
-            showStep2SuccessMessage(otpResult.message || 'OTP sent successfully! Redirecting to verification...');
+            showStep2SuccessMessage('Verification code sent! Redirecting to verification step...');
             
-            // Wait longer before scrolling to let user read the success message
-            setTimeout(() => {
-                scrollToTopOfSection();
-            }, 800); // Increased delay to 800ms
+            // Update button to show success
+            if (buttonText) buttonText.textContent = 'Code Sent Successfully!';
+            if (continueBtn) {
+                continueBtn.classList.remove('from-blue-600', 'to-indigo-600');
+                continueBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+            }
             
-            // Navigate to step 3 directly without client-side animation
+            // Redirect to step 3 after showing success
             setTimeout(() => {
                 window.location.href = '/Auth/RegisterStep3';
-            }, 2500); // Increased to 2.5 seconds
+            }, 2000);
             
         } else {
-            showStep2ErrorMessage(otpResult.message || 'Failed to send OTP. Please try again.');
-            
-            // Reset button state
-            const continueBtn = document.getElementById('continueToFinalButton');
-            continueBtn.disabled = false;
-            document.getElementById('continueButtonText').textContent = 'Continue to Next Step';
-            document.getElementById('continueSpinner').classList.add('hidden');
-            
-            // Scroll to show error message with delay
-            setTimeout(() => {
-                scrollToTopOfSection();
-            }, 400); // Slight delay for error messages too
+            showStep2ErrorMessage(otpResult.message || 'Failed to send verification code. Please try again.');
+            resetStep2Button();
         }
         
     } catch (error) {
         console.error('OTP sending failed:', error);
         showStep2ErrorMessage('Failed to send OTP. Please try again.');
-        
-        // Reset button state
-        const continueBtn = document.getElementById('continueToFinalButton');
-        continueBtn.disabled = false;
-        document.getElementById('continueButtonText').textContent = 'Continue to Next Step';
-        document.getElementById('continueSpinner').classList.add('hidden');
-        
-        // Scroll to show error message with delay
-        setTimeout(() => {
-            scrollToTopOfSection();
-        }, 400);
+        resetStep2Button();
     }
+}
+
+// Helper function to reset step 2 button state
+function resetStep2Button() {
+    const continueBtn = document.getElementById('continueToFinalButton');
+    const buttonText = document.getElementById('continueButtonText');
+    const spinner = document.getElementById('continueSpinner');
+    
+    if (continueBtn) {
+        continueBtn.disabled = false;
+        continueBtn.classList.remove('processing-glow', 'bg-green-600', 'hover:bg-green-700');
+        continueBtn.classList.add('bg-gradient-to-r', 'from-blue-600', 'to-indigo-600', 'hover:from-blue-700', 'hover:to-indigo-700');
+    }
+    
+    if (buttonText) buttonText.textContent = 'Continue to Next Step';
+    if (spinner) spinner.classList.add('hidden');
+    
+    // Scroll to show error message
+    setTimeout(() => {
+        scrollToTopOfSection();
+    }, 400);
 }
 
 // Function to send OTP for registration
@@ -843,7 +858,7 @@ function openCameraModal(callback) {
         .catch(err => {
             console.error('Camera error:', err);
             alert('Unable to access camera. Using test photo.');
-            callback('data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAf/AABEIAAEAAQMBEQACEQEDEQH/xAAUAAEAAAAAAAAAAAAAAAAAAAAA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/EABQBAQAAAAAAAAAAAAAAAAAAAAD/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdAA==');
+            callback('data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAf/AABEIAAEAAQMBEQACEQEDEQH/xAAUAAEAAAAAAAAAAAAAAAAAAAAA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/EABQBAQAAAAAAAAAAAAAAAAAAAAD/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdAA==');
             closeCameraModal();
         });
 }
@@ -940,11 +955,6 @@ window.resetAllRegistrationState = function() {
     }
     
     // Clear any camera modal state
-    if (window.cameraModal && window.cameraModal.close) {
-        window.cameraModal.close();
-    }
-    
-    // Close any open camera modals
     if (cameraStream) {
         cameraStream.getTracks().forEach(track => track.stop());
         cameraStream = null;
@@ -954,7 +964,20 @@ window.resetAllRegistrationState = function() {
         cameraModal.classList.add('hidden');
     }
     
-    // Reset any step 2 photo preview
+    // Reset step 1 button
+    const step1Button = document.getElementById('submitButton');
+    if (step1Button) {
+        step1Button.disabled = false;
+        step1Button.classList.remove('opacity-75');
+        
+        const step1ButtonText = document.getElementById('buttonText');
+        const step1Spinner = document.getElementById('buttonSpinner');
+        
+        if (step1ButtonText) step1ButtonText.textContent = 'Continue to Next Step';
+        if (step1Spinner) step1Spinner.classList.add('hidden');
+    }
+    
+    // Reset step 2 photo preview
     const photoPreview = document.getElementById('photoPreview');
     if (photoPreview) {
         photoPreview.innerHTML = `
@@ -968,7 +991,7 @@ window.resetAllRegistrationState = function() {
         `;
     }
     
-    // Reset capture button if it exists
+    // Reset capture button
     const captureBtn = document.getElementById('capturePhotoBtn');
     if (captureBtn) {
         captureBtn.innerHTML = `
@@ -982,51 +1005,51 @@ window.resetAllRegistrationState = function() {
         captureBtn.disabled = false;
     }
     
-    // Reset continue button if it exists
-    const continueBtn = document.getElementById('continueButton') || document.getElementById('continueToFinalButton');
+    // Reset step 2 continue button completely
+    const continueBtn = document.getElementById('continueToFinalButton');
     if (continueBtn) {
-        continueBtn.disabled = true;
-        const buttonText = document.getElementById('continueButtonText');
-        const spinner = document.getElementById('continueSpinner');
-        
-        if (buttonText) buttonText.textContent = 'Continue to Next Step';
-        if (spinner) spinner.classList.add('hidden');
-        
+        continueBtn.disabled = true; // Should be disabled until photo is taken
         continueBtn.classList.remove('processing-glow', 'bg-green-600', 'hover:bg-green-700');
         continueBtn.classList.add('bg-gradient-to-r', 'from-blue-600', 'to-indigo-600', 'hover:from-blue-700', 'hover:to-indigo-700');
+        
+        const continueButtonText = document.getElementById('continueButtonText');
+        const continueSpinner = document.getElementById('continueSpinner');
+        
+        if (continueButtonText) continueButtonText.textContent = 'Continue to Next Step';
+        if (continueSpinner) continueSpinner.classList.add('hidden');
     }
     
-    // Clear OTP inputs if they exist
+    // Reset step 3 OTP inputs
     const otpInputs = document.querySelectorAll('[id^="otp"]');
     otpInputs.forEach(input => {
         if (input) {
             input.value = '';
-            input.classList.remove('border-red-300', 'border-green-300');
+            input.classList.remove('border-red-500', 'border-green-500');
             input.classList.add('border-gray-300');
         }
     });
     
-    // Reset verify button if it exists
+    // Reset step 3 verify button
     const verifyBtn = document.getElementById('verifyOtpBtn');
     if (verifyBtn) {
         verifyBtn.disabled = true;
+        verifyBtn.classList.remove('bg-green-600', 'hover:bg-green-700', 'processing-glow');
+        verifyBtn.classList.add('bg-green-600', 'hover:bg-green-700'); // Default green for verify button
+        
         const verifyText = document.getElementById('verifyButtonText');
         const verifySpinner = document.getElementById('verifySpinner');
         
         if (verifyText) verifyText.textContent = 'Verify & Complete Registration';
         if (verifySpinner) verifySpinner.classList.add('hidden');
-        
-        verifyBtn.classList.remove('bg-green-600', 'hover:bg-green-700', 'processing-glow');
-        verifyBtn.classList.add('bg-green-600', 'hover:bg-green-700');
     }
     
-    // Hide all step 2 and step 3 messages
+    // Hide all step messages
     const step2Success = document.getElementById('step2SuccessMessage');
     const step2Error = document.getElementById('step2ErrorMessage');
     if (step2Success) step2Success.classList.add('hidden');
     if (step2Error) step2Error.classList.add('hidden');
     
-    console.log('All registration state completely reset');
+    console.log('All registration state and buttons completely reset');
 };
 
 // Initialize when DOM is loaded

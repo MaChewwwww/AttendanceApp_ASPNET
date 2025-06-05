@@ -85,14 +85,6 @@
             Sign In with Face Recognition
         </button>
     </div>
-
-    <!-- Switch to Register -->
-    <div class="mt-6 text-center">
-        <p class="text-sm text-gray-600">
-            Don't have an account? 
-            <button id="switchToRegister" class="text-blue-600 hover:text-blue-800 font-medium underline cursor-pointer transition-colors">Register here</button>
-        </p>
-    </div>
 </div>
 
 <script>
@@ -125,18 +117,15 @@ function initializeLoginForm() {
         });
     }
     
-    // Switch to register
+    // DO NOT add switch to register functionality here
+    // This login content is only loaded when switching from register to login tab
+    // Adding register switch would cause circular navigation and content flash
     const switchToRegisterBtn = document.getElementById('switchToRegister');
     if (switchToRegisterBtn) {
-        switchToRegisterBtn.addEventListener('click', function() {
-            if (typeof window.showRegister === 'function') {
-                window.showRegister();
-            } else if (window.parent && typeof window.parent.showRegister === 'function') {
-                window.parent.showRegister();
-            } else {
-                document.getElementById('registerTab')?.click();
-            }
-        });
+        // Disable the button to prevent any accidental clicks
+        switchToRegisterBtn.style.pointerEvents = 'none';
+        switchToRegisterBtn.style.opacity = '0.5';
+        console.log('Register button disabled to prevent tab switching conflicts');
     }
     
     // Face recognition login
