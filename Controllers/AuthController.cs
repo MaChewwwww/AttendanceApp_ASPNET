@@ -334,15 +334,31 @@ namespace AttendanceApp_ASPNET.Controllers
                 
                 if (apiResponse.TryGetProperty("message", out var messageProperty))
                 {
-                    message = messageProperty.GetString() ?? "";
+                    var apiMessage = messageProperty.GetString() ?? "";
+                    
+                    // Provide user-friendly message
+                    if (!isValid)
+                    {
+                        message = "Invalid email or password. Please check your credentials and try again.";
+                    }
+                    else
+                    {
+                        message = apiMessage;
+                    }
                 }
                 
                 if (apiResponse.TryGetProperty("errors", out var errorsProperty) && errorsProperty.ValueKind == JsonValueKind.Array)
                 {
-                    errors = errorsProperty.EnumerateArray()
+                    // Transform API errors to user-friendly messages
+                    var apiErrors = errorsProperty.EnumerateArray()
                         .Select(e => e.GetString())
                         .Where(e => !string.IsNullOrEmpty(e))
                         .ToArray();
+                    
+                    if (!isValid && apiErrors.Length > 0)
+                    {
+                        errors = new[] { "Invalid email or password. Please check your credentials and try again." };
+                    }
                 }
                 
                 var response = new { 
@@ -355,10 +371,13 @@ namespace AttendanceApp_ASPNET.Controllers
             }
             catch (Exception ex)
             {
+                // Log the actual error for debugging but show user-friendly message
+                Console.WriteLine($"Login validation error: {ex.Message}");
+                
                 return Json(new { 
                     success = false, 
-                    message = "Login validation failed",
-                    errors = new[] { $"Login validation failed: {ex.Message}" } 
+                    message = "Unable to validate login. Please try again.",
+                    errors = new[] { "Unable to validate login. Please try again." } 
                 });
             }
         }
@@ -383,7 +402,7 @@ namespace AttendanceApp_ASPNET.Controllers
                 var apiResponse = JsonSerializer.Deserialize<JsonElement>(result);
                 
                 bool success = false;
-                string message = "Failed to send login OTP";
+                string message = "Unable to send verification code. Please try again.";
                 string otpId = "";
                 
                 if (apiResponse.TryGetProperty("success", out var successProperty))
@@ -393,7 +412,30 @@ namespace AttendanceApp_ASPNET.Controllers
                 
                 if (apiResponse.TryGetProperty("message", out var messageProperty))
                 {
-                    message = messageProperty.GetString() ?? message;
+                    var apiMessage = messageProperty.GetString() ?? "";
+                    
+                    // Provide user-friendly messages
+                    if (success)
+                    {
+                        message = "Verification code sent successfully!";
+                    }
+                    else
+                    {
+                        if (apiMessage.Contains("not found", StringComparison.OrdinalIgnoreCase) ||
+                            apiMessage.Contains("invalid email", StringComparison.OrdinalIgnoreCase))
+                        {
+                            message = "Account not found. Please check your email address.";
+                        }
+                        else if (apiMessage.Contains("rate limit", StringComparison.OrdinalIgnoreCase) ||
+                                apiMessage.Contains("too many", StringComparison.OrdinalIgnoreCase))
+                        {
+                            message = "Too many requests. Please wait before requesting another code.";
+                        }
+                        else
+                        {
+                            message = "Unable to send verification code. Please try again.";
+                        }
+                    }
                 }
                 
                 if (apiResponse.TryGetProperty("otp_id", out var otpIdProperty))
@@ -423,9 +465,12 @@ namespace AttendanceApp_ASPNET.Controllers
             }
             catch (Exception ex)
             {
+                // Log the actual error for debugging but show user-friendly message
+                Console.WriteLine($"Send login OTP error: {ex.Message}");
+                
                 return Json(new { 
                     success = false, 
-                    message = $"Failed to send login OTP: {ex.Message}",
+                    message = "Unable to send verification code. Please try again later.",
                     otp_id = ""
                 });
             }
@@ -453,7 +498,7 @@ namespace AttendanceApp_ASPNET.Controllers
                 var apiResponse = JsonSerializer.Deserialize<JsonElement>(result);
                 
                 bool success = false;
-                string message = "Login verification failed";
+                string message = "Invalid verification code. Please check your code and try again.";
                 JsonElement userInfo = default;
                 
                 if (apiResponse.TryGetProperty("status", out var statusProperty))
@@ -467,7 +512,34 @@ namespace AttendanceApp_ASPNET.Controllers
                 
                 if (apiResponse.TryGetProperty("message", out var messageProperty))
                 {
-                    message = messageProperty.GetString() ?? message;
+                    var apiMessage = messageProperty.GetString() ?? "";
+                    
+                    // Provide user-friendly messages based on API response
+                    if (!success)
+                    {
+                        if (apiMessage.Contains("expired", StringComparison.OrdinalIgnoreCase))
+                        {
+                            message = "Your verification code has expired. Please request a new code.";
+                        }
+                        else if (apiMessage.Contains("invalid", StringComparison.OrdinalIgnoreCase) || 
+                                apiMessage.Contains("incorrect", StringComparison.OrdinalIgnoreCase))
+                        {
+                            message = "Invalid verification code. Please check your code and try again.";
+                        }
+                        else if (apiMessage.Contains("not found", StringComparison.OrdinalIgnoreCase))
+                        {
+                            message = "Verification session expired. Please try logging in again.";
+                        }
+                        else
+                        {
+                            // Keep default user-friendly message for any other error
+                            message = "Invalid verification code. Please check your code and try again.";
+                        }
+                    }
+                    else
+                    {
+                        message = "Login successful!";
+                    }
                 }
                 
                 if (apiResponse.TryGetProperty("user", out var userProperty))
@@ -485,9 +557,12 @@ namespace AttendanceApp_ASPNET.Controllers
             }
             catch (Exception ex)
             {
+                // Log the actual error for debugging but show user-friendly message
+                Console.WriteLine($"Login OTP verification error: {ex.Message}");
+                
                 return Json(new { 
                     success = false, 
-                    message = $"Failed to verify login OTP: {ex.Message}",
+                    message = "Unable to verify code at this time. Please try again.",
                     user = (object?)null
                 });
             }
