@@ -465,8 +465,9 @@ namespace AttendanceApp_ASPNET.Controllers
             }
             catch (Exception ex)
             {
-                // Log the actual error for debugging but show user-friendly message
+                // Log the actual error for debugging
                 Console.WriteLine($"Send login OTP error: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
                 
                 return Json(new { 
                     success = false, 
