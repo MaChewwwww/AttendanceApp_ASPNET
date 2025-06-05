@@ -14,4 +14,10 @@ namespace Register.ViewModels
         public string ConfirmPassword { get; set; } // For password confirmation
         public bool TermsAccepted { get; set; } // For terms and conditions checkbox
     }
+
+    public class LoginViewModel
+    {
+        public string Email { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+    }
 }

@@ -24,6 +24,14 @@ builder.Services.Configure<ApiSettings>(builder.Configuration.GetSection("ApiSet
 // Register HttpClient and ApiService
 builder.Services.AddHttpClient<IApiService, ApiService>();
 
+// Register API service
+builder.Services.AddScoped<IApiService, ApiService>();
+
+// Add antiforgery token services
+builder.Services.AddAntiforgery(options => {
+    options.HeaderName = "RequestVerificationToken";
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -44,6 +52,9 @@ app.UseSession();  // Enable session before checking it
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Add antiforgery middleware
+app.UseAntiforgery();
 
 // Default route configuration
 app.MapControllerRoute(

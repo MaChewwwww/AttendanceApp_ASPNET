@@ -304,5 +304,63 @@ namespace AttendanceApp_ASPNET.Controllers
                 });
             }
         }
+
+        [HttpPost]
+        public async Task<IActionResult> ValidateLogin([FromBody] JsonElement loginData)
+        {
+            try
+            {
+                // Convert JsonElement to object for API call - matching Python model structure
+                var loginDataObject = new
+                {
+                    email = loginData.GetProperty("email").GetString() ?? "",
+                    password = loginData.GetProperty("password").GetString() ?? ""
+                };
+
+                var result = await _apiService.ValidateLoginCredentialsAsync(loginDataObject);
+                
+                // Parse the API response
+                var apiResponse = JsonSerializer.Deserialize<JsonElement>(result);
+                
+                // Handle your Python API's response format
+                bool isValid = false;
+                string[] errors = Array.Empty<string>();
+                string message = "";
+                
+                if (apiResponse.TryGetProperty("is_valid", out var isValidProperty))
+                {
+                    isValid = isValidProperty.GetBoolean();
+                }
+                
+                if (apiResponse.TryGetProperty("message", out var messageProperty))
+                {
+                    message = messageProperty.GetString() ?? "";
+                }
+                
+                if (apiResponse.TryGetProperty("errors", out var errorsProperty) && errorsProperty.ValueKind == JsonValueKind.Array)
+                {
+                    errors = errorsProperty.EnumerateArray()
+                        .Select(e => e.GetString())
+                        .Where(e => !string.IsNullOrEmpty(e))
+                        .ToArray();
+                }
+                
+                var response = new { 
+                    success = isValid,
+                    message = message,
+                    errors = errors
+                };
+                
+                return Json(response);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { 
+                    success = false, 
+                    message = "Login validation failed",
+                    errors = new[] { $"Login validation failed: {ex.Message}" } 
+                });
+            }
+        }
     }
 }
