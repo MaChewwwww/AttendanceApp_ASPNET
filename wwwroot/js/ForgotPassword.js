@@ -56,7 +56,8 @@ function closeForgotPasswordModal() {
     // Reset form and clear data
     resetForgotPasswordForm();
     hideForgotPasswordMessages();
-    window.currentForgotPasswordOtpId = null;
+    // DON'T clear the OTP ID here - we need it for verification
+    // window.currentForgotPasswordOtpId = null;
     // DON'T clear the email when closing - keep it for OTP modal
     // window.forgotPasswordEmail = '';
 }
@@ -311,7 +312,7 @@ async function validateForgotPasswordEmailWithAPI(email) {
 async function sendPasswordResetOTPWithAPI(email) {
     try {
         const apiUrl = '/Auth/SendPasswordResetOTP';
-        const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
         
         const requestData = { email: email };
         
@@ -333,6 +334,7 @@ async function sendPasswordResetOTPWithAPI(email) {
         try {
             result = JSON.parse(responseText);
         } catch (parseError) {
+            console.error('Failed to parse API response:', responseText);
             return { 
                 success: false, 
                 message: "Invalid server response. Please try again.",
@@ -342,14 +344,15 @@ async function sendPasswordResetOTPWithAPI(email) {
         
         return {
             success: result.success || false,
-            message: result.message || '',
-            otp_id: result.otp_id || null
+            message: result.message || 'Failed to send password reset instructions',
+            otp_id: result.otp_id || null // Keep as received (should be integer from C#)
         };
         
     } catch (error) {
+        console.error('Send password reset OTP API error:', error);
         return { 
             success: false, 
-            message: `Network Error: ${error.message}`,
+            message: "Network error. Please check your connection and try again.",
             otp_id: null
         };
     }
@@ -359,12 +362,34 @@ async function sendPasswordResetOTPWithAPI(email) {
 async function verifyPasswordResetOTPWithAPI(otpId, otpCode) {
     try {
         const apiUrl = '/Auth/VerifyPasswordResetOTP';
-        const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+        
+        // Ensure otpId is an integer
+        const otpIdInt = typeof otpId === 'string' ? parseInt(otpId, 10) : otpId;
+        
+        // Debug logging
+        console.log('=== VERIFY PASSWORD RESET OTP DEBUG ===');
+        console.log('Original otpId:', otpId, 'Type:', typeof otpId);
+        console.log('Converted otpIdInt:', otpIdInt, 'Type:', typeof otpIdInt);
+        console.log('otpCode:', otpCode, 'Type:', typeof otpCode);
+        
+        if (isNaN(otpIdInt)) {
+            console.log('ERROR: Failed to convert otpId to integer');
+            return { 
+                success: false, 
+                message: "Invalid OTP session. Please try again.",
+                reset_token: null
+            };
+        }
         
         const requestData = {
-            otp_id: otpId,
+            otp_id: otpIdInt, // Send as integer
             otp_code: otpCode
         };
+        
+        console.log('Request data:', requestData);
+        console.log('JSON.stringify(requestData):', JSON.stringify(requestData));
+        console.log('=======================================');
         
         const requestOptions = {
             method: "POST",
@@ -379,11 +404,17 @@ async function verifyPasswordResetOTPWithAPI(otpId, otpCode) {
         const response = await fetch(apiUrl, requestOptions);
         const responseText = await response.text();
         
+        console.log('=== RESPONSE DEBUG ===');
+        console.log('Response status:', response.status);
+        console.log('Response text:', responseText);
+        console.log('======================');
+        
         // Handle non-JSON responses gracefully
         let result;
         try {
             result = JSON.parse(responseText);
         } catch (parseError) {
+            console.error('Failed to parse API response:', responseText);
             return { 
                 success: false, 
                 message: "Invalid server response. Please try again.",
@@ -398,6 +429,7 @@ async function verifyPasswordResetOTPWithAPI(otpId, otpCode) {
         };
         
     } catch (error) {
+        console.error('Password reset OTP verification API error:', error);
         return { 
             success: false, 
             message: "Network error. Please check your connection and try again.",
@@ -455,8 +487,22 @@ async function sendPasswordResetInstructions() {
             
             const resetResult = await sendPasswordResetOTPWithAPI(email);
             
-            if (resetResult.success) {
-                window.currentForgotPasswordOtpId = resetResult.otp_id;
+            console.log('=== SEND OTP RESULT DEBUG ===');
+            console.log('Reset result:', resetResult);
+            console.log('OTP ID from result:', resetResult.otp_id);
+            console.log('OTP ID type:', typeof resetResult.otp_id);
+            console.log('=============================');
+            
+            if (resetResult.success && resetResult.otp_id !== null && resetResult.otp_id !== undefined) {
+                // Store the OTP ID - ensure it's converted to integer
+                const otpIdToStore = typeof resetResult.otp_id === 'string' ? parseInt(resetResult.otp_id, 10) : resetResult.otp_id;
+                window.currentForgotPasswordOtpId = otpIdToStore;
+                
+                console.log('=== OTP ID STORAGE DEBUG ===');
+                console.log('Original OTP ID:', resetResult.otp_id);
+                console.log('Stored OTP ID:', window.currentForgotPasswordOtpId);
+                console.log('Stored type:', typeof window.currentForgotPasswordOtpId);
+                console.log('============================');
                 
                 // Close this modal and show OTP modal
                 closeForgotPasswordModal();
@@ -467,6 +513,7 @@ async function sendPasswordResetInstructions() {
                 }, 300);
                 
             } else {
+                console.error('No valid OTP ID received:', resetResult);
                 showForgotPasswordError(resetResult.message || 'Failed to send reset code. Please try again.');
             }
             
@@ -547,8 +594,8 @@ function closePasswordResetOTPModal() {
     // Reset form and clear data
     resetPasswordResetOTPForm();
     hidePasswordResetOTPMessages();
+    // Clear the session data only when completely closing the password reset flow
     window.currentForgotPasswordOtpId = null;
-    // Clear email only when completely done with password reset flow
     window.forgotPasswordEmail = '';
 }
 
@@ -882,8 +929,21 @@ async function verifyPasswordResetOTP() {
         return;
     }
     
-    if (!window.currentForgotPasswordOtpId) {
-        showPasswordResetOTPError('OTP session expired. Please try again.');
+    // Debug: Check the stored OTP ID
+    console.log('=== VERIFY OTP DEBUG ===');
+    console.log('window.currentForgotPasswordOtpId:', window.currentForgotPasswordOtpId);
+    console.log('Type:', typeof window.currentForgotPasswordOtpId);
+    console.log('========================');
+    
+    // Validate that we have an OTP ID
+    if (!window.currentForgotPasswordOtpId && window.currentForgotPasswordOtpId !== 0) {
+        showPasswordResetOTPError('Password reset session expired. Please start the process again.');
+        setTimeout(() => {
+            closePasswordResetOTPModal();
+            setTimeout(() => {
+                showForgotPasswordModal();
+            }, 300);
+        }, 2000);
         return;
     }
     
@@ -913,7 +973,7 @@ async function verifyPasswordResetOTP() {
             verifyBtn.classList.remove('bg-orange-600', 'hover:bg-orange-700');
             verifyBtn.classList.add('bg-green-600', 'hover:bg-green-700');
             
-            showPasswordResetOTPSuccess('Verification successful! Set your new password...');
+            showPasswordResetOTPSuccess(result.message || 'Verification successful! Set your new password...');
             
             // Store session information for new password modal
             window.currentPasswordResetSessionId = result.reset_token;
@@ -929,7 +989,7 @@ async function verifyPasswordResetOTP() {
                 }, 300);
             }, 1500);
         } else {
-            // Enhanced failure flow with better UX
+            // Enhanced failure flow with better UX and specific error messages
             
             // Add minimum delay for better perceived performance (feels more secure)
             const minDelay = 1200; // 1.2 seconds minimum processing time
@@ -941,70 +1001,114 @@ async function verifyPasswordResetOTP() {
                 setTimeout(resolve, remainingDelay);
             });
             
-            // Show error state on button first
-            verifyBtnText.textContent = 'Verification Failed';
-            verifyBtn.classList.remove('bg-orange-600', 'hover:bg-orange-700');
-            verifyBtn.classList.add('bg-red-600', 'hover:bg-red-700');
+            // Determine error type based on message for different visual feedback
+            const errorMessage = result.message || 'Invalid verification code. Please check your code and try again.';
+            const isExpiredError = errorMessage.includes('expired');
+            const isSessionError = errorMessage.includes('session expired') || errorMessage.includes('start the process again');
+            const isAccountError = errorMessage.includes('Account not found') || errorMessage.includes('contact support');
+            
+            // Show error state on button first with appropriate color
+            if (isExpiredError || isSessionError) {
+                verifyBtnText.textContent = 'Session Expired';
+                verifyBtn.classList.remove('bg-orange-600', 'hover:bg-orange-700');
+                verifyBtn.classList.add('bg-yellow-600', 'hover:bg-yellow-700');
+            } else if (isAccountError) {
+                verifyBtnText.textContent = 'Account Error';
+                verifyBtn.classList.remove('bg-orange-600', 'hover:bg-orange-700');
+                verifyBtn.classList.add('bg-purple-600', 'hover:bg-purple-700');
+            } else {
+                verifyBtnText.textContent = 'Invalid Code';
+                verifyBtn.classList.remove('bg-orange-600', 'hover:bg-orange-700');
+                verifyBtn.classList.add('bg-red-600', 'hover:bg-red-700');
+            }
             
             // Show error with slight delay for better visual flow
             setTimeout(() => {
-                showPasswordResetOTPError(result.message || 'Invalid verification code. Please check your code and try again.');
+                showPasswordResetOTPError(errorMessage);
                 
-                // Add red border animation to inputs
-                otpInputs.forEach((input, index) => {
-                    setTimeout(() => {
-                        input.classList.add('border-red-400', 'animate-pulse');
-                        input.style.borderColor = '#f87171';
-                        
-                        // Shake animation effect
-                        input.style.animation = 'shake 0.5s ease-in-out';
-                    }, index * 50); // Staggered animation
-                });
-                
-                // Reset inputs with staggered clear animation
-                setTimeout(() => {
+                // Different animations based on error type
+                if (isExpiredError || isSessionError || isAccountError) {
+                    // For session/account errors, fade out inputs instead of shake
                     otpInputs.forEach((input, index) => {
                         setTimeout(() => {
-                            input.value = '';
-                            input.style.transform = 'scale(0.95)';
-                            
-                            setTimeout(() => {
-                                input.style.transform = 'scale(1)';
-                            }, 100);
-                        }, index * 80);
+                            input.classList.add('border-yellow-400');
+                            input.style.borderColor = '#fbbf24';
+                            input.style.opacity = '0.6';
+                        }, index * 50);
                     });
-                }, 600);
+                    
+                    // If session expired, suggest restarting the process
+                    if (isSessionError) {
+                        setTimeout(() => {
+                            if (confirm('Your password reset session has expired. Would you like to start over?')) {
+                                closePasswordResetOTPModal();
+                                setTimeout(() => {
+                                    showForgotPasswordModal();
+                                }, 300);
+                                return;
+                            }
+                        }, 2000);
+                    }
+                } else {
+                    // For invalid code errors, use shake animation
+                    otpInputs.forEach((input, index) => {
+                        setTimeout(() => {
+                            input.classList.add('border-red-400', 'animate-pulse');
+                            input.style.borderColor = '#f87171';
+                            
+                            // Shake animation effect
+                            input.style.animation = 'shake 0.5s ease-in-out';
+                        }, index * 50); // Staggered animation
+                    });
+                    
+                    // Reset inputs with staggered clear animation (only for invalid code)
+                    setTimeout(() => {
+                        otpInputs.forEach((input, index) => {
+                            setTimeout(() => {
+                                input.value = '';
+                                input.style.transform = 'scale(0.95)';
+                                
+                                setTimeout(() => {
+                                    input.style.transform = 'scale(1)';
+                                }, 100);
+                            }, index * 80);
+                        });
+                    }, 600);
+                }
                 
                 // Clean up styling and reset button after error display
                 setTimeout(() => {
                     // Remove error styling from inputs
                     otpInputs.forEach(input => {
                         input.disabled = false;
-                        input.classList.remove('border-red-400', 'animate-pulse', 'processing-glow');
+                        input.classList.remove('border-red-400', 'border-yellow-400', 'animate-pulse', 'processing-glow');
                         input.style.borderColor = '';
                         input.style.animation = '';
                         input.style.transform = '';
+                        input.style.opacity = '';
                     });
                     
                     // Reset button state
                     verifyBtn.disabled = false;
                     verifyBtnText.textContent = 'Verify & Reset';
                     verifySpinner.classList.add('hidden');
-                    verifyBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
+                    verifyBtn.classList.remove('bg-red-600', 'hover:bg-red-700', 'bg-yellow-600', 'hover:bg-yellow-700', 'bg-purple-600', 'hover:bg-purple-700');
                     verifyBtn.classList.add('bg-orange-600', 'hover:bg-orange-700');
                     
-                    // Focus first input for retry with subtle highlight
-                    const firstInput = otpInputs[0];
-                    if (firstInput) {
-                        firstInput.focus();
-                        firstInput.style.boxShadow = '0 0 0 2px rgba(251, 146, 60, 0.3)';
-                        
-                        // Remove highlight after a moment
-                        setTimeout(() => {
-                            firstInput.style.boxShadow = '';
-                        }, 1000);
+                    // Focus first input for retry with subtle highlight (only for retryable errors)
+                    if (!isSessionError && !isAccountError) {
+                        const firstInput = otpInputs[0];
+                        if (firstInput) {
+                            firstInput.focus();
+                            firstInput.style.boxShadow = '0 0 0 2px rgba(251, 146, 60, 0.3)';
+                            
+                            // Remove highlight after a moment
+                            setTimeout(() => {
+                                firstInput.style.boxShadow = '';
+                            }, 1000);
+                        }
                     }
-                }, 1500);
+                }, isExpiredError || isSessionError || isAccountError ? 3000 : 1500); // Longer delay for session errors
                 
             }, 300);
         }
@@ -1068,8 +1172,21 @@ async function resendPasswordResetOTP() {
         // Reuse the same SendPasswordResetOTP endpoint
         const result = await sendPasswordResetOTPWithAPI(window.forgotPasswordEmail);
         
-        if (result.success) {
-            window.currentForgotPasswordOtpId = result.otp_id;
+        console.log('=== RESEND OTP RESULT DEBUG ===');
+        console.log('Resend result:', result);
+        console.log('New OTP ID:', result.otp_id);
+        console.log('===============================');
+        
+        if (result.success && result.otp_id !== null && result.otp_id !== undefined) {
+            // Update the stored OTP ID with the new one
+            const otpIdToStore = typeof result.otp_id === 'string' ? parseInt(result.otp_id, 10) : result.otp_id;
+            window.currentForgotPasswordOtpId = otpIdToStore;
+            
+            console.log('=== NEW OTP ID STORAGE DEBUG ===');
+            console.log('New stored OTP ID:', window.currentForgotPasswordOtpId);
+            console.log('New stored type:', typeof window.currentForgotPasswordOtpId);
+            console.log('=================================');
+            
             showPasswordResetOTPResendSuccess();
             
             // Clear OTP inputs

@@ -872,7 +872,7 @@ namespace AttendanceApp_ASPNET.Controllers
                 
                 bool success = false;
                 string message = "Failed to send password reset instructions";
-                string otpId = "";
+                int? otpId = null;
                 
                 if (apiResponse.TryGetProperty("success", out var successProperty))
                 {
@@ -886,25 +886,25 @@ namespace AttendanceApp_ASPNET.Controllers
                 
                 if (apiResponse.TryGetProperty("otp_id", out var otpIdProperty))
                 {
-                    // Handle both string and number types for otp_id
-                    if (otpIdProperty.ValueKind == JsonValueKind.String)
+                    // Handle both string and number types for otp_id and ensure it's an integer
+                    if (otpIdProperty.ValueKind == JsonValueKind.Number)
                     {
-                        otpId = otpIdProperty.GetString() ?? "";
+                        otpId = otpIdProperty.GetInt32();
                     }
-                    else if (otpIdProperty.ValueKind == JsonValueKind.Number)
+                    else if (otpIdProperty.ValueKind == JsonValueKind.String)
                     {
-                        otpId = otpIdProperty.GetInt64().ToString();
-                    }
-                    else
-                    {
-                        otpId = otpIdProperty.ToString();
+                        var otpIdString = otpIdProperty.GetString() ?? "";
+                        if (int.TryParse(otpIdString, out int parsedOtpId))
+                        {
+                            otpId = parsedOtpId;
+                        }
                     }
                 }
                 
                 var response = new { 
                     success = success,
                     message = message,
-                    otp_id = otpId
+                    otp_id = otpId // Send as integer, not string
                 };
                 
                 return Json(response);
@@ -914,7 +914,7 @@ namespace AttendanceApp_ASPNET.Controllers
                 return Json(new { 
                     success = false, 
                     message = $"Failed to send password reset instructions: {ex.Message}",
-                    otp_id = ""
+                    otp_id = (int?)null
                 });
             }
         }
@@ -924,18 +924,95 @@ namespace AttendanceApp_ASPNET.Controllers
         {
             try
             {
-                // Extract OTP ID and OTP code
-                var otpId = requestData.GetProperty("otp_id").GetString() ?? "";
-                var otpCode = requestData.GetProperty("otp_code").GetString() ?? "";
+                // Debug: Log the incoming request data
+                Console.WriteLine($"=== VERIFY PASSWORD RESET OTP DEBUG ===");
+                Console.WriteLine($"Raw request data: {requestData.GetRawText()}");
+                
+                // Extract OTP ID and OTP code with better error handling
+                int otpId;
+                string otpCode = "";
+
+                // Handle otp_id - it could come as string or number from frontend
+                if (requestData.TryGetProperty("otp_id", out var otpIdProperty))
+                {
+                    Console.WriteLine($"OTP ID property found. Type: {otpIdProperty.ValueKind}, Value: {otpIdProperty}");
+                    
+                    if (otpIdProperty.ValueKind == JsonValueKind.Number)
+                    {
+                        otpId = otpIdProperty.GetInt32();
+                        Console.WriteLine($"OTP ID parsed as number: {otpId}");
+                    }
+                    else if (otpIdProperty.ValueKind == JsonValueKind.String)
+                    {
+                        var otpIdString = otpIdProperty.GetString() ?? "";
+                        Console.WriteLine($"OTP ID as string: '{otpIdString}'");
+                        if (!int.TryParse(otpIdString, out otpId))
+                        {
+                            Console.WriteLine($"Failed to parse OTP ID string '{otpIdString}' to integer");
+                            return Json(new { 
+                                success = false, 
+                                message = "Invalid OTP ID format. Please try again.",
+                                reset_token = (object?)null
+                            });
+                        }
+                        Console.WriteLine($"OTP ID parsed from string: {otpId}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Invalid OTP ID type: {otpIdProperty.ValueKind}");
+                        return Json(new { 
+                            success = false, 
+                            message = "Invalid OTP ID format. Please try again.",
+                            reset_token = (object?)null
+                        });
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("OTP ID property not found in request");
+                    return Json(new { 
+                        success = false, 
+                        message = "OTP ID is required. Please try again.",
+                        reset_token = (object?)null
+                    });
+                }
+
+                // Handle otp_code
+                if (requestData.TryGetProperty("otp_code", out var otpCodeProperty))
+                {
+                    otpCode = otpCodeProperty.GetString() ?? "";
+                    Console.WriteLine($"OTP Code: '{otpCode}'");
+                }
+
+                if (string.IsNullOrEmpty(otpCode))
+                {
+                    Console.WriteLine("OTP code is empty or null");
+                    return Json(new { 
+                        success = false, 
+                        message = "OTP code is required. Please try again.",
+                        reset_token = (object?)null
+                    });
+                }
 
                 // Convert to the format expected by Python API
                 var verifyPasswordResetOtpData = new
                 {
-                    otp_id = otpId,
+                    otp_id = otpId, // Send as integer
                     otp_code = otpCode
                 };
 
+                // Debug: Log what we're sending to the API
+                Console.WriteLine($"Sending to Python API: otp_id={otpId} (type: {otpId.GetType().Name}), otp_code='{otpCode}'");
+                var debugJson = JsonSerializer.Serialize(verifyPasswordResetOtpData);
+                Console.WriteLine($"JSON being sent: {debugJson}");
+                Console.WriteLine("=====================================");
+
                 var result = await _apiService.VerifyPasswordResetOTPAsync(verifyPasswordResetOtpData);
+                
+                // Debug: Log the API response
+                Console.WriteLine($"=== API RESPONSE DEBUG ===");
+                Console.WriteLine($"Raw API response: {result}");
+                Console.WriteLine("==========================");
                 
                 // Parse the API response
                 var apiResponse = JsonSerializer.Deserialize<JsonElement>(result);
@@ -1001,6 +1078,7 @@ namespace AttendanceApp_ASPNET.Controllers
             catch (Exception ex)
             {
                 Console.WriteLine($"Password reset OTP verification error: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
                 
                 return Json(new { 
                     success = false, 

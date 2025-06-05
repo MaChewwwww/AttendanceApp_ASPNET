@@ -347,6 +347,13 @@ namespace AttendanceApp_ASPNET.Services
                 var apiUrl = $"{_apiBaseUrl}/forgotPassword/verify-otp";
                 
                 var json = JsonSerializer.Serialize(verifyData);
+                
+                // Debug: Log what we're sending
+                Console.WriteLine($"=== API SERVICE DEBUG ===");
+                Console.WriteLine($"Sending to: {apiUrl}");
+                Console.WriteLine($"JSON payload: {json}");
+                Console.WriteLine("=========================");
+                
                 var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
                 
                 _httpClient.DefaultRequestHeaders.Clear();
@@ -355,6 +362,12 @@ namespace AttendanceApp_ASPNET.Services
                 
                 var response = await _httpClient.PostAsync(apiUrl, content);
                 var responseContent = await response.Content.ReadAsStringAsync();
+                
+                // Debug: Log the response
+                Console.WriteLine($"=== API RESPONSE DEBUG ===");
+                Console.WriteLine($"Status: {response.StatusCode}");
+                Console.WriteLine($"Response: {responseContent}");
+                Console.WriteLine("==========================");
                 
                 if (!response.IsSuccessStatusCode)
                 {
