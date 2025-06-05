@@ -918,5 +918,96 @@ namespace AttendanceApp_ASPNET.Controllers
                 });
             }
         }
+
+        [HttpPost]
+        public async Task<IActionResult> VerifyPasswordResetOTP([FromBody] JsonElement requestData)
+        {
+            try
+            {
+                // Extract OTP ID and OTP code
+                var otpId = requestData.GetProperty("otp_id").GetString() ?? "";
+                var otpCode = requestData.GetProperty("otp_code").GetString() ?? "";
+
+                // Convert to the format expected by Python API
+                var verifyPasswordResetOtpData = new
+                {
+                    otp_id = otpId,
+                    otp_code = otpCode
+                };
+
+                var result = await _apiService.VerifyPasswordResetOTPAsync(verifyPasswordResetOtpData);
+                
+                // Parse the API response
+                var apiResponse = JsonSerializer.Deserialize<JsonElement>(result);
+                
+                bool success = false;
+                string message = "Invalid verification code. Please check your code and try again.";
+                string resetToken = "";
+                
+                if (apiResponse.TryGetProperty("success", out var successProperty))
+                {
+                    success = successProperty.GetBoolean();
+                }
+                
+                if (apiResponse.TryGetProperty("message", out var messageProperty))
+                {
+                    var apiMessage = messageProperty.GetString() ?? "";
+                    
+                    // Provide user-friendly messages based on API response
+                    if (!success)
+                    {
+                        if (apiMessage.Contains("expired", StringComparison.OrdinalIgnoreCase))
+                        {
+                            message = "Your verification code has expired. Please request a new password reset.";
+                        }
+                        else if (apiMessage.Contains("invalid", StringComparison.OrdinalIgnoreCase) || 
+                                apiMessage.Contains("incorrect", StringComparison.OrdinalIgnoreCase))
+                        {
+                            message = "Invalid verification code. Please check your code and try again.";
+                        }
+                        else if (apiMessage.Contains("not found", StringComparison.OrdinalIgnoreCase))
+                        {
+                            message = "Password reset session expired. Please start the process again.";
+                        }
+                        else if (apiMessage.Contains("Account not found", StringComparison.OrdinalIgnoreCase) ||
+                                apiMessage.Contains("User not found", StringComparison.OrdinalIgnoreCase))
+                        {
+                            message = "Account not found. Please contact support if you believe this is an error.";
+                        }
+                        else
+                        {
+                            message = "Invalid verification code. Please check your code and try again.";
+                        }
+                    }
+                    else
+                    {
+                        message = "Verification successful! You can now set your new password.";
+                    }
+                }
+                
+                if (apiResponse.TryGetProperty("reset_token", out var resetTokenProperty))
+                {
+                    resetToken = resetTokenProperty.GetString() ?? "";
+                }
+                
+                var response = new { 
+                    success = success,
+                    message = message,
+                    reset_token = success ? resetToken : (object?)null
+                };
+                
+                return Json(response);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Password reset OTP verification error: {ex.Message}");
+                
+                return Json(new { 
+                    success = false, 
+                    message = "Unable to verify code at this time. Please try again.",
+                    reset_token = (object?)null
+                });
+            }
+        }
     }
 }

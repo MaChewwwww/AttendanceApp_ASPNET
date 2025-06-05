@@ -2,102 +2,101 @@
 let loginEmail = '';
 
 // Make loginEmail accessible globally
-Object.defineProperty(window, 'loginEmail', {
-    get: function() { return loginEmail; },
-    set: function(value) { loginEmail = value; }
-});
+window.loginEmail = '';
 
-// Global functions
-function togglePassword() {
-    const passwordField = document.getElementById('loginPassword');
-    const type = passwordField.type === 'password' ? 'text' : 'password';
-    passwordField.type = type;
-}
-
-function goToRegister() {
-    window.location.href = '/Auth/Register';
-}
-
-// Message display functions
-function showLoginError(message) {
-    const errorMessage = document.getElementById('loginErrorMessage');
-    if (errorMessage) {
-        const errorText = errorMessage.querySelector('p');
-        if (errorText) errorText.textContent = message;
-        errorMessage.classList.remove('hidden');
+// Ensure functions are available globally and re-attachable
+window.performLogin = async function() {
+    const emailInput = document.getElementById('loginEmail');
+    const passwordInput = document.getElementById('loginPassword');
+    const loginButton = document.getElementById('loginButton');
+    const loginButtonText = document.getElementById('loginButtonText');
+    
+    if (!emailInput || !passwordInput || !loginButton || !loginButtonText) {
+        console.error('Login form elements not found');
+        showLoginError('Login form not properly loaded. Please refresh the page.');
+        return;
     }
     
-    setTimeout(() => {
-        errorMessage?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 100);
-}
-
-function showLoginSuccess() {
-    const successMessage = document.getElementById('loginSuccessMessage');
-    const successIcon = document.getElementById('loginSuccessIcon');
-    const successSpinner = document.getElementById('loginSuccessSpinner');
-    const successText = document.getElementById('loginSuccessText');
+    const email = emailInput.value.trim();
+    const password = passwordInput.value.trim();
     
-    if (successMessage) {
-        successMessage.classList.remove('hidden');
+    // Store email globally for OTP use
+    window.loginEmail = email;
+    
+    // Client-side validation
+    if (!email || !password) {
+        showLoginError('Please enter both email and password.');
+        return;
     }
     
-    // Show spinner and hide checkmark icon during OTP sending
-    if (successIcon) {
-        successIcon.classList.add('hidden');
+    // Basic email format validation
+    const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailPattern.test(email)) {
+        showLoginError('Please enter a valid email address.');
+        return;
     }
-    if (successSpinner) {
-        successSpinner.classList.remove('hidden');
-    }
-    if (successText) {
-        successText.innerHTML = 'Validation successful! <span class="animate-pulse">Sending login OTP code...</span>';
-    }
-}
-
-function showOTPSendingComplete() {
-    const successIcon = document.getElementById('loginSuccessIcon');
-    const successSpinner = document.getElementById('loginSuccessSpinner');
-    const successText = document.getElementById('loginSuccessText');
     
-    // Hide spinner and show checkmark icon when OTP sending is complete
-    if (successSpinner) {
-        successSpinner.classList.add('hidden');
+    // Check PUP domain
+    if (!email.endsWith('@iskolarngbayan.pup.edu.ph')) {
+        showLoginError('Please use your PUP email address (@iskolarngbayan.pup.edu.ph).');
+        return;
     }
-    if (successIcon) {
-        successIcon.classList.remove('hidden');
-    }
-    if (successText) {
-        successText.innerHTML = 'OTP sent successfully! Please check your email.';
-    }
-}
-
-function hideMessages() {
-    const errorMessage = document.getElementById('loginErrorMessage');
-    const successMessage = document.getElementById('loginSuccessMessage');
     
-    if (errorMessage) errorMessage.classList.add('hidden');
-    if (successMessage) successMessage.classList.add('hidden');
-}
-
-function resetLoginButton() {
-    setTimeout(() => {
-        const loginButton = document.getElementById('loginButton');
-        const loginButtonText = document.getElementById('loginButtonText');
+    // Set loading state
+    loginButton.disabled = true;
+    loginButtonText.textContent = 'Validating...';
+    hideMessages();
+    
+    try {
+        // First validate credentials
+        const validationResult = await validateLoginWithAPI({ email, password });
         
-        if (loginButton) {
-            loginButton.disabled = false;
-            loginButton.classList.remove('bg-green-600', 'hover:bg-green-700');
-            loginButton.classList.add('bg-blue-600', 'hover:bg-blue-700');
+        if (validationResult.success) {
+            // Credentials are valid - send OTP
+            loginButtonText.textContent = 'Sending verification code...';
+            
+            const otpResult = await sendLoginOTP(email);
+            
+            if (otpResult.success) {
+                window.currentLoginOtpId = otpResult.otp_id;
+                
+                // Show success and then OTP modal
+                showOTPSendingComplete();
+                
+                setTimeout(() => {
+                    if (typeof window.showOTPModal === 'function') {
+                        window.showOTPModal();
+                    }
+                }, 2000);
+                
+            } else {
+                showLoginError(otpResult.message || 'Failed to send verification code. Please try again.');
+            }
+            
+        } else {
+            // Show validation errors
+            const errorMessages = validationResult.errors && validationResult.errors.length > 0 
+                ? validationResult.errors.join(' ') 
+                : validationResult.message || 'Invalid email or password.';
+            
+            showLoginError(errorMessages);
         }
-        if (loginButtonText) loginButtonText.textContent = 'Sign In';
-    }, 1000);
-}
+        
+    } catch (error) {
+        console.error('Login error:', error);
+        showLoginError('Login failed due to a network error. Please check your connection and try again.');
+    } finally {
+        // Reset button state
+        loginButton.disabled = false;
+        loginButtonText.textContent = 'Sign In';
+    }
+};
 
-// API validation function
+// API function to validate login credentials
 async function validateLoginWithAPI(loginData) {
     try {
         const apiUrl = '/Auth/ValidateLogin';
-        const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
         
         const requestOptions = {
             method: "POST",
@@ -110,37 +109,40 @@ async function validateLoginWithAPI(loginData) {
         };
 
         const response = await fetch(apiUrl, requestOptions);
+        const responseText = await response.text();
         
-        if (!response.ok) {
-            const errorText = await response.text();
+        // Handle non-JSON responses gracefully
+        let result;
+        try {
+            result = JSON.parse(responseText);
+        } catch (parseError) {
             return { 
                 success: false, 
-                errors: [`Server Error ${response.status}: ${response.statusText}`] 
+                message: "Invalid server response. Please try again.",
+                errors: []
             };
         }
-
-        const responseText = await response.text();
-        const result = JSON.parse(responseText);
         
         return {
             success: result.success || false,
-            message: result.message || '',
+            message: result.message || 'Validation failed',
             errors: result.errors || []
         };
         
     } catch (error) {
         return { 
             success: false, 
-            errors: [`Network Error: ${error.message}`] 
+            message: "Network error. Please check your connection and try again.",
+            errors: []
         };
     }
 }
 
-// Send Login OTP - make this function globally accessible
+// Make the sendLoginOTP function globally accessible
 window.sendLoginOTP = async function(email) {
     try {
         const apiUrl = '/Auth/SendLoginOTP';
-        const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
         
         const requestData = { email: email };
         
@@ -156,95 +158,111 @@ window.sendLoginOTP = async function(email) {
 
         const response = await fetch(apiUrl, requestOptions);
         const responseText = await response.text();
-        const result = JSON.parse(responseText);
+        
+        // Handle non-JSON responses gracefully
+        let result;
+        try {
+            result = JSON.parse(responseText);
+        } catch (parseError) {
+            return { 
+                success: false, 
+                message: "Invalid server response. Please try again.",
+                otp_id: null
+            };
+        }
         
         return {
             success: result.success || false,
-            message: result.message || '',
+            message: result.message || 'Failed to send verification code',
             otp_id: result.otp_id || null
         };
         
     } catch (error) {
         return { 
             success: false, 
-            message: `Network Error: ${error.message}` 
+            message: "Network error. Please check your connection and try again.",
+            otp_id: null
         };
     }
 };
 
-// MAIN LOGIN FUNCTION
-async function performLogin() {
-    const loginButton = document.getElementById('loginButton');
-    const loginButtonText = document.getElementById('loginButtonText');
-    
-    // Set loading state
-    loginButton.disabled = true;
-    loginButtonText.textContent = 'Signing In...';
-    
-    // Hide previous messages
-    hideMessages();
-    
-    try {
-        const email = document.getElementById('loginEmail').value.trim();
-        const password = document.getElementById('loginPassword').value;
-        
-        // Store for OTP process and make it globally accessible
-        loginEmail = email;
-        window.loginEmail = email;
-        
-        // Client-side validation
-        if (!email || !password) {
-            showLoginError('Please enter both email and password.');
-            resetLoginButton();
-            return;
+// Message functions
+function showLoginError(message) {
+    const errorMessage = document.getElementById('loginErrorMessage');
+    if (errorMessage) {
+        const errorText = errorMessage.querySelector('p');
+        if (errorText) {
+            errorText.textContent = message;
         }
+        errorMessage.classList.remove('hidden');
         
-        // Validate with API first
-        const validationResult = await validateLoginWithAPI({ email, password });
-        
-        if (validationResult.success) {
-            // Validation successful - now send OTP
-            showLoginSuccess();
-            loginButtonText.textContent = 'Sending OTP...';
-            
-            // Send OTP
-            const otpResult = await window.sendLoginOTP(email);
-            
-            if (otpResult.success) {
-                window.currentLoginOtpId = otpResult.otp_id;
-                
-                // Show completion state
-                showOTPSendingComplete();
-                
-                // Show OTP modal after a brief delay to show completion
-                setTimeout(() => {
-                    try {
-                        showOTPModal();
-                    } catch (modalError) {
-                        showLoginError('Failed to show verification dialog. Please try again.');
-                        resetLoginButton();
-                        return;
-                    }
-                }, 800);
-                
-                resetLoginButton();
-            } else {
-                showLoginError(otpResult.message || 'Failed to send verification code. Please try again.');
-                resetLoginButton();
-            }
-            
-        } else {
-            // Failed validation
-            const errorMessages = validationResult.errors && validationResult.errors.length > 0 
-                ? validationResult.errors.join(' ') 
-                : validationResult.message || 'Login validation failed.';
-            
-            showLoginError(errorMessages);
-            resetLoginButton();
-        }
-        
-    } catch (error) {
-        showLoginError('Login failed. Please try again.');
-        resetLoginButton();
+        setTimeout(() => {
+            errorMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+    }
+    
+    // Hide success message
+    const successMessage = document.getElementById('loginSuccessMessage');
+    if (successMessage) {
+        successMessage.classList.add('hidden');
     }
 }
+
+function showLoginSuccess(message) {
+    const successMessage = document.getElementById('loginSuccessMessage');
+    if (successMessage) {
+        const successText = document.getElementById('loginSuccessText');
+        if (successText) {
+            successText.textContent = message;
+        }
+        successMessage.classList.remove('hidden');
+    }
+    
+    // Hide error message
+    const errorMessage = document.getElementById('loginErrorMessage');
+    if (errorMessage) {
+        errorMessage.classList.add('hidden');
+    }
+}
+
+function hideMessages() {
+    const errorMessage = document.getElementById('loginErrorMessage');
+    if (errorMessage) {
+        errorMessage.classList.add('hidden');
+    }
+    
+    const successMessage = document.getElementById('loginSuccessMessage');
+    if (successMessage) {
+        successMessage.classList.add('hidden');
+    }
+}
+
+function showOTPSendingComplete() {
+    const successIcon = document.getElementById('loginSuccessIcon');
+    const successSpinner = document.getElementById('loginSuccessSpinner');
+    const successText = document.getElementById('loginSuccessText');
+    
+    if (successIcon && successSpinner && successText) {
+        // Hide spinner and show check icon
+        successSpinner.classList.add('hidden');
+        successIcon.classList.remove('hidden');
+        
+        // Update text
+        successText.textContent = 'Verification code sent successfully! Check your email.';
+    }
+}
+
+// Make sure other functions are globally accessible
+window.togglePassword = function() {
+    const passwordField = document.getElementById('loginPassword');
+    if (passwordField) {
+        const type = passwordField.type === 'password' ? 'text' : 'password';
+        passwordField.type = type;
+    }
+};
+
+window.goToRegister = function() {
+    if (typeof showRegister === 'function') {
+        showRegister();
+    }
+};

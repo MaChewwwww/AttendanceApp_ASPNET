@@ -18,6 +18,7 @@ namespace AttendanceApp_ASPNET.Services
         Task<string> VerifyLoginOTPAsync(object verifyLoginData);
         Task<string> ValidateForgotPasswordEmailAsync(object emailData);
         Task<string> SendPasswordResetOTPAsync(object resetData);
+        Task<string> VerifyPasswordResetOTPAsync(object verifyData);
         string GetApiKey();
         string GetApiBaseUrl();
     }
@@ -336,6 +337,35 @@ namespace AttendanceApp_ASPNET.Services
             catch (Exception ex)
             {
                 throw new Exception($"Send password reset OTP failed: {ex.Message}", ex);
+            }
+        }
+
+        public async Task<string> VerifyPasswordResetOTPAsync(object verifyData)
+        {
+            try
+            {
+                var apiUrl = $"{_apiBaseUrl}/forgotPassword/verify-otp";
+                
+                var json = JsonSerializer.Serialize(verifyData);
+                var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                
+                _httpClient.DefaultRequestHeaders.Clear();
+                _httpClient.DefaultRequestHeaders.Add("AttendanceApp-API-Key", _apiKey);
+                _httpClient.DefaultRequestHeaders.Add("User-Agent", "AttendanceApp-ASPNET/1.0");
+                
+                var response = await _httpClient.PostAsync(apiUrl, content);
+                var responseContent = await response.Content.ReadAsStringAsync();
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new Exception($"Verify password reset OTP API returned {response.StatusCode}: {responseContent}");
+                }
+                
+                return responseContent;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Verify password reset OTP failed: {ex.Message}", ex);
             }
         }
     }
