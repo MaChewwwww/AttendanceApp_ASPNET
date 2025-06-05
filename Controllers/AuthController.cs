@@ -791,5 +791,132 @@ namespace AttendanceApp_ASPNET.Controllers
                 });
             }
         }
+
+        [HttpPost]
+        public async Task<IActionResult> ValidateForgotPasswordEmail([FromBody] JsonElement requestData)
+        {
+            try
+            {
+                // Extract email from request
+                var email = requestData.GetProperty("email").GetString() ?? "";
+
+                // Convert to the format expected by Python API
+                var forgotPasswordData = new
+                {
+                    email = email
+                };
+
+                var result = await _apiService.ValidateForgotPasswordEmailAsync(forgotPasswordData);
+                
+                // Parse the API response
+                var apiResponse = JsonSerializer.Deserialize<JsonElement>(result);
+                
+                bool isValid = false;
+                string message = "Email validation failed";
+                string[] errors = Array.Empty<string>();
+                
+                if (apiResponse.TryGetProperty("is_valid", out var isValidProperty))
+                {
+                    isValid = isValidProperty.GetBoolean();
+                }
+                
+                if (apiResponse.TryGetProperty("message", out var messageProperty))
+                {
+                    message = messageProperty.GetString() ?? message;
+                }
+                
+                if (apiResponse.TryGetProperty("errors", out var errorsProperty) && errorsProperty.ValueKind == JsonValueKind.Array)
+                {
+                    errors = errorsProperty.EnumerateArray()
+                        .Select(e => e.GetString())
+                        .Where(e => !string.IsNullOrEmpty(e))
+                        .ToArray();
+                }
+                
+                var response = new { 
+                    is_valid = isValid,
+                    message = message,
+                    errors = errors
+                };
+                
+                return Json(response);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { 
+                    is_valid = false, 
+                    message = $"Failed to validate email: {ex.Message}",
+                    errors = new[] { $"Validation failed: {ex.Message}" }
+                });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SendPasswordResetOTP([FromBody] JsonElement requestData)
+        {
+            try
+            {
+                // Extract email from request
+                var email = requestData.GetProperty("email").GetString() ?? "";
+
+                // Convert to the format expected by Python API
+                var resetOTPData = new
+                {
+                    email = email
+                };
+
+                var result = await _apiService.SendPasswordResetOTPAsync(resetOTPData);
+                
+                // Parse the API response
+                var apiResponse = JsonSerializer.Deserialize<JsonElement>(result);
+                
+                bool success = false;
+                string message = "Failed to send password reset instructions";
+                string otpId = "";
+                
+                if (apiResponse.TryGetProperty("success", out var successProperty))
+                {
+                    success = successProperty.GetBoolean();
+                }
+                
+                if (apiResponse.TryGetProperty("message", out var messageProperty))
+                {
+                    message = messageProperty.GetString() ?? message;
+                }
+                
+                if (apiResponse.TryGetProperty("otp_id", out var otpIdProperty))
+                {
+                    // Handle both string and number types for otp_id
+                    if (otpIdProperty.ValueKind == JsonValueKind.String)
+                    {
+                        otpId = otpIdProperty.GetString() ?? "";
+                    }
+                    else if (otpIdProperty.ValueKind == JsonValueKind.Number)
+                    {
+                        otpId = otpIdProperty.GetInt64().ToString();
+                    }
+                    else
+                    {
+                        otpId = otpIdProperty.ToString();
+                    }
+                }
+                
+                var response = new { 
+                    success = success,
+                    message = message,
+                    otp_id = otpId
+                };
+                
+                return Json(response);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { 
+                    success = false, 
+                    message = $"Failed to send password reset instructions: {ex.Message}",
+                    otp_id = ""
+                });
+            }
+        }
     }
 }

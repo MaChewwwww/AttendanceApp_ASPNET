@@ -16,6 +16,8 @@ namespace AttendanceApp_ASPNET.Services
         Task<string> ValidateLoginCredentialsAsync(object loginData);
         Task<string> SendLoginOTPAsync(object loginOTPData);
         Task<string> VerifyLoginOTPAsync(object verifyLoginData);
+        Task<string> ValidateForgotPasswordEmailAsync(object emailData);
+        Task<string> SendPasswordResetOTPAsync(object resetData);
         string GetApiKey();
         string GetApiBaseUrl();
     }
@@ -276,6 +278,64 @@ namespace AttendanceApp_ASPNET.Services
             catch (Exception ex)
             {
                 throw new Exception($"Verify login OTP failed: {ex.Message}", ex);
+            }
+        }
+
+        public async Task<string> ValidateForgotPasswordEmailAsync(object emailData)
+        {
+            try
+            {
+                var apiUrl = $"{_apiBaseUrl}/forgotPassword/validate-email";
+                
+                var json = JsonSerializer.Serialize(emailData);
+                var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                
+                _httpClient.DefaultRequestHeaders.Clear();
+                _httpClient.DefaultRequestHeaders.Add("AttendanceApp-API-Key", _apiKey);
+                _httpClient.DefaultRequestHeaders.Add("User-Agent", "AttendanceApp-ASPNET/1.0");
+                
+                var response = await _httpClient.PostAsync(apiUrl, content);
+                var responseContent = await response.Content.ReadAsStringAsync();
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new Exception($"Forgot password email validation API returned {response.StatusCode}: {responseContent}");
+                }
+                
+                return responseContent;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Forgot password email validation failed: {ex.Message}", ex);
+            }
+        }
+
+        public async Task<string> SendPasswordResetOTPAsync(object resetData)
+        {
+            try
+            {
+                var apiUrl = $"{_apiBaseUrl}/forgotPassword/send-reset-otp";
+                
+                var json = JsonSerializer.Serialize(resetData);
+                var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                
+                _httpClient.DefaultRequestHeaders.Clear();
+                _httpClient.DefaultRequestHeaders.Add("AttendanceApp-API-Key", _apiKey);
+                _httpClient.DefaultRequestHeaders.Add("User-Agent", "AttendanceApp-ASPNET/1.0");
+                
+                var response = await _httpClient.PostAsync(apiUrl, content);
+                var responseContent = await response.Content.ReadAsStringAsync();
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new Exception($"Send password reset OTP API returned {response.StatusCode}: {responseContent}");
+                }
+                
+                return responseContent;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Send password reset OTP failed: {ex.Message}", ex);
             }
         }
     }
