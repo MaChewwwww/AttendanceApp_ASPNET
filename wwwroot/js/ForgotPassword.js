@@ -968,26 +968,112 @@ async function verifyPasswordResetOTP() {
         const result = await verifyPasswordResetOTPWithAPI(window.currentForgotPasswordOtpId, otpCode);
         
         if (result.success) {
-            // Success flow - keep existing timing
-            verifyBtnText.textContent = 'Verified!';
-            verifyBtn.classList.remove('bg-orange-600', 'hover:bg-orange-700');
-            verifyBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+            // Enhanced success flow with beautiful animations
             
-            showPasswordResetOTPSuccess(result.message || 'Verification successful! Set your new password...');
-            
-            // Store session information for new password modal
-            window.currentPasswordResetSessionId = result.reset_token;
-            window.newPasswordEmail = window.forgotPasswordEmail;
-            
-            // Close OTP modal and show new password modal
-            setTimeout(() => {
-                closePasswordResetOTPModal();
-                
-                // Show new password modal after a brief delay
+            // Step 1: Immediate visual feedback on inputs (Green wave effect)
+            otpInputs.forEach((input, index) => {
                 setTimeout(() => {
-                    showNewPasswordModal();
-                }, 300);
-            }, 1500);
+                    input.classList.remove('processing-glow');
+                    input.classList.add('border-green-400', 'bg-green-50');
+                    input.style.borderColor = '#34d399';
+                    input.style.backgroundColor = '#f0fdf4';
+                    input.style.transform = 'scale(1.05)';
+                    input.style.boxShadow = '0 0 0 3px rgba(52, 211, 153, 0.3)';
+                    
+                    // Add checkmark animation overlay
+                    const checkmark = document.createElement('div');
+                    checkmark.innerHTML = '✓';
+                    checkmark.style.cssText = `
+                        position: absolute;
+                        top: 50%;
+                        left: 50%;
+                        transform: translate(-50%, -50%) scale(0);
+                        color: #10b981;
+                        font-size: 18px;
+                        font-weight: bold;
+                        pointer-events: none;
+                        animation: checkmarkPop 0.6s ease-out forwards;
+                        z-index: 10;
+                    `;
+                    
+                    // Position relative for checkmark overlay
+                    const inputContainer = input.parentElement;
+                    if (inputContainer && !inputContainer.style.position) {
+                        inputContainer.style.position = 'relative';
+                    }
+                    input.style.position = 'relative';
+                    input.appendChild(checkmark);
+                    
+                    // Remove checkmark after animation
+                    setTimeout(() => {
+                        if (checkmark.parentNode) {
+                            checkmark.remove();
+                        }
+                    }, 800);
+                    
+                }, index * 80); // Staggered wave effect
+            });
+            
+            // Step 2: Button success animation
+            setTimeout(() => {
+                verifyBtnText.textContent = 'Verified!';
+                verifySpinner.classList.add('hidden');
+                verifyBtn.classList.remove('bg-orange-600', 'hover:bg-orange-700');
+                verifyBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+                
+                // Add success icon to button
+                const successIcon = document.createElement('span');
+                successIcon.innerHTML = '✓';
+                successIcon.style.cssText = `
+                    display: inline-block;
+                    margin-left: 8px;
+                    font-size: 16px;
+                    font-weight: bold;
+                    animation: bounceIn 0.6s ease-out;
+                `;
+                verifyBtnText.appendChild(successIcon);
+                
+                // Button pulse effect
+                verifyBtn.style.animation = 'successPulse 0.8s ease-out';
+                
+            }, 500);
+            
+            // Step 3: Success message with enhanced animation
+            setTimeout(() => {
+                showPasswordResetOTPSuccess(result.message || 'Verification successful! Redirecting to set new password...');
+                
+                // Add confetti-like effect
+                createSuccessParticles();
+                
+            }, 800);
+            
+            // Step 4: Enhanced modal transition
+            setTimeout(() => {
+                // Store session information for new password modal
+                window.currentPasswordResetSessionId = result.reset_token;
+                window.newPasswordEmail = window.forgotPasswordEmail;
+                
+                // Fade out current modal with scale animation
+                const modalContent = document.getElementById('passwordResetOTPModalContent');
+                if (modalContent) {
+                    modalContent.style.transition = 'all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+                    modalContent.style.transform = 'scale(0.8)';
+                    modalContent.style.opacity = '0';
+                    modalContent.style.filter = 'blur(2px)';
+                }
+                
+                // Close OTP modal and show new password modal
+                setTimeout(() => {
+                    closePasswordResetOTPModal();
+                    
+                    // Show new password modal with slide-in effect
+                    setTimeout(() => {
+                        showNewPasswordModal();
+                    }, 200);
+                }, 600);
+                
+            }, 2000); // Give more time to appreciate the success state
+            
         } else {
             // Enhanced failure flow with better UX and specific error messages
             
@@ -1253,11 +1339,183 @@ function resetPasswordResetResendButton() {
     }
 }
 
-// Make new functions globally accessible
+// Create success particles animation
+function createSuccessParticles() {
+    const modal = document.getElementById('passwordResetOTPModal');
+    if (!modal) return;
+    
+    // Create particles container
+    const particlesContainer = document.createElement('div');
+    particlesContainer.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 9999;
+        overflow: hidden;
+    `;
+    
+    // Create multiple particles
+    const colors = ['#10b981', '#34d399', '#6ee7b7', '#a7f3d0', '#d1fae5'];
+    const shapes = ['✓', '★', '●', '◆', '▲'];
+    
+    for (let i = 0; i < 15; i++) {
+        const particle = document.createElement('div');
+        const shape = shapes[Math.floor(Math.random() * shapes.length)];
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        const size = Math.random() * 20 + 10;
+        const startX = Math.random() * window.innerWidth;
+        const startY = window.innerHeight + 20;
+        const endX = startX + (Math.random() - 0.5) * 200;
+        const endY = -50;
+        const duration = Math.random() * 2 + 2;
+        const delay = Math.random() * 0.5;
+        
+        particle.innerHTML = shape;
+        particle.style.cssText = `
+            position: absolute;
+            left: ${startX}px;
+            top: ${startY}px;
+            font-size: ${size}px;
+            color: ${color};
+            font-weight: bold;
+            pointer-events: none;
+            animation: floatUp ${duration}s ease-out ${delay}s forwards;
+        `;
+        
+        particlesContainer.appendChild(particle);
+    }
+    
+    document.body.appendChild(particlesContainer);
+    
+    // Remove particles after animation
+    setTimeout(() => {
+        if (particlesContainer.parentNode) {
+            particlesContainer.remove();
+        }
+    }, 4000);
+}
+
+// Add CSS animations to document head if not already present
+function addSuccessAnimations() {
+    if (document.getElementById('success-animations')) return;
+    
+    const style = document.createElement('style');
+    style.id = 'success-animations';
+    style.textContent = `
+        @keyframes checkmarkPop {
+            0% {
+                transform: translate(-50%, -50%) scale(0) rotate(-45deg);
+                opacity: 0;
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.2) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(1) rotate(0deg);
+                opacity: 0.8;
+            }
+        }
+        
+        @keyframes successPulse {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            }
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+            }
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+            }
+        }
+        
+        @keyframes bounceIn {
+            0% {
+                transform: scale(0) rotate(-180deg);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.3) rotate(-90deg);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1) rotate(0deg);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes floatUp {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-${window.innerHeight + 100}px) rotate(360deg);
+                opacity: 0;
+            }
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+        
+        .processing-glow {
+            animation: processingGlow 2s ease-in-out infinite;
+        }
+        
+        @keyframes processingGlow {
+            0%, 100% {
+                box-shadow: 0 0 5px rgba(251, 146, 60, 0.3);
+            }
+            50% {
+                box-shadow: 0 0 20px rgba(251, 146, 60, 0.8);
+            }
+        }
+        
+        /* Strikethrough animation for resend button */
+        .strikethrough-animate {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .strikethrough-animate.active::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background-color: currentColor;
+            transform: translateX(-100%);
+            animation: strikethrough 0.3s ease-out forwards;
+        }
+        
+        @keyframes strikethrough {
+            to {
+                transform: translateX(0);
+            }
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+// Initialize animations when the script loads
+addSuccessAnimations();
+
+// Make all functions globally accessible
 window.showPasswordResetOTPModal = showPasswordResetOTPModal;
 window.closePasswordResetOTPModal = closePasswordResetOTPModal;
 window.verifyPasswordResetOTP = verifyPasswordResetOTP;
 window.resendPasswordResetOTP = resendPasswordResetOTP;
+window.createSuccessParticles = createSuccessParticles;
 
 // Make functions globally accessible
 window.showForgotPasswordModal = showForgotPasswordModal;
