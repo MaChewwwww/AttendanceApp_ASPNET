@@ -330,7 +330,7 @@
                 // CRITICAL: Clear register content immediately to prevent flash
                 const registerContent = registerSection.querySelector('.h-full');
                 if (registerContent) {
-                    registerContent.innerHTML = '<div class="p-6 h-full"><div class="text-center flex flex-col items-center justify-center h-full"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div><p class="text-gray-600">Loading...</p></div></div>';
+                    registerContent.innerHTML = '<div class="p-6 h-full"><div class="text-center flex flex-col items-center justify-center h-full"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div><p class="text-gray-600">Loading...</p></div></div>';
                 }
                 
                 // Update tabs with animation
@@ -554,29 +554,15 @@
                 // CRITICAL: Clear any existing register content to prevent flash
                 const registerContent = registerSection.querySelector('.h-full');
                 if (registerContent) {
-                    registerContent.innerHTML = '<div class="p-6 h-full"><div class="text-center flex flex-col items-center justify-center h-full"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div><p class="text-gray-600">Loading...</p></div></div>';
+                    registerContent.innerHTML = '<div class="p-6 h-full"><div class="text-center flex flex-col items-center justify-center h-full"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div><p class="text-gray-600">Loading...</p></div></div>';
                 }
                 
-                // Animate login section into view
-                setTimeout(() => {
-                    loginSection.style.transition = 'transform 0.6s ease-out, opacity 0.6s ease-out';
-                    loginSection.style.transform = 'translateX(0)';
-                    loginSection.style.opacity = '1';
-                    
-                    setTimeout(() => {
-                        loginSection.style.transition = '';
-                        loginSection.style.transform = '';
-                        loginSection.style.opacity = '';
-                        
-                        // Only load login content AFTER the animation completes
-                        // and we're sure user isn't navigating away
-                        setTimeout(() => {
-                            if (currentView === 'login' && !isTransitioning) {
-                                loadLoginContent();
-                            }
-                        }, 100);
-                    }, 600);
-                }, 100);
+                // Show login section immediately without animation
+                loginSection.style.transform = 'translateX(0)';
+                loginSection.style.opacity = '1';
+                
+                // Load login content immediately for direct navigation
+                loadLoginContent();
                 
                 // ABSOLUTELY DO NOT load register content when on login page
                 console.log('Login page initialized - register content cleared');
