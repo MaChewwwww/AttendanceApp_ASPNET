@@ -28,10 +28,15 @@
     <!-- Success Message -->
     <div id="loginSuccessMessage" class="hidden mb-4 rounded-lg bg-green-50 border border-green-200 p-3 animate-slide-down">
         <div class="flex items-center">
-            <svg class="w-4 h-4 text-green-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+            <svg id="loginSuccessIcon" class="w-4 h-4 text-green-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
             </svg>
-            <p class="text-sm font-medium text-green-800">Login successful! Redirecting to dashboard...</p>
+            <!-- Loading spinner - initially hidden -->
+            <svg id="loginSuccessSpinner" class="hidden w-4 h-4 text-green-400 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p id="loginSuccessText" class="text-sm font-medium text-green-800">Validation successful! Sending login OTP code...</p>
         </div>
     </div>
 
@@ -61,10 +66,7 @@
         </div>
         
         <div class="flex items-center justify-between">
-            <label class="flex items-center">
-                <input type="checkbox" id="rememberMe" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded transition-colors">
-                <span class="ml-2 text-sm text-gray-600">Remember me</span>
-            </label>
+            <div></div> <!-- Empty div to maintain spacing -->
             <a href="#" class="text-sm text-blue-600 hover:text-blue-700 transition-colors">Forgot password?</a>
         </div>
         
@@ -94,7 +96,153 @@
     </div>
 </div>
 
+<!-- OTP Verification Modal -->
+<div id="otpModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden flex items-center justify-center">
+    <div class="relative mx-auto p-8 border w-full max-w-md shadow-2xl rounded-xl bg-white animate-slide-in">
+        <!-- Modal Header -->
+        <div class="text-center mb-8">
+            <div class="mx-auto w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center mb-6">
+                <svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path>
+                    <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path>
+                </svg>
+            </div>
+            <h3 class="text-xl font-bold text-gray-800 mb-3">Email Verification</h3>
+            <p class="text-gray-600 text-base">
+                Enter the 6-digit verification code sent to your email
+            </p>
+        </div>
+
+        <!-- OTP Error Message -->
+        <div id="otpErrorMessage" class="hidden mb-6 rounded-lg bg-red-50 border border-red-200 p-4">
+            <div class="flex items-center">
+                <svg class="w-5 h-5 text-red-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                </svg>
+                <p class="text-base font-medium text-red-800"></p>
+            </div>
+        </div>
+
+        <!-- OTP Success Message -->
+        <div id="otpSuccessMessage" class="hidden mb-6 rounded-lg bg-green-50 border border-green-200 p-4">
+            <div class="flex items-center">
+                <svg class="w-5 h-5 text-green-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                </svg>
+                <p class="text-base font-medium text-green-800">Login successful! Redirecting...</p>
+            </div>
+        </div>
+
+        <!-- OTP Input Section -->
+        <div class="mb-8">
+            <label class="block text-base font-medium text-gray-700 mb-4 text-center">
+                Enter Verification Code
+            </label>
+            
+            <!-- OTP Input Fields -->
+            <div class="flex justify-center space-x-3 mb-6">
+                <input type="text" id="otpInput1" maxlength="1" class="w-12 h-12 text-center border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-xl font-semibold" />
+                <input type="text" id="otpInput2" maxlength="1" class="w-12 h-12 text-center border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-xl font-semibold" />
+                <input type="text" id="otpInput3" maxlength="1" class="w-12 h-12 text-center border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-xl font-semibold" />
+                <input type="text" id="otpInput4" maxlength="1" class="w-12 h-12 text-center border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-xl font-semibold" />
+                <input type="text" id="otpInput5" maxlength="1" class="w-12 h-12 text-center border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-xl font-semibold" />
+                <input type="text" id="otpInput6" maxlength="1" class="w-12 h-12 text-center border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-xl font-semibold" />
+            </div>
+            
+            <!-- Resend OTP -->
+            <div class="text-center">
+                <button id="resendLoginOtpBtn" onclick="resendLoginOTP()" class="text-blue-600 hover:text-blue-700 text-base font-medium underline transition-colors disabled:text-gray-400 disabled:line-through disabled:no-underline disabled:cursor-not-allowed">
+                    Resend Code
+                </button>
+            </div>
+        </div>
+
+        <!-- Modal Buttons -->
+        <div class="flex space-x-4">
+            <button onclick="closeOTPModal()" class="flex-1 bg-gray-300 text-gray-700 py-3 px-6 rounded-lg hover:bg-gray-400 transition-colors font-medium text-base">
+                Cancel
+            </button>
+            <button id="verifyLoginOtpBtn" onclick="verifyLoginOTP()" disabled 
+                    class="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium text-base disabled:opacity-50 disabled:cursor-not-allowed">
+                <span id="verifyLoginButtonText">Verify & Login</span>
+                <svg id="verifyLoginSpinner" class="hidden animate-spin -mr-1 ml-2 h-5 w-5 text-white inline" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            </button>
+        </div>
+        
+        <!-- Important Notes -->
+        <div class="mt-6 bg-blue-50 rounded-lg p-4 border border-blue-200">
+            <div class="flex items-start">
+                <svg class="w-5 h-5 text-blue-400 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                </svg>
+                <div>
+                    <h4 class="text-sm font-medium text-blue-800 mb-2">Important:</h4>
+                    <ul class="text-sm text-blue-700 space-y-1">
+                        <li>• Check your email inbox and spam folder</li>
+                        <li>• Code expires in 10 minutes</li>
+                        <li>• Click "Resend Code" if needed</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- OTP Verification Fallback Modal - initially hidden -->
+<div id="otpModalFallback" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden flex items-center justify-center">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-lg bg-white">
+        <!-- Modal Header -->
+        <div class="text-center mb-6">
+            <div class="mx-auto w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mb-4">
+                <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path>
+                    <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path>
+                </svg>
+            </div>
+            <h3 class="text-lg font-bold text-gray-800 mb-2">Email Verification</h3>
+            <p class="text-gray-600 text-sm">Enter the 6-digit verification code sent to your email</p>
+        </div>
+
+        <!-- OTP Input Section -->
+        <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-3 text-center">Enter Verification Code</label>
+            
+            <!-- OTP Input Fields -->
+            <div class="flex justify-center space-x-2 mb-4">
+                <input type="text" id="otpInputFallback1" maxlength="1" class="w-10 h-10 text-center border-2 border-gray-300 rounded-lg focus:border-blue-500 text-lg font-semibold" />
+                <input type="text" id="otpInputFallback2" maxlength="1" class="w-10 h-10 text-center border-2 border-gray-300 rounded-lg focus:border-blue-500 text-lg font-semibold" />
+                <input type="text" id="otpInputFallback3" maxlength="1" class="w-10 h-10 text-center border-2 border-gray-300 rounded-lg focus:border-blue-500 text-lg font-semibold" />
+                <input type="text" id="otpInputFallback4" maxlength="1" class="w-10 h-10 text-center border-2 border-gray-300 rounded-lg focus:border-blue-500 text-lg font-semibold" />
+                <input type="text" id="otpInputFallback5" maxlength="1" class="w-10 h-10 text-center border-2 border-gray-300 rounded-lg focus:border-blue-500 text-lg font-semibold" />
+                <input type="text" id="otpInputFallback6" maxlength="1" class="w-10 h-10 text-center border-2 border-gray-300 rounded-lg focus:border-blue-500 text-lg font-semibold" />
+            </div>
+            
+            <!-- Resend OTP for fallback -->
+            <div class="text-center">
+                <button id="resendFallbackOtpBtn" onclick="resendFallbackOTP()" class="text-blue-600 hover:text-blue-700 text-sm font-medium underline transition-colors disabled:text-gray-400 disabled:line-through disabled:no-underline disabled:cursor-not-allowed">
+                    Resend Code
+                </button>
+            </div>
+        </div>
+
+        <!-- Modal Buttons -->
+        <div class="flex space-x-3">
+            <button onclick="closeFallbackOTPModal()" class="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors font-medium text-sm">Cancel</button>
+            <button id="verifyFallbackOtpBtn" onclick="verifyFallbackOTP()" disabled class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm disabled:opacity-50">
+                <span id="verifyFallbackButtonText">Verify & Login</span>
+            </button>
+        </div>
+    </div>
+</div>
+
 <script>
+// Global variables for OTP functionality
+let currentLoginOtpId = null;
+let loginEmail = '';
+
 // Global functions - much simpler approach
 function togglePassword() {
     const passwordField = document.getElementById('loginPassword');
@@ -106,66 +254,79 @@ function goToRegister() {
     window.location.href = '/Auth/Register';
 }
 
-// Main login function - now global and simple
-async function performLogin() {
-    console.log('=== PERFORM LOGIN CALLED ===');
-    
-    const loginButton = document.getElementById('loginButton');
-    const loginButtonText = document.getElementById('loginButtonText');
-    
-    // Set loading state
-    loginButton.disabled = true;
-    loginButtonText.textContent = 'Signing In...';
-    
-    // Hide previous messages
-    hideMessages();
-    
-    try {
-        const email = document.getElementById('loginEmail').value.trim();
-        const password = document.getElementById('loginPassword').value;
-        
-        console.log('Email:', email);
-        console.log('Password length:', password.length);
-        
-        // Client-side validation
-        if (!email || !password) {
-            showLoginError('Please enter both email and password.');
-            resetLoginButton();
-            return;
-        }
-        
-        console.log('Starting API call...');
-        
-        // Validate with API
-        const validationResult = await validateLoginWithAPI({ email, password });
-        
-        console.log('API result:', validationResult);
-        
-        if (validationResult.success) {
-            // Success
-            showLoginSuccess();
-            loginButtonText.textContent = 'Login Successful!';
-            loginButton.classList.remove('bg-blue-600', 'hover:bg-blue-700');
-            loginButton.classList.add('bg-green-600', 'hover:bg-green-700');
-            
-            setTimeout(() => {
-                window.location.href = '/Dashboard';
-            }, 1500);
-        } else {
-            // Failed
-            const errorMessages = validationResult.errors && validationResult.errors.length > 0 
-                ? validationResult.errors.join(' ') 
-                : validationResult.message || 'Login validation failed.';
-            
-            showLoginError(errorMessages);
-            resetLoginButton();
-        }
-        
-    } catch (error) {
-        console.error('Login error:', error);
-        showLoginError('Login failed. Please try again.');
-        resetLoginButton();
+// Message display functions
+function showLoginError(message) {
+    const errorMessage = document.getElementById('loginErrorMessage');
+    if (errorMessage) {
+        const errorText = errorMessage.querySelector('p');
+        if (errorText) errorText.textContent = message;
+        errorMessage.classList.remove('hidden');
     }
+    
+    setTimeout(() => {
+        errorMessage?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+}
+
+function showLoginSuccess() {
+    const successMessage = document.getElementById('loginSuccessMessage');
+    const successIcon = document.getElementById('loginSuccessIcon');
+    const successSpinner = document.getElementById('loginSuccessSpinner');
+    const successText = document.getElementById('loginSuccessText');
+    
+    if (successMessage) {
+        successMessage.classList.remove('hidden');
+    }
+    
+    // Show spinner and hide checkmark icon during OTP sending
+    if (successIcon) {
+        successIcon.classList.add('hidden');
+    }
+    if (successSpinner) {
+        successSpinner.classList.remove('hidden');
+    }
+    if (successText) {
+        successText.innerHTML = 'Validation successful! <span class="animate-pulse">Sending login OTP code...</span>';
+    }
+}
+
+function showOTPSendingComplete() {
+    const successIcon = document.getElementById('loginSuccessIcon');
+    const successSpinner = document.getElementById('loginSuccessSpinner');
+    const successText = document.getElementById('loginSuccessText');
+    
+    // Hide spinner and show checkmark icon when OTP sending is complete
+    if (successSpinner) {
+        successSpinner.classList.add('hidden');
+    }
+    if (successIcon) {
+        successIcon.classList.remove('hidden');
+    }
+    if (successText) {
+        successText.innerHTML = 'OTP sent successfully! Please check your email.';
+    }
+}
+
+function hideMessages() {
+    const errorMessage = document.getElementById('loginErrorMessage');
+    const successMessage = document.getElementById('loginSuccessMessage');
+    
+    if (errorMessage) errorMessage.classList.add('hidden');
+    if (successMessage) successMessage.classList.add('hidden');
+}
+
+function resetLoginButton() {
+    setTimeout(() => {
+        const loginButton = document.getElementById('loginButton');
+        const loginButtonText = document.getElementById('loginButtonText');
+        
+        if (loginButton) {
+            loginButton.disabled = false;
+            loginButton.classList.remove('bg-green-600', 'hover:bg-green-700');
+            loginButton.classList.add('bg-blue-600', 'hover:bg-blue-700');
+        }
+        if (loginButtonText) loginButtonText.textContent = 'Sign In';
+    }, 1000);
 }
 
 // API validation function
@@ -218,40 +379,733 @@ async function validateLoginWithAPI(loginData) {
     }
 }
 
-function resetLoginButton() {
-    setTimeout(() => {
-        const loginButton = document.getElementById('loginButton');
-        const loginButtonText = document.getElementById('loginButtonText');
+// Send Login OTP
+async function sendLoginOTP(email) {
+    try {
+        const apiUrl = '/Auth/SendLoginOTP';
+        const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
         
-        loginButton.disabled = false;
-        loginButton.classList.remove('bg-green-600', 'hover:bg-green-700');
-        loginButton.classList.add('bg-blue-600', 'hover:bg-blue-700');
-        loginButtonText.textContent = 'Sign In';
+        const requestData = { email: email };
+        
+        const requestOptions = {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "RequestVerificationToken": token
+            },
+            body: JSON.stringify(requestData)
+        };
+
+        const response = await fetch(apiUrl, requestOptions);
+        const responseText = await response.text();
+        const result = JSON.parse(responseText);
+        
+        return {
+            success: result.success || false,
+            message: result.message || '',
+            otp_id: result.otp_id || null
+        };
+        
+    } catch (error) {
+        console.error('Send login OTP error:', error);
+        return { 
+            success: false, 
+            message: `Network Error: ${error.message}` 
+        };
+    }
+}
+
+// MAIN LOGIN FUNCTION
+async function performLogin() {
+    console.log('=== PERFORM LOGIN CALLED ===');
+    
+    const loginButton = document.getElementById('loginButton');
+    const loginButtonText = document.getElementById('loginButtonText');
+    
+    // Set loading state
+    loginButton.disabled = true;
+    loginButtonText.textContent = 'Signing In...';
+    
+    // Hide previous messages
+    hideMessages();
+    
+    try {
+        const email = document.getElementById('loginEmail').value.trim();
+        const password = document.getElementById('loginPassword').value;
+        
+        loginEmail = email; // Store for OTP process
+        
+        console.log('Email:', email);
+        console.log('Password length:', password.length);
+        
+        // Client-side validation
+        if (!email || !password) {
+            showLoginError('Please enter both email and password.');
+            resetLoginButton();
+            return;
+        }
+        
+        console.log('Starting API call...');
+        
+        // Validate with API first
+        const validationResult = await validateLoginWithAPI({ email, password });
+        
+        console.log('API result:', validationResult);
+        
+        if (validationResult.success) {
+            // Validation successful - now send OTP
+            showLoginSuccess();
+            loginButtonText.textContent = 'Sending OTP...';
+            
+            // Send OTP
+            const otpResult = await sendLoginOTP(email);
+            
+            if (otpResult.success) {
+                currentLoginOtpId = otpResult.otp_id;
+                
+                // Show completion state
+                showOTPSendingComplete();
+                
+                // Show OTP modal after a brief delay to show completion
+                setTimeout(() => {
+                    console.log('About to show OTP modal...');
+                    try {
+                        showOTPModal();
+                        console.log('OTP modal shown successfully');
+                    } catch (modalError) {
+                        console.error('Error showing OTP modal:', modalError);
+                        showLoginError('Failed to show verification dialog. Please try again.');
+                        resetLoginButton();
+                        return;
+                    }
+                }, 800);
+                
+                resetLoginButton();
+            } else {
+                showLoginError(otpResult.message || 'Failed to send verification code. Please try again.');
+                resetLoginButton();
+            }
+            
+        } else {
+            // Failed validation
+            const errorMessages = validationResult.errors && validationResult.errors.length > 0 
+                ? validationResult.errors.join(' ') 
+                : validationResult.message || 'Login validation failed.';
+            
+            showLoginError(errorMessages);
+            resetLoginButton();
+        }
+        
+    } catch (error) {
+        console.error('Login error:', error);
+        showLoginError('Login failed. Please try again.');
+        resetLoginButton();
+    }
+}
+
+// OTP Modal Functions
+function showOTPModal() {
+    console.log('=== SHOW OTP MODAL CALLED ===');
+    
+    // Wait a bit to ensure DOM is fully loaded
+    setTimeout(() => {
+        const otpModal = document.getElementById('otpModal');
+        console.log('Looking for otpModal element...');
+        console.log('otpModal element:', otpModal);
+        console.log('Document ready state:', document.readyState);
+        
+        if (!otpModal) {
+            console.error('OTP Modal element not found!');
+            console.log('Available elements with IDs:');
+            const allElementsWithId = document.querySelectorAll('[id]');
+            allElementsWithId.forEach(el => {
+                console.log(`- ${el.id}: ${el.tagName}`);
+            });
+            
+            // Try to find modal by class instead
+            const modalByClass = document.querySelector('.fixed.inset-0.bg-gray-600');
+            console.log('Modal found by class:', modalByClass);
+            
+            if (modalByClass) {
+                console.log('Using modal found by class selector');
+                modalByClass.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+                setupOTPInputsAlternative();
+                return;
+            }
+            
+            // Fallback: Create modal if it doesn't exist
+            console.log('Creating modal as fallback...');
+            createOTPModalFallback();
+            return;
+        }
+        
+        console.log('OTP Modal found, showing...');
+        otpModal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        
+        // Clear any existing messages
+        hideOTPMessages();
+        
+        // Clear OTP inputs
+        for (let i = 1; i <= 6; i++) {
+            const input = document.getElementById(`otpInput${i}`);
+            if (input) {
+                input.value = '';
+            }
+        }
+        
+        // Reset verify button
+        const verifyBtn = document.getElementById('verifyLoginOtpBtn');
+        if (verifyBtn) {
+            verifyBtn.disabled = true;
+            verifyBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+            verifyBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+        }
+        
+        const verifyBtnText = document.getElementById('verifyLoginButtonText');
+        if (verifyBtnText) {
+            verifyBtnText.textContent = 'Verify & Login';
+        }
+        
+        const verifySpinner = document.getElementById('verifyLoginSpinner');
+        if (verifySpinner) {
+            verifySpinner.classList.add('hidden');
+        }
+        
+        // Focus first OTP input after a small delay
+        setTimeout(() => {
+            const firstInput = document.getElementById('otpInput1');
+            if (firstInput) {
+                firstInput.focus();
+                console.log('First OTP input focused');
+            } else {
+                console.error('First OTP input not found!');
+            }
+        }, 200);
+        
+        // Setup OTP inputs
+        setupOTPInputs();
+        
+        console.log('OTP Modal should now be visible');
+    }, 100);
+}
+
+function closeOTPModal() {
+    console.log('=== CLOSE OTP MODAL CALLED ===');
+    
+    const otpModal = document.getElementById('otpModal');
+    if (otpModal) {
+        otpModal.classList.add('hidden');
+    }
+    
+    document.body.style.overflow = 'auto'; // Restore scrolling
+    
+    // Clear OTP inputs
+    for (let i = 1; i <= 6; i++) {
+        const input = document.getElementById(`otpInput${i}`);
+        if (input) {
+            input.value = '';
+        }
+    }
+    
+    // Clear any messages
+    hideOTPMessages();
+    
+    // Reset verify button
+    const verifyBtn = document.getElementById('verifyLoginOtpBtn');
+    if (verifyBtn) {
+        verifyBtn.disabled = true;
+    }
+    
+    console.log('OTP Modal closed');
+}
+
+function setupOTPInputs() {
+    console.log('=== SETUP OTP INPUTS CALLED ===');
+    
+    const otpInputs = [];
+    let allInputsFound = true;
+    
+    for (let i = 1; i <= 6; i++) {
+        const input = document.getElementById(`otpInput${i}`);
+        if (input) {
+            otpInputs.push(input);
+        } else {
+            console.error(`OTP input ${i} not found!`);
+            allInputsFound = false;
+        }
+    }
+    
+    if (!allInputsFound) {
+        console.error('Not all OTP inputs found, setup aborted');
+        return;
+    }
+    
+    console.log('All OTP inputs found, setting up event listeners...');
+    
+    function getOTPValue() {
+        return otpInputs.map(input => input.value).join('');
+    }
+    
+    function checkOTPComplete() {
+        const otpValue = getOTPValue();
+        const verifyBtn = document.getElementById('verifyLoginOtpBtn');
+        if (verifyBtn) {
+            verifyBtn.disabled = otpValue.length !== 6;
+        }
+    }
+    
+    // Remove any existing event listeners first to prevent duplicates
+    otpInputs.forEach((input, index) => {
+        // Clone the node to remove all event listeners
+        const newInput = input.cloneNode(true);
+        input.parentNode.replaceChild(newInput, input);
+        otpInputs[index] = newInput; // Update reference
+    });
+    
+    // Auto-focus and move to next input
+    otpInputs.forEach((input, index) => {
+        input.addEventListener('input', function(e) {
+            // Only allow numbers
+            this.value = this.value.replace(/[^0-9]/g, '');
+            
+            // Move to next input if current is filled
+            if (this.value.length === 1 && index < otpInputs.length - 1) {
+                otpInputs[index + 1].focus();
+            }
+            
+            // Check if all inputs are filled
+            checkOTPComplete();
+        });
+        
+        input.addEventListener('keydown', function(e) {
+            // Move to previous input on backspace
+            if (e.key === 'Backspace' && this.value === '' && index > 0) {
+                otpInputs[index - 1].focus();
+            }
+        });
+        
+        input.addEventListener('paste', function(e) {
+            e.preventDefault();
+            const paste = (e.clipboardData || window.clipboardData).getData('text');
+            const pasteArray = paste.split('').filter(char => /[0-9]/.test(char));
+            
+            pasteArray.forEach((char, pasteIndex) => {
+                if (index + pasteIndex < otpInputs.length) {
+                    otpInputs[index + pasteIndex].value = char;
+                }
+            });
+            
+            checkOTPComplete();
+        });
+    });
+    
+    console.log('OTP inputs setup completed');
+}
+
+async function verifyLoginOTP() {
+    const otpInputs = [];
+    for (let i = 1; i <= 6; i++) {
+        otpInputs.push(document.getElementById(`otpInput${i}`));
+    }
+    
+    const otpCode = otpInputs.map(input => input.value).join('');
+    
+    if (otpCode.length !== 6) {
+        showOTPError('Please enter the complete 6-digit verification code.');
+        return;
+    }
+    
+    if (!currentLoginOtpId) {
+        showOTPError('OTP session expired. Please try logging in again.');
+        return;
+    }
+    
+    // Set loading state
+    const verifyBtn = document.getElementById('verifyLoginOtpBtn');
+    verifyBtn.disabled = true;
+    document.getElementById('verifyLoginButtonText').textContent = 'Verifying...';
+    document.getElementById('verifyLoginSpinner').classList.remove('hidden');
+    
+    try {
+        const result = await verifyLoginOTPWithAPI(currentLoginOtpId, otpCode);
+        
+        if (result.success) {
+            showOTPSuccess('Login successful! Redirecting to dashboard...');
+            
+            // Show success animation
+            document.getElementById('verifyLoginButtonText').textContent = 'Login Successful!';
+            
+            // Wait for user to see success message then redirect
+            setTimeout(() => {
+                closeOTPModal();
+                window.location.href = '/Dashboard';
+            }, 2000);
+            
+        } else {
+            showOTPError(result.message || 'OTP verification failed. Please try again.');
+            
+            // Reset button state
+            verifyBtn.disabled = false;
+            document.getElementById('verifyLoginButtonText').textContent = 'Verify & Login';
+            document.getElementById('verifyLoginSpinner').classList.add('hidden');
+            
+            // Clear OTP inputs for retry
+            otpInputs.forEach(input => input.value = '');
+            otpInputs[0].focus();
+        }
+        
+    } catch (error) {
+        console.error('OTP verification failed:', error);
+        showOTPError('Verification failed. Please try again.');
+        
+        // Reset button state
+        verifyBtn.disabled = false;
+        document.getElementById('verifyLoginButtonText').textContent = 'Verify & Login';
+        document.getElementById('verifyLoginSpinner').classList.add('hidden');
+    }
+}
+
+async function verifyLoginOTPWithAPI(otpId, otpCode) {
+    try {
+        const apiUrl = '/Auth/VerifyLoginOTP';
+        const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+        
+        const requestData = {
+            otp_id: otpId,
+            otp_code: otpCode
+        };
+        
+        const requestOptions = {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "RequestVerificationToken": token
+            },
+            body: JSON.stringify(requestData)
+        };
+
+        const response = await fetch(apiUrl, requestOptions);
+        const responseText = await response.text();
+        const result = JSON.parse(responseText);
+        
+        return {
+            success: result.success || false,
+            message: result.message || 'Verification failed',
+            user: result.user || null
+        };
+        
+    } catch (error) {
+        console.error('Verify login OTP error:', error);
+        return { 
+            success: false, 
+            message: `Network Error: ${error.message}` 
+        };
+    }
+}
+
+async function resendLoginOTP() {
+    if (!loginEmail) {
+        showOTPError('Session expired. Please try logging in again.');
+        return;
+    }
+    
+    const resendBtn = document.getElementById('resendLoginOtpBtn');
+    
+    // Disable button and show loading state
+    resendBtn.disabled = true;
+    resendBtn.textContent = 'Sending...';
+    resendBtn.classList.add('line-through', 'no-underline', 'text-gray-400');
+    resendBtn.classList.remove('text-blue-600', 'hover:text-blue-700', 'underline');
+    
+    try {
+        const result = await sendLoginOTP(loginEmail);
+        
+        if (result.success) {
+            currentLoginOtpId = result.otp_id;
+            showOTPSuccess('Verification code sent successfully!');
+            
+            // Start 5-minute cooldown timer
+            startResendCooldown(300); // 5 minutes = 300 seconds
+            
+        } else {
+            showOTPError(result.message || 'Failed to resend verification code.');
+            resetResendButton();
+        }
+        
+    } catch (error) {
+        console.error('Resend login OTP failed:', error);
+        showOTPError('Failed to resend verification code.');
+        resetResendButton();
+    }
+}
+
+function startResendCooldown(seconds) {
+    const resendBtn = document.getElementById('resendLoginOtpBtn');
+    let timeLeft = seconds;
+    
+    // Ensure button stays disabled and styled during countdown
+    resendBtn.disabled = true;
+    resendBtn.classList.add('line-through', 'no-underline', 'text-gray-400', 'cursor-not-allowed');
+    resendBtn.classList.remove('text-blue-600', 'hover:text-blue-700', 'underline');
+    
+    const countdown = setInterval(() => {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        const timeString = minutes > 0 ? `${minutes}:${seconds.toString().padStart(2, '0')}` : `${seconds}s`;
+        
+        resendBtn.textContent = `Resend Code (${timeString})`;
+        resendBtn.disabled = true;
+        
+        timeLeft--;
+        
+        if (timeLeft < 0) {
+            clearInterval(countdown);
+            resetResendButton();
+        }
     }, 1000);
 }
 
-function showLoginError(message) {
-    const errorMessage = document.getElementById('loginErrorMessage');
-    const errorText = errorMessage.querySelector('p');
-    errorText.textContent = message;
-    errorMessage.classList.remove('hidden');
-}
-
-function showLoginSuccess() {
-    const successMessage = document.getElementById('loginSuccessMessage');
-    successMessage.classList.remove('hidden');
-}
-
-function hideMessages() {
-    const errorMessage = document.getElementById('loginErrorMessage');
-    const successMessage = document.getElementById('loginSuccessMessage');
+function resetResendButton() {
+    const resendBtn = document.getElementById('resendLoginOtpBtn');
     
-    errorMessage.classList.add('hidden');
-    successMessage.classList.add('hidden');
+    // Reset button to original state
+    resendBtn.textContent = 'Resend Code';
+    resendBtn.disabled = false;
+    resendBtn.classList.remove('line-through', 'no-underline', 'text-gray-400', 'cursor-not-allowed');
+    resendBtn.classList.add('text-blue-600', 'hover:text-blue-700', 'underline');
 }
 
-// Add Enter key support
+// Update the fallback modal to include similar styling
+function createOTPModalFallback() {
+    console.log('Creating OTP modal as fallback...');
+    
+    const modalHTML = `
+    <div id="otpModalFallback" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-lg bg-white">
+            <!-- Modal Header -->
+            <div class="text-center mb-6">
+                <div class="mx-auto w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mb-4">
+                    <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path>
+                        <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-bold text-gray-800 mb-2">Email Verification</h3>
+                <p class="text-gray-600 text-sm">Enter the 6-digit verification code sent to your email</p>
+            </div>
+
+            <!-- OTP Input Section -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-3 text-center">Enter Verification Code</label>
+                
+                <!-- OTP Input Fields -->
+                <div class="flex justify-center space-x-2 mb-4">
+                    <input type="text" id="otpInputFallback1" maxlength="1" class="w-10 h-10 text-center border-2 border-gray-300 rounded-lg focus:border-blue-500 text-lg font-semibold" />
+                    <input type="text" id="otpInputFallback2" maxlength="1" class="w-10 h-10 text-center border-2 border-gray-300 rounded-lg focus:border-blue-500 text-lg font-semibold" />
+                    <input type="text" id="otpInputFallback3" maxlength="1" class="w-10 h-10 text-center border-2 border-gray-300 rounded-lg focus:border-blue-500 text-lg font-semibold" />
+                    <input type="text" id="otpInputFallback4" maxlength="1" class="w-10 h-10 text-center border-2 border-gray-300 rounded-lg focus:border-blue-500 text-lg font-semibold" />
+                    <input type="text" id="otpInputFallback5" maxlength="1" class="w-10 h-10 text-center border-2 border-gray-300 rounded-lg focus:border-blue-500 text-lg font-semibold" />
+                    <input type="text" id="otpInputFallback6" maxlength="1" class="w-10 h-10 text-center border-2 border-gray-300 rounded-lg focus:border-blue-500 text-lg font-semibold" />
+                </div>
+                
+                <!-- Resend OTP for fallback -->
+                <div class="text-center">
+                    <button id="resendFallbackOtpBtn" onclick="resendFallbackOTP()" class="text-blue-600 hover:text-blue-700 text-sm font-medium underline transition-colors disabled:text-gray-400 disabled:line-through disabled:no-underline disabled:cursor-not-allowed">
+                        Resend Code
+                    </button>
+                </div>
+            </div>
+
+            <!-- Modal Buttons -->
+            <div class="flex space-x-3">
+                <button onclick="closeFallbackOTPModal()" class="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors font-medium text-sm">Cancel</button>
+                <button id="verifyFallbackOtpBtn" onclick="verifyFallbackOTP()" disabled class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm disabled:opacity-50">
+                    <span id="verifyFallbackButtonText">Verify & Login</span>
+                </button>
+            </div>
+        </div>
+    </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    document.body.style.overflow = 'hidden';
+    
+    // Setup fallback OTP inputs
+    setupFallbackOTPInputs();
+    
+    // Focus first input
+    setTimeout(() => {
+        const firstInput = document.getElementById('otpInputFallback1');
+        if (firstInput) {
+            firstInput.focus();
+        }
+    }, 100);
+}
+
+function setupFallbackOTPInputs() {
+    const otpInputs = [];
+    for (let i = 1; i <= 6; i++) {
+        const input = document.getElementById(`otpInputFallback${i}`);
+        if (input) {
+            otpInputs.push(input);
+        }
+    }
+    
+    function checkOTPComplete() {
+        const otpValue = otpInputs.map(input => input.value).join('');
+        const verifyBtn = document.getElementById('verifyFallbackOtpBtn');
+        if (verifyBtn) {
+            verifyBtn.disabled = otpValue.length !== 6;
+        }
+    }
+    
+    otpInputs.forEach((input, index) => {
+        input.addEventListener('input', function(e) {
+            this.value = this.value.replace(/[^0-9]/g, '');
+            if (this.value.length === 1 && index < otpInputs.length - 1) {
+                otpInputs[index + 1].focus();
+            }
+            checkOTPComplete();
+        });
+        
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Backspace' && this.value === '' && index > 0) {
+                otpInputs[index - 1].focus();
+            }
+        });
+    });
+}
+
+function closeFallbackOTPModal() {
+    console.log('=== CLOSE FALLBACK OTP MODAL CALLED ===');
+    
+    const fallbackModal = document.getElementById('otpModalFallback');
+    if (fallbackModal) {
+        fallbackModal.remove();
+    }
+    document.body.style.overflow = 'auto';
+    
+    console.log('Fallback OTP Modal closed');
+}
+
+function verifyFallbackOTP() {
+    const otpInputs = [];
+    for (let i = 1; i <= 6; i++) {
+        const input = document.getElementById(`otpInputFallback${i}`);
+        if (input) {
+            otpInputs.push(input);
+        }
+    }
+    
+    const otpCode = otpInputs.map(input => input.value).join('');
+    
+    if (otpCode.length !== 6) {
+        alert('Please enter the complete 6-digit verification code.');
+        return;
+    }
+    
+    if (!currentLoginOtpId) {
+        alert('OTP session expired. Please try logging in again.');
+        return;
+    }
+    
+    // Set loading state
+    const verifyBtn = document.getElementById('verifyFallbackOtpBtn');
+    const verifyBtnText = document.getElementById('verifyFallbackButtonText');
+    
+    if (verifyBtn) verifyBtn.disabled = true;
+    if (verifyBtnText) verifyBtnText.textContent = 'Verifying...';
+    
+    // Call the same verification function
+    verifyLoginOTPWithAPI(currentLoginOtpId, otpCode)
+        .then(result => {
+            if (result.success) {
+                if (verifyBtnText) verifyBtnText.textContent = 'Login Successful!';
+                setTimeout(() => {
+                    closeFallbackOTPModal();
+                    window.location.href = '/Dashboard';
+                }, 2000);
+            } else {
+                alert(result.message || 'OTP verification failed. Please try again.');
+                if (verifyBtn) verifyBtn.disabled = false;
+                if (verifyBtnText) verifyBtnText.textContent = 'Verify & Login';
+                otpInputs.forEach(input => input.value = '');
+                otpInputs[0]?.focus();
+            }
+        })
+        .catch(error => {
+            console.error('OTP verification failed:', error);
+            alert('Verification failed. Please try again.');
+            if (verifyBtn) verifyBtn.disabled = false;
+            if (verifyBtnText) verifyBtnText.textContent = 'Verify & Login';
+        });
+}
+
+function showOTPError(message) {
+    console.log('Showing OTP error:', message);
+    
+    const errorMessage = document.getElementById('otpErrorMessage');
+    if (errorMessage) {
+        const errorText = errorMessage.querySelector('p');
+        if (errorText) {
+            errorText.textContent = message;
+        }
+        errorMessage.classList.remove('hidden');
+    }
+    
+    // Hide success message
+    const successMessage = document.getElementById('otpSuccessMessage');
+    if (successMessage) {
+        successMessage.classList.add('hidden');
+    }
+}
+
+function showOTPSuccess(message) {
+    console.log('Showing OTP success:', message);
+    
+    const successMessage = document.getElementById('otpSuccessMessage');
+    if (successMessage) {
+        const successText = successMessage.querySelector('p');
+        if (successText) {
+            successText.textContent = message;
+        }
+        successMessage.classList.remove('hidden');
+    }
+    
+    // Hide error message
+    const errorMessage = document.getElementById('otpErrorMessage');
+    if (errorMessage) {
+        errorMessage.classList.add('hidden');
+    }
+}
+
+function hideOTPMessages() {
+    const errorMessage = document.getElementById('otpErrorMessage');
+    if (errorMessage) {
+        errorMessage.classList.add('hidden');
+    }
+    
+    const successMessage = document.getElementById('otpSuccessMessage');
+    if (successMessage) {
+        successMessage.classList.add('hidden');
+    }
+}
+
+// Initialize page when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('=== DOM CONTENT LOADED ===');
+    
+    // Ensure all functions are globally accessible
+    window.performLogin = performLogin;
+    window.closeOTPModal = closeOTPModal;
+    window.closeFallbackOTPModal = closeFallbackOTPModal;
+    window.verifyFallbackOTP = verifyFallbackOTP;
+    window.resendFallbackOTP = resendFallbackOTP;
+    
     const emailField = document.getElementById('loginEmail');
     const passwordField = document.getElementById('loginPassword');
     
@@ -261,9 +1115,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    emailField.addEventListener('keypress', handleEnterKey);
-    passwordField.addEventListener('keypress', handleEnterKey);
+    if (emailField) emailField.addEventListener('keypress', handleEnterKey);
+    if (passwordField) passwordField.addEventListener('keypress', handleEnterKey);
     
     console.log('Login form initialized');
+    console.log('performLogin function available:', typeof window.performLogin);
+    console.log('closeOTPModal function available:', typeof window.closeOTPModal);
+    console.log('closeFallbackOTPModal function available:', typeof window.closeFallbackOTPModal);
 });
 </script>

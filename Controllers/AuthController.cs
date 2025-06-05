@@ -362,5 +362,135 @@ namespace AttendanceApp_ASPNET.Controllers
                 });
             }
         }
+
+        [HttpPost]
+        public async Task<IActionResult> SendLoginOTP([FromBody] JsonElement requestData)
+        {
+            try
+            {
+                // Extract email from request
+                var email = requestData.GetProperty("email").GetString() ?? "";
+
+                // Convert to the format expected by Python API
+                var loginOTPData = new
+                {
+                    email = email
+                };
+
+                var result = await _apiService.SendLoginOTPAsync(loginOTPData);
+                
+                // Parse the API response
+                var apiResponse = JsonSerializer.Deserialize<JsonElement>(result);
+                
+                bool success = false;
+                string message = "Failed to send login OTP";
+                string otpId = "";
+                
+                if (apiResponse.TryGetProperty("success", out var successProperty))
+                {
+                    success = successProperty.GetBoolean();
+                }
+                
+                if (apiResponse.TryGetProperty("message", out var messageProperty))
+                {
+                    message = messageProperty.GetString() ?? message;
+                }
+                
+                if (apiResponse.TryGetProperty("otp_id", out var otpIdProperty))
+                {
+                    // Handle both string and number types for otp_id
+                    if (otpIdProperty.ValueKind == JsonValueKind.String)
+                    {
+                        otpId = otpIdProperty.GetString() ?? "";
+                    }
+                    else if (otpIdProperty.ValueKind == JsonValueKind.Number)
+                    {
+                        otpId = otpIdProperty.GetInt64().ToString();
+                    }
+                    else
+                    {
+                        otpId = otpIdProperty.ToString();
+                    }
+                }
+                
+                var response = new { 
+                    success = success,
+                    message = message,
+                    otp_id = otpId
+                };
+                
+                return Json(response);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { 
+                    success = false, 
+                    message = $"Failed to send login OTP: {ex.Message}",
+                    otp_id = ""
+                });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> VerifyLoginOTP([FromBody] JsonElement requestData)
+        {
+            try
+            {
+                // Extract OTP ID and OTP code
+                var otpId = requestData.GetProperty("otp_id").GetString() ?? "";
+                var otpCode = requestData.GetProperty("otp_code").GetString() ?? "";
+
+                // Convert to the format expected by Python API
+                var verifyLoginOtpData = new
+                {
+                    otp_id = otpId,
+                    otp_code = otpCode
+                };
+
+                var result = await _apiService.VerifyLoginOTPAsync(verifyLoginOtpData);
+                
+                // Parse the API response
+                var apiResponse = JsonSerializer.Deserialize<JsonElement>(result);
+                
+                bool success = false;
+                string message = "Login verification failed";
+                JsonElement userInfo = default;
+                
+                if (apiResponse.TryGetProperty("status", out var statusProperty))
+                {
+                    success = statusProperty.GetString() == "success";
+                }
+                else if (apiResponse.TryGetProperty("success", out var successProperty))
+                {
+                    success = successProperty.GetBoolean();
+                }
+                
+                if (apiResponse.TryGetProperty("message", out var messageProperty))
+                {
+                    message = messageProperty.GetString() ?? message;
+                }
+                
+                if (apiResponse.TryGetProperty("user", out var userProperty))
+                {
+                    userInfo = userProperty;
+                }
+                
+                var response = new { 
+                    success = success,
+                    message = message,
+                    user = userInfo.ValueKind != JsonValueKind.Undefined ? userInfo : (object?)null
+                };
+                
+                return Json(response);
+            }
+            catch (Exception ex)
+            {
+                return Json(new { 
+                    success = false, 
+                    message = $"Failed to verify login OTP: {ex.Message}",
+                    user = (object?)null
+                });
+            }
+        }
     }
 }

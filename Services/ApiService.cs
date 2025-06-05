@@ -14,6 +14,8 @@ namespace AttendanceApp_ASPNET.Services
         Task<string> SendRegistrationOTPAsync(object otpData);
         Task<string> VerifyOTPAndCompleteRegistrationAsync(object verifyData);
         Task<string> ValidateLoginCredentialsAsync(object loginData);
+        Task<string> SendLoginOTPAsync(object loginOTPData);
+        Task<string> VerifyLoginOTPAsync(object verifyLoginData);
         string GetApiKey();
         string GetApiBaseUrl();
     }
@@ -216,6 +218,64 @@ namespace AttendanceApp_ASPNET.Services
             catch (Exception ex)
             {
                 throw new Exception($"Login validation failed: {ex.Message}", ex);
+            }
+        }
+
+        public async Task<string> SendLoginOTPAsync(object loginOTPData)
+        {
+            try
+            {
+                var apiUrl = $"{_apiBaseUrl}/loginStudent/send-login-otp";
+                
+                var json = JsonSerializer.Serialize(loginOTPData);
+                var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                
+                _httpClient.DefaultRequestHeaders.Clear();
+                _httpClient.DefaultRequestHeaders.Add("AttendanceApp-API-Key", _apiKey);
+                _httpClient.DefaultRequestHeaders.Add("User-Agent", "AttendanceApp-ASPNET/1.0");
+                
+                var response = await _httpClient.PostAsync(apiUrl, content);
+                var responseContent = await response.Content.ReadAsStringAsync();
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new Exception($"Login OTP API returned {response.StatusCode}: {responseContent}");
+                }
+                
+                return responseContent;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Send login OTP failed: {ex.Message}", ex);
+            }
+        }
+
+        public async Task<string> VerifyLoginOTPAsync(object verifyLoginData)
+        {
+            try
+            {
+                var apiUrl = $"{_apiBaseUrl}/loginStudent/verify-login-otp";
+                
+                var json = JsonSerializer.Serialize(verifyLoginData);
+                var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                
+                _httpClient.DefaultRequestHeaders.Clear();
+                _httpClient.DefaultRequestHeaders.Add("AttendanceApp-API-Key", _apiKey);
+                _httpClient.DefaultRequestHeaders.Add("User-Agent", "AttendanceApp-ASPNET/1.0");
+                
+                var response = await _httpClient.PostAsync(apiUrl, content);
+                var responseContent = await response.Content.ReadAsStringAsync();
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new Exception($"Verify login OTP API returned {response.StatusCode}: {responseContent}");
+                }
+                
+                return responseContent;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Verify login OTP failed: {ex.Message}", ex);
             }
         }
     }
