@@ -68,6 +68,37 @@
             position: relative;
         }
         
+        /* Enhanced slide animations */
+        .slide-content-enter {
+            animation: slideContentEnter 0.5s ease-out forwards;
+        }
+        
+        .slide-content-exit {
+            animation: slideContentExit 0.5s ease-in forwards;
+        }
+        
+        @@keyframes slideContentEnter {
+            from { 
+                opacity: 0; 
+                transform: translateX(30px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateX(0); 
+            }
+        }
+        
+        @@keyframes slideContentExit {
+            from { 
+                opacity: 1; 
+                transform: translateX(0); 
+            }
+            to { 
+                opacity: 0; 
+                transform: translateX(-30px); 
+            }
+        }
+        
         /* Page transition animations */
         .page-transition-enter {
             animation: pageSlideIn 0.5s ease-out forwards;
@@ -170,11 +201,11 @@
             <!-- Navigation Tabs -->
             <div class="absolute top-0 left-0 right-0 z-30 bg-white border-b border-gray-200">
                 <div class="flex">
-                    <button id="loginTab" class="flex-1 py-4 px-6 text-center font-semibold transition-all duration-300 border-b-2 border-transparent hover:bg-gray-50">
+                    <button id="loginTab" class="flex-1 py-4 px-6 text-center font-semibold transition-all duration-300 border-b-2 hover:bg-gray-50">
                         <span class="text-gray-600">Login</span>
                     </button>
-                    <button id="registerTab" class="flex-1 py-4 px-6 text-center font-semibold transition-all duration-300 border-b-2 border-blue-600 bg-blue-50">
-                        <span class="text-blue-600">Register</span>
+                    <button id="registerTab" class="flex-1 py-4 px-6 text-center font-semibold transition-all duration-300 border-b-2 hover:bg-gray-50">
+                        <span class="text-gray-600">Register</span>
                     </button>
                 </div>
             </div>
@@ -183,7 +214,7 @@
             <div class="relative h-full pt-16">
                 
                 <!-- Sliding Panel with Logo/Wallpaper -->
-                <div id="slidingPanel" class="absolute inset-0 auth-slider transform translate-x-0 z-20 content-container">
+                <div id="slidingPanel" class="absolute inset-0 auth-slider transform z-20 content-container">
                     <div class="h-full bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 flex items-center justify-center relative overflow-hidden">
                         <!-- Background Pattern -->
                         <div class="absolute inset-0 opacity-10">
@@ -240,49 +271,13 @@
                 <!-- Main Content Area -->
                 <div class="flex h-full relative">
                     <!-- Login Section -->
-                    <div id="loginSection" class="content-container absolute left-0 top-0 h-full hidden">
-                        <div class="h-full flex items-center justify-center p-8 bg-white">
+                    <div id="loginSection" class="content-container absolute left-0 top-0 h-full">
+                        <div class="h-full flex items-center justify-center p-8 bg-white overflow-y-auto">
                             <div class="w-full max-w-md" id="loginContent">
-                                <!-- Login content will be loaded here -->
-                                <div class="text-center mb-8">
-                                    <div class="mx-auto w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mb-4">
-                                        <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd" d="M18 8a6 6 0 01-7.743 5.743L10 14l-4 4-4-4 1.257-1.257A6 6 0 1118 8zm-6-2a1 1 0 11-2 0 1 1 0 012 0z" clip-rule="evenodd"></path>
-                                        </svg>
-                                    </div>
-                                    <h2 class="text-3xl font-bold text-gray-800 mb-2">Welcome Back</h2>
-                                    <p class="text-gray-600">Sign in to your account</p>
-                                </div>
-                                
-                                <form class="space-y-6">
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                                        <input type="email" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" placeholder="your.email@iskolarngbayan.pup.edu.ph">
-                                    </div>
-                                    
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
-                                        <input type="password" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" placeholder="••••••••">
-                                    </div>
-                                    
-                                    <div class="flex items-center justify-between">
-                                        <label class="flex items-center">
-                                            <input type="checkbox" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-                                            <span class="ml-2 text-sm text-gray-600">Remember me</span>
-                                        </label>
-                                        <a href="#" class="text-sm text-blue-600 hover:text-blue-700">Forgot password?</a>
-                                    </div>
-                                    
-                                    <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors">
-                                        Sign In
-                                    </button>
-                                </form>
-                                
-                                <div class="mt-6 text-center">
-                                    <p class="text-sm text-gray-600">
-                                        Don't have an account? 
-                                        <button id="switchToRegisterFromLogin" class="text-blue-600 hover:text-blue-800 font-medium underline cursor-pointer">Register here</button>
-                                    </p>
+                                <!-- Login content will be loaded here dynamically -->
+                                <div id="loginLoader" class="text-center">
+                                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                                    <p class="text-gray-600">Loading...</p>
                                 </div>
                             </div>
                         </div>
@@ -306,108 +301,279 @@
             const loginSection = document.getElementById('loginSection');
             const registerSection = document.getElementById('registerSection');
             const slidingPanel = document.getElementById('slidingPanel');
+            const loginContent = document.getElementById('loginContent');
             
-            let currentView = 'register';
+            let currentView = 'login'; // Default to login since it's the default route
+            let isTransitioning = false;
+            
+            // Determine initial view based on current URL
+            const currentPath = window.location.pathname.toLowerCase();
+            console.log('Current path:', currentPath);
+            
+            if (currentPath.includes('/register')) {
+                currentView = 'register';
+            } else {
+                currentView = 'login';
+            }
             
             function showLogin() {
-                if (currentView === 'login') return;
+                if (currentView === 'login' || isTransitioning) return;
                 
+                isTransitioning = true;
                 currentView = 'login';
                 
-                // Clear ALL registration data when switching to login
+                // Clear registration data when switching to login
                 clearAllRegistrationData();
-                
-                // Set a flag in localStorage to indicate we've switched to login
                 localStorage.setItem('switchedToLogin', 'true');
-                
-                // Reset registration forms if they exist
                 resetAllRegistrationForms();
                 
-                // Scroll to top of modal
-                scrollToTop();
-                
-                // Update tabs
+                // Update tabs with animation
                 updateTabsForLogin();
                 
-                // Slide panel to cover register (move right)
+                // Animate sliding panel to cover register (move right)
                 slidingPanel.style.transform = 'translateX(100%)';
                 
-                // Show login, hide register
+                // Show login section with slide animation
                 loginSection.classList.remove('hidden');
-                registerSection.classList.add('hidden');
+                loginSection.classList.add('slide-content-enter');
                 
-                // Load login content dynamically if needed
+                // Hide register section
+                registerSection.classList.add('slide-content-exit');
+                
+                setTimeout(() => {
+                    registerSection.classList.add('hidden');
+                    registerSection.classList.remove('slide-content-exit');
+                    loginSection.classList.remove('slide-content-enter');
+                    isTransitioning = false;
+                }, 500);
+                
+                // Load login content
                 loadLoginContent();
+                
+                // Update URL without page reload
+                window.history.pushState({}, '', '/Auth/Login');
+                
+                scrollToTop();
             }
             
             function showRegister() {
-                if (currentView === 'register') return;
+                if (currentView === 'register' || isTransitioning) return;
                 
+                isTransitioning = true;
                 currentView = 'register';
                 
-                // Check if we need to reset to step 1
-                const resetToStep1 = localStorage.getItem('resetToStep1');
-                const switchedToLogin = localStorage.getItem('switchedToLogin');
-                
-                // Clear the login switch flag
+                // Clear login switch flags
                 localStorage.removeItem('switchedToLogin');
                 localStorage.removeItem('resetToStep1');
                 
-                // Scroll to top of modal
-                scrollToTop();
-                
-                // Update tabs
+                // Update tabs with animation
                 updateTabsForRegister();
                 
-                // Slide panel to cover login (move left to original position)
+                // Animate sliding panel to cover login (move left to original position)
                 slidingPanel.style.transform = 'translateX(0%)';
                 
-                // Show register, hide login
+                // Show register section with slide animation
                 registerSection.classList.remove('hidden');
-                loginSection.classList.add('hidden');
+                registerSection.classList.add('slide-content-enter');
                 
-                // Navigate to register step 1 if needed
-                if (resetToStep1 || switchedToLogin) {
-                    window.location.href = '/Auth/Register';
+                // Hide login section
+                loginSection.classList.add('slide-content-exit');
+                
+                setTimeout(() => {
+                    loginSection.classList.add('hidden');
+                    loginSection.classList.remove('slide-content-exit');
+                    registerSection.classList.remove('slide-content-enter');
+                    isTransitioning = false;
+                }, 500);
+                
+                // Navigate to register step 1
+                window.location.href = '/Auth/Register';
+                
+                scrollToTop();
+            }
+            
+            function updateTabsForLogin() {
+                // Update login tab
+                loginTab.classList.add('border-blue-600', 'bg-blue-50', 'border-b-2');
+                loginTab.querySelector('span').classList.remove('text-gray-600');
+                loginTab.querySelector('span').classList.add('text-blue-600');
+                
+                // Update register tab
+                registerTab.classList.remove('border-blue-600', 'bg-blue-50', 'border-b-2');
+                registerTab.classList.add('border-transparent');
+                registerTab.querySelector('span').classList.remove('text-blue-600');
+                registerTab.querySelector('span').classList.add('text-gray-600');
+            }
+            
+            function updateTabsForRegister() {
+                // Update register tab
+                registerTab.classList.add('border-blue-600', 'bg-blue-50', 'border-b-2');
+                registerTab.querySelector('span').classList.remove('text-gray-600');
+                registerTab.querySelector('span').classList.add('text-blue-600');
+                
+                // Update login tab
+                loginTab.classList.remove('border-blue-600', 'bg-blue-50', 'border-b-2');
+                loginTab.classList.add('border-transparent');
+                loginTab.querySelector('span').classList.remove('text-blue-600');
+                loginTab.querySelector('span').classList.add('text-gray-600');
+            }
+            
+            function loadLoginContent() {
+                // Load login content via AJAX
+                fetch('/Auth/Login')
+                    .then(response => response.text())
+                    .then(html => {
+                        // Parse the HTML response
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(html, 'text/html');
+                        
+                        // Extract only the main content div from the login page, not the entire layout
+                        const mainContent = doc.querySelector('.p-6.h-full');
+                        
+                        if (mainContent) {
+                            // Get just the inner content without the wrapper div
+                            loginContent.innerHTML = mainContent.innerHTML;
+                        } else {
+                            // Fallback: look for any content inside the body that's not layout-related
+                            const bodyContent = doc.querySelector('body');
+                            if (bodyContent) {
+                                // Find the first div with p-6 class or similar content structure
+                                const contentDiv = bodyContent.querySelector('[class*="p-6"]') || 
+                                                 bodyContent.querySelector('form') || 
+                                                 bodyContent.querySelector('.space-y-6');
+                                
+                                if (contentDiv) {
+                                    loginContent.innerHTML = contentDiv.outerHTML;
+                                } else {
+                                    // Ultimate fallback - create a simple login form
+                                    loginContent.innerHTML = createSimpleLoginForm();
+                                }
+                            } else {
+                                loginContent.innerHTML = createSimpleLoginForm();
+                            }
+                        }
+                        
+                        // Re-initialize login form scripts
+                        initializeLoginForm();
+                    })
+                    .catch(error => {
+                        console.error('Error loading login content:', error);
+                        loginContent.innerHTML = createSimpleLoginForm();
+                        initializeLoginForm();
+                    });
+            }
+            
+            function createSimpleLoginForm() {
+                return `
+                    <!-- Header -->
+                    <div class="text-center mb-8">
+                        <div class="mx-auto w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mb-4">
+                            <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 8a6 6 0 01-7.743 5.743L10 14l-4 4-4-4 1.257-1.257A6 6 0 1118 8zm-6-2a1 1 0 11-2 0 1 1 0 012 0z" clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                        <h2 class="text-2xl font-bold text-gray-800 mb-2">Welcome Back</h2>
+                        <p class="text-gray-600 text-sm">Sign in to access your attendance dashboard</p>
+                    </div>
+
+                    <!-- Error Message -->
+                    <div id="loginErrorMessage" class="hidden mb-4 rounded-lg bg-red-50 border border-red-200 p-3 animate-slide-down">
+                        <div class="flex items-center">
+                            <svg class="w-4 h-4 text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                            </svg>
+                            <p class="text-sm font-medium text-red-800"></p>
+                        </div>
+                    </div>
+
+                    <!-- Login Form -->
+                    <form id="loginForm" class="space-y-6">
+                        <div>
+                            <label for="loginEmail" class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                            <input type="email" id="loginEmail" name="email" required
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" 
+                                   placeholder="your.email@iskolarngbayan.pup.edu.ph" value="johnmathewcparocha@iskolarngbayan.pup.edu.ph">
+                        </div>
+                        
+                        <div>
+                            <label for="loginPassword" class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                            <div class="relative">
+                                <input type="password" id="loginPassword" name="password" required
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors pr-10" 
+                                       placeholder="Enter your password" value="TestPass123!">
+                                <button type="button" id="toggleLoginPassword" class="absolute right-3 top-3 text-gray-400 hover:text-gray-600 transition-colors">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center justify-between">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="rememberMe" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded transition-colors">
+                                <span class="ml-2 text-sm text-gray-600">Remember me</span>
+                            </label>
+                            <a href="#" class="text-sm text-blue-600 hover:text-blue-700 transition-colors">Forgot password?</a>
+                        </div>
+                        
+                        <button type="submit" id="loginButton" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed btn-smooth">
+                            <span id="loginButtonText">Sign In</span>
+                            <svg id="loginSpinner" class="hidden animate-spin -mr-1 ml-2 h-4 w-4 text-white inline" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </button>
+                    </form>
+
+                    <!-- Divider -->
+                    <div class="mt-6 relative">
+                        <div class="absolute inset-0 flex items-center">
+                            <div class="w-full border-t border-gray-300"></div>
+                        </div>
+                        <div class="relative flex justify-center text-sm">
+                            <span class="px-2 bg-white text-gray-500">or</span>
+                        </div>
+                    </div>
+
+                    <!-- Face Recognition Login -->
+                    <div class="mt-6">
+                        <button type="button" id="faceLoginBtn" class="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 rounded-lg font-semibold hover:from-green-700 hover:to-emerald-700 transition-all duration-200 btn-smooth">
+                            <svg class="w-5 h-5 inline mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+                            </svg>
+                            Sign In with Face Recognition
+                        </button>
+                    </div>
+
+                    <!-- Switch to Register -->
+                    <div class="mt-6 text-center">
+                        <p class="text-sm text-gray-600">
+                            Don't have an account? 
+                            <button id="switchToRegister" class="text-blue-600 hover:text-blue-800 font-medium underline cursor-pointer transition-colors">Register here</button>
+                        </p>
+                    </div>
+                `;
+            }
+            
+            function initializeLoginForm() {
+                // Re-run login form initialization scripts
+                const loginScript = loginContent.querySelector('script');
+                if (loginScript) {
+                    eval(loginScript.textContent);
                 }
             }
             
             function scrollToTop() {
-                // Smooth scroll the main modal content to top
                 const mainContent = document.querySelector('.w-full.max-w-6xl.h-\\[700px\\]');
                 if (mainContent) {
-                    mainContent.scrollTo({
-                        top: 0,
-                        behavior: 'smooth'
-                    });
+                    mainContent.scrollTo({ top: 0, behavior: 'smooth' });
                 }
-                
-                // Smooth scroll any overflow content in sections to top
-                const loginContent = loginSection.querySelector('.h-full');
-                const registerContent = registerSection.querySelector('.h-full');
-                
-                if (loginContent) {
-                    loginContent.scrollTo({
-                        top: 0,
-                        behavior: 'smooth'
-                    });
-                }
-                if (registerContent) {
-                    registerContent.scrollTo({
-                        top: 0,
-                        behavior: 'smooth'
-                    });
-                }
-                
-                // Smooth scroll the window to top as well (in case modal is not in viewport)
-                window.scrollTo({ 
-                    top: 0, 
-                    behavior: 'smooth' 
-                });
+                window.scrollTo({ top: 0, behavior: 'smooth' });
             }
             
             function clearAllRegistrationData() {
-                // Clear all registration-related data
                 sessionStorage.removeItem('registrationData');
                 sessionStorage.removeItem('otpId');
                 sessionStorage.removeItem('faceImage');
@@ -416,225 +582,50 @@
             }
             
             function resetAllRegistrationForms() {
-                // Reset registration form if it exists
-                if (window.resetRegistrationForm && typeof window.resetRegistrationForm === 'function') {
-                    window.resetRegistrationForm();
+                if (window.resetAllRegistrationState && typeof window.resetAllRegistrationState === 'function') {
+                    window.resetAllRegistrationState();
                 }
-                
-                // Reset any step 2 or step 3 data
-                const photoPreview = document.getElementById('photoPreview');
-                if (photoPreview) {
-                    photoPreview.innerHTML = `
-                        <div class="text-center">
-                            <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
-                            </svg>
-                            <p class="text-gray-500 text-sm mb-2">No photo captured yet</p>
-                            <p class="text-gray-400 text-xs">Click the button below to take your photo</p>
-                        </div>
-                    `;
-                }
-                
-                // Reset OTP inputs if they exist
-                const otpInputs = document.querySelectorAll('[id^="otp"]');
-                otpInputs.forEach(input => {
-                    if (input) input.value = '';
-                });
-                
-                // Hide any success/error messages
-                const successMessages = document.querySelectorAll('[id*="successMessage"], [id*="SuccessMessage"]');
-                const errorMessages = document.querySelectorAll('[id*="validationMessages"], [id*="ErrorMessage"]');
-                
-                successMessages.forEach(msg => {
-                    if (msg) msg.classList.add('hidden');
-                });
-                
-                errorMessages.forEach(msg => {
-                    if (msg) msg.classList.add('hidden');
-                });
             }
             
-            function resetLoginForm() {
-                // Reset login form
-                const loginForm = loginSection.querySelector('form');
-                if (loginForm) {
-                    loginForm.reset();
-                }
-                
-                // Clear any login error messages
-                const loginErrors = loginSection.querySelectorAll('.text-red-600, .bg-red-50');
-                loginErrors.forEach(error => {
-                    error.classList.add('hidden');
-                });
-            }
-            
-            function resetRegistrationToStep1() {
-                // Clear session storage
-                clearAllRegistrationData();
-                
-                // Always navigate to the register page instead of trying to restore content
-                window.location.href = '/Auth/Register';
-            }
-            
-            // Make showLogin available globally for child windows/iframes
-            window.switchToLogin = showLogin;
-            
+            // Event listeners
             loginTab.addEventListener('click', showLogin);
             registerTab.addEventListener('click', showRegister);
             
-            // Listen for registration completion event
-            window.addEventListener('registrationCompleted', function(event) {
-                console.log('Registration completed event received:', event.detail);
-                localStorage.setItem('registrationCompleted', 'true');
-                
-                // Clear all registration data
-                clearAllRegistrationData();
-                
-                // Reset to step 1 first, then switch to login
-                resetRegistrationToStep1();
-                
-                // Switch to login without success message
-                setTimeout(() => {
-                    showLogin();
-                }, 100);
-            });
+            // Make functions available globally
+            window.showLogin = showLogin;
+            window.showRegister = showRegister;
             
-            // Listen for document-level event as well
-            document.addEventListener('registrationCompleted', function(event) {
-                console.log('Document registration completed event received:', event.detail);
-                localStorage.setItem('registrationCompleted', 'true');
-                
-                // Clear all registration data
-                clearAllRegistrationData();
-                
-                // Reset to step 1 first, then switch to login
-                resetRegistrationToStep1();
-                
-                // Switch to login without success message
-                setTimeout(() => {
-                    showLogin();
-                }, 100);
-            });
-            
-            // Initialize with proper view detection
-            const currentPath = window.location.pathname.toLowerCase();
-            console.log('Current path:', currentPath);
-            
-            // Determine initial view based on current URL
-            if (currentPath.includes('/login')) {
-                currentView = 'login';
+            // Initialize with correct view
+            if (currentView === 'login') {
                 updateTabsForLogin();
                 slidingPanel.style.transform = 'translateX(100%)';
                 loginSection.classList.remove('hidden');
                 registerSection.classList.add('hidden');
+                loadLoginContent();
             } else {
-                // Default to register for all other paths (register, registerstep2, etc.)
-                currentView = 'register';
                 updateTabsForRegister();
                 slidingPanel.style.transform = 'translateX(0%)';
                 registerSection.classList.remove('hidden');
                 loginSection.classList.add('hidden');
             }
             
-            // Add event listener for switch to register from login
-            document.addEventListener('click', function(e) {
-                if (e.target && e.target.id === 'switchToRegisterFromLogin') {
-                    showRegister();
+            // Listen for registration completion
+            window.addEventListener('registrationCompleted', function(event) {
+                console.log('Registration completed, switching to login');
+                clearAllRegistrationData();
+                setTimeout(() => showLogin(), 100);
+            });
+            
+            // Handle browser back/forward
+            window.addEventListener('popstate', function(event) {
+                const path = window.location.pathname.toLowerCase();
+                if (path.includes('/register')) {
+                    if (currentView !== 'register') showRegister();
+                } else {
+                    if (currentView !== 'login') showLogin();
                 }
             });
         });
-        
-        function updateTabsForLogin() {
-            loginTab.classList.add('border-blue-600', 'bg-blue-50');
-            loginTab.querySelector('span').classList.remove('text-gray-600');
-            loginTab.querySelector('span').classList.add('text-blue-600');
-            loginTab.classList.remove('border-transparent');
-            
-            registerTab.classList.remove('border-blue-600', 'bg-blue-50');
-            registerTab.querySelector('span').classList.remove('text-blue-600');
-            registerTab.querySelector('span').classList.add('text-gray-600');
-            registerTab.classList.add('border-transparent');
-        }
-        
-        function updateTabsForRegister() {
-            registerTab.classList.add('border-blue-600', 'bg-blue-50');
-            registerTab.querySelector('span').classList.remove('text-gray-600');
-            registerTab.querySelector('span').classList.add('text-blue-600');
-            registerTab.classList.remove('border-transparent');
-            
-            loginTab.classList.remove('border-blue-600', 'bg-blue-50');
-            loginTab.querySelector('span').classList.remove('text-blue-600');
-            loginTab.querySelector('span').classList.add('text-gray-600');
-            loginTab.classList.add('border-transparent');
-        }
-        
-        function showLogin() {
-            if (currentView === 'login') return;
-            
-            currentView = 'login';
-            
-            // Clear ALL registration data when switching to login
-            clearAllRegistrationData();
-            
-            // Set a flag in localStorage to indicate we've switched to login
-            localStorage.setItem('switchedToLogin', 'true');
-            
-            // Reset registration forms if they exist
-            resetAllRegistrationForms();
-            
-            // Scroll to top of modal
-            scrollToTop();
-            
-            // Update tabs
-            updateTabsForLogin();
-            
-            // Slide panel to cover register (move right)
-            slidingPanel.style.transform = 'translateX(100%)';
-            
-            // Show login, hide register
-            loginSection.classList.remove('hidden');
-            registerSection.classList.add('hidden');
-            
-            // Load login content dynamically if needed
-            loadLoginContent();
-        }
-        
-        function showRegister() {
-            if (currentView === 'register') return;
-            
-            currentView = 'register';
-            
-            // Check if we need to reset to step 1
-            const resetToStep1 = localStorage.getItem('resetToStep1');
-            const switchedToLogin = localStorage.getItem('switchedToLogin');
-            
-            // Clear the login switch flag
-            localStorage.removeItem('switchedToLogin');
-            localStorage.removeItem('resetToStep1');
-            
-            // Scroll to top of modal
-            scrollToTop();
-            
-            // Update tabs
-            updateTabsForRegister();
-            
-            // Slide panel to cover login (move left to original position)
-            slidingPanel.style.transform = 'translateX(0%)';
-            
-            // Show register, hide login
-            registerSection.classList.remove('hidden');
-            loginSection.classList.add('hidden');
-            
-            // Navigate to register step 1 if needed
-            if (resetToStep1 || switchedToLogin) {
-                window.location.href = '/Auth/Register';
-            }
-        }
-        
-        function loadLoginContent() {
-            // Login content is already in the HTML, no need to load dynamically
-            console.log('Login content already loaded');
-        }
     </script>
 </body>
 </html>
