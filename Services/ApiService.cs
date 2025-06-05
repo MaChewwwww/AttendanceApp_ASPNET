@@ -4,8 +4,11 @@ using System.Text.Json;
 
 namespace AttendanceApp_ASPNET.Services
 {
+    // ABSTRACTION: Interface hides complex HTTP communication details
+    // Only exposes essential operations that controllers need
     public interface IApiService
     {
+        // ABSTRACTION: Abstract method signatures - no implementation details exposed
         Task<string> ValidateStudentRegistrationAsync(object formData);
         Task<string> ValidateFaceImageAsync(object faceData);
         Task<string> SendRegistrationOTPAsync(object otpData);
@@ -14,12 +17,18 @@ namespace AttendanceApp_ASPNET.Services
         string GetApiBaseUrl();
     }
 
+    // INHERITANCE: ApiService implements IApiService interface
+    // Inherits the contract and must implement all interface methods
     public class ApiService : IApiService
     {
+        // ENCAPSULATION: Private fields - data hiding from external access
+        // Internal implementation details are protected
         private readonly string _apiKey;
         private readonly string _apiBaseUrl;
         private readonly HttpClient _httpClient;
 
+        // ENCAPSULATION: Constructor provides controlled initialization
+        // DEPENDENCY INJECTION: Demonstrates polymorphism - can inject different configurations
         public ApiService(IOptions<ApiSettings> apiSettings, HttpClient httpClient)
         {
             _apiKey = apiSettings.Value.ApiKey;
@@ -27,32 +36,40 @@ namespace AttendanceApp_ASPNET.Services
             _httpClient = httpClient;
         }
 
+        // ENCAPSULATION: Public methods provide controlled access to private data
         public string GetApiKey()
         {
-            return _apiKey;
+            return _apiKey; // Controlled access to private field
         }
 
         public string GetApiBaseUrl()
         {
-            return _apiBaseUrl;
+            return _apiBaseUrl; // Controlled access to private field
         }
 
+        // POLYMORPHISM: Same method signature, different implementations possible
+        // ABSTRACTION: Complex HTTP logic hidden behind simple method interface
         public async Task<string> ValidateStudentRegistrationAsync(object formData)
         {
             try
             {
+                // ENCAPSULATION: Internal HTTP setup logic hidden from caller
                 var apiUrl = $"{_apiBaseUrl}/registerStudent/validate-fields";
                 
+                // ABSTRACTION: JSON serialization complexity hidden
                 var json = JsonSerializer.Serialize(formData);
                 var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
                 
+                // ENCAPSULATION: HTTP header configuration encapsulated
                 _httpClient.DefaultRequestHeaders.Clear();
                 _httpClient.DefaultRequestHeaders.Add("AttendanceApp-API-Key", _apiKey);
                 _httpClient.DefaultRequestHeaders.Add("User-Agent", "AttendanceApp-ASPNET/1.0");
                 
+                // ABSTRACTION: HTTP communication complexity abstracted away
                 var response = await _httpClient.PostAsync(apiUrl, content);
                 var responseContent = await response.Content.ReadAsStringAsync();
                 
+                // ENCAPSULATION: Error handling logic encapsulated within method
                 if (!response.IsSuccessStatusCode)
                 {
                     throw new Exception($"API returned {response.StatusCode}: {responseContent}");
@@ -60,8 +77,10 @@ namespace AttendanceApp_ASPNET.Services
                 
                 return responseContent;
             }
+            // POLYMORPHISM: Different exception types handled uniformly
             catch (HttpRequestException httpEx)
             {
+                // ENCAPSULATION: Error transformation logic hidden from caller
                 throw new Exception($"HTTP request failed: {httpEx.Message}", httpEx);
             }
             catch (TaskCanceledException tcEx)
@@ -70,14 +89,18 @@ namespace AttendanceApp_ASPNET.Services
             }
             catch (Exception ex)
             {
+                // POLYMORPHISM: Base Exception type can handle any derived exception
                 throw new Exception($"API validation failed: {ex.Message}", ex);
             }
         }
 
+        // POLYMORPHISM: Same method pattern, different endpoint and error messages
+        // ABSTRACTION: Face validation complexity hidden behind simple interface
         public async Task<string> ValidateFaceImageAsync(object faceData)
         {
             try
             {
+                // ENCAPSULATION: Similar logic pattern but encapsulated separately
                 var apiUrl = $"{_apiBaseUrl}/registerStudent/validate-face";
                 
                 var json = JsonSerializer.Serialize(faceData);
@@ -92,6 +115,7 @@ namespace AttendanceApp_ASPNET.Services
                 
                 if (!response.IsSuccessStatusCode)
                 {
+                    // POLYMORPHISM: Same exception type, different message content
                     throw new Exception($"Face validation API returned {response.StatusCode}: {responseContent}");
                 }
                 
@@ -99,10 +123,12 @@ namespace AttendanceApp_ASPNET.Services
             }
             catch (Exception ex)
             {
+                // ABSTRACTION: Complex error details abstracted to simple message
                 throw new Exception($"Face validation failed: {ex.Message}", ex);
             }
         }
 
+        // POLYMORPHISM: Consistent method signature across different operations
         public async Task<string> SendRegistrationOTPAsync(object otpData)
         {
             try
@@ -132,10 +158,12 @@ namespace AttendanceApp_ASPNET.Services
             }
         }
 
+        // INHERITANCE: Must implement all interface methods due to contract
         public async Task<string> VerifyOTPAndCompleteRegistrationAsync(object verifyData)
         {
             try
             {
+                // ENCAPSULATION: Implementation details will be hidden here
                 var apiUrl = $"{_apiBaseUrl}/registerStudent/verify-registration";
                 
                 var json = JsonSerializer.Serialize(verifyData);

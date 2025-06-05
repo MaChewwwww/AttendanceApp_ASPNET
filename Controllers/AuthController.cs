@@ -7,7 +7,7 @@ namespace AttendanceApp_ASPNET.Controllers
     public class AuthController : Controller
     {
         private readonly IApiService _apiService;
-
+        
         public AuthController(IApiService apiService)
         {
             _apiService = apiService;
