@@ -15,6 +15,34 @@ namespace AttendanceApp_ASPNET.Controllers
 
         public IActionResult Register()
         {
+            // Check if user is already authenticated
+            var isAuthenticated = HttpContext.Session.GetString("IsAuthenticated");
+            if (!string.IsNullOrEmpty(isAuthenticated) && isAuthenticated == "true")
+            {
+                var userRole = HttpContext.Session.GetString("UserRole");
+                
+                // Redirect based on role
+                switch (userRole?.ToLower())
+                {
+                    case "student":
+                        TempData["InfoMessage"] = "You are already logged in.";
+                        return RedirectToAction("Dashboard", "Student");
+                    case "faculty":
+                    case "teacher":
+                    case "instructor":
+                        TempData["InfoMessage"] = "You are already logged in.";
+                        return RedirectToAction("Dashboard", "Faculty");
+                    case "admin":
+                    case "administrator":
+                        TempData["InfoMessage"] = "You are already logged in.";
+                        return RedirectToAction("Dashboard", "Admin");
+                    default:
+                        // Default to student dashboard
+                        TempData["InfoMessage"] = "You are already logged in.";
+                        return RedirectToAction("Dashboard", "Student");
+                }
+            }
+            
             return View();
         }
 
@@ -84,6 +112,34 @@ namespace AttendanceApp_ASPNET.Controllers
 
         public IActionResult Login()
         {
+            // Check if user is already authenticated
+            var isAuthenticated = HttpContext.Session.GetString("IsAuthenticated");
+            if (!string.IsNullOrEmpty(isAuthenticated) && isAuthenticated == "true")
+            {
+                var userRole = HttpContext.Session.GetString("UserRole");
+                
+                // Redirect based on role
+                switch (userRole?.ToLower())
+                {
+                    case "student":
+                        TempData["InfoMessage"] = "You are already logged in.";
+                        return RedirectToAction("Dashboard", "Student");
+                    case "faculty":
+                    case "teacher":
+                    case "instructor":
+                        TempData["InfoMessage"] = "You are already logged in.";
+                        return RedirectToAction("Dashboard", "Faculty");
+                    case "admin":
+                    case "administrator":
+                        TempData["InfoMessage"] = "You are already logged in.";
+                        return RedirectToAction("Dashboard", "Admin");
+                    default:
+                        // Default to student dashboard
+                        TempData["InfoMessage"] = "You are already logged in.";
+                        return RedirectToAction("Dashboard", "Student");
+                }
+            }
+            
             return View();
         }
 
@@ -216,16 +272,64 @@ namespace AttendanceApp_ASPNET.Controllers
 
         public IActionResult RegisterStep2()
         {
+            // Check if user is already authenticated
+            var isAuthenticated = HttpContext.Session.GetString("IsAuthenticated");
+            if (!string.IsNullOrEmpty(isAuthenticated) && isAuthenticated == "true")
+            {
+                var userRole = HttpContext.Session.GetString("UserRole");
+                TempData["InfoMessage"] = "You are already logged in.";
+                
+                return userRole?.ToLower() switch
+                {
+                    "student" => RedirectToAction("Dashboard", "Student"),
+                    "faculty" or "teacher" or "instructor" => RedirectToAction("Dashboard", "Faculty"),
+                    "admin" or "administrator" => RedirectToAction("Dashboard", "Admin"),
+                    _ => RedirectToAction("Dashboard", "Student")
+                };
+            }
+            
             return View();
         }
 
         public IActionResult RegisterStep3()
         {
+            // Check if user is already authenticated
+            var isAuthenticated = HttpContext.Session.GetString("IsAuthenticated");
+            if (!string.IsNullOrEmpty(isAuthenticated) && isAuthenticated == "true")
+            {
+                var userRole = HttpContext.Session.GetString("UserRole");
+                TempData["InfoMessage"] = "You are already logged in.";
+                
+                return userRole?.ToLower() switch
+                {
+                    "student" => RedirectToAction("Dashboard", "Student"),
+                    "faculty" or "teacher" or "instructor" => RedirectToAction("Dashboard", "Faculty"),
+                    "admin" or "administrator" => RedirectToAction("Dashboard", "Admin"),
+                    _ => RedirectToAction("Dashboard", "Student")
+                };
+            }
+            
             return View();
         }
 
         public IActionResult RegisterStep4()
         {
+            // Check if user is already authenticated
+            var isAuthenticated = HttpContext.Session.GetString("IsAuthenticated");
+            if (!string.IsNullOrEmpty(isAuthenticated) && isAuthenticated == "true")
+            {
+                var userRole = HttpContext.Session.GetString("UserRole");
+                TempData["InfoMessage"] = "You are already logged in.";
+                
+                return userRole?.ToLower() switch
+                {
+                    "student" => RedirectToAction("Dashboard", "Student"),
+                    "faculty" or "teacher" or "instructor" => RedirectToAction("Dashboard", "Faculty"),
+                    "admin" or "administrator" => RedirectToAction("Dashboard", "Admin"),
+                    _ => RedirectToAction("Dashboard", "Student")
+                };
+            }
+            
             return View();
         }
 
@@ -501,12 +605,10 @@ namespace AttendanceApp_ASPNET.Controllers
                 bool success = false;
                 string message = "Invalid verification code. Please check your code and try again.";
                 JsonElement userInfo = default;
+                string authToken = "";
+                string userRole = "";
                 
-                if (apiResponse.TryGetProperty("status", out var statusProperty))
-                {
-                    success = statusProperty.GetString() == "success";
-                }
-                else if (apiResponse.TryGetProperty("success", out var successProperty))
+                if (apiResponse.TryGetProperty("success", out var successProperty))
                 {
                     success = successProperty.GetBoolean();
                 }
@@ -533,7 +635,6 @@ namespace AttendanceApp_ASPNET.Controllers
                         }
                         else
                         {
-                            // Keep default user-friendly message for any other error
                             message = "Invalid verification code. Please check your code and try again.";
                         }
                     }
@@ -546,25 +647,147 @@ namespace AttendanceApp_ASPNET.Controllers
                 if (apiResponse.TryGetProperty("user", out var userProperty))
                 {
                     userInfo = userProperty;
+                    
+                    // Extract user role for routing decision
+                    if (userInfo.TryGetProperty("role", out var roleProp))
+                    {
+                        userRole = roleProp.GetString()?.ToLower() ?? "";
+                    }
+                    // Fallback: check if student_number exists to determine if it's a student
+                    else if (userInfo.TryGetProperty("student_number", out var studentNumberProp) && 
+                             !string.IsNullOrEmpty(studentNumberProp.GetString()))
+                    {
+                        userRole = "student";
+                    }
+                    // Default to student if no role information is available
+                    else
+                    {
+                        userRole = "student";
+                    }
+                }
+                
+                // Check for authentication token from API
+                if (apiResponse.TryGetProperty("token", out var tokenProperty))
+                {
+                    authToken = tokenProperty.GetString() ?? "";
+                }
+                
+                // Determine redirect URL based on user role
+                string redirectUrl = "";
+                if (success)
+                {
+                    switch (userRole.ToLower())
+                    {
+                        case "student":
+                            redirectUrl = "/Student/Dashboard";
+                            break;
+                        case "faculty":
+                        case "teacher":
+                        case "instructor":
+                            redirectUrl = "/Faculty/Dashboard";
+                            break;
+                        case "admin":
+                        case "administrator":
+                            redirectUrl = "/Admin/Dashboard";
+                            break;
+                        default:
+                            // Default to student dashboard if role is unclear
+                            redirectUrl = "/Student/Dashboard";
+                            Console.WriteLine($"Unknown user role '{userRole}', defaulting to student dashboard");
+                            break;
+                    }
+                }
+                
+                // If login successful, create user session
+                if (success && userInfo.ValueKind != JsonValueKind.Undefined)
+                {
+                    try
+                    {
+                        // Store user information in session
+                        HttpContext.Session.SetString("IsAuthenticated", "true");
+                        HttpContext.Session.SetString("UserInfo", userInfo.ToString());
+                        HttpContext.Session.SetString("UserRole", userRole);
+                        
+                        // Store specific user data for easy access
+                        if (userInfo.TryGetProperty("user_id", out var userIdProp))
+                        {
+                            HttpContext.Session.SetString("UserId", userIdProp.ToString());
+                        }
+                        if (userInfo.TryGetProperty("email", out var emailProp))
+                        {
+                            HttpContext.Session.SetString("UserEmail", emailProp.GetString() ?? "");
+                        }
+                        if (userInfo.TryGetProperty("name", out var nameProp))
+                        {
+                            var fullName = nameProp.GetString() ?? "";
+                            var nameParts = fullName.Split(' ');
+                            HttpContext.Session.SetString("FirstName", nameParts.Length > 0 ? nameParts[0] : "");
+                            HttpContext.Session.SetString("LastName", nameParts.Length > 1 ? string.Join(" ", nameParts.Skip(1)) : "");
+                        }
+                        if (userInfo.TryGetProperty("student_number", out var studentNumberProp))
+                        {
+                            HttpContext.Session.SetString("StudentNumber", studentNumberProp.GetString() ?? "");
+                        }
+                        if (userInfo.TryGetProperty("employee_number", out var employeeNumberProp))
+                        {
+                            HttpContext.Session.SetString("EmployeeNumber", employeeNumberProp.GetString() ?? "");
+                        }
+                        if (userInfo.TryGetProperty("department", out var departmentProp))
+                        {
+                            HttpContext.Session.SetString("Department", departmentProp.GetString() ?? "");
+                        }
+                        if (userInfo.TryGetProperty("status_id", out var statusIdProp))
+                        {
+                            HttpContext.Session.SetString("StatusId", statusIdProp.ToString());
+                        }
+                        if (userInfo.TryGetProperty("verified", out var verifiedProp))
+                        {
+                            HttpContext.Session.SetString("Verified", verifiedProp.ToString());
+                        }
+                        
+                        // Store auth token if provided
+                        if (!string.IsNullOrEmpty(authToken))
+                        {
+                            HttpContext.Session.SetString("AuthToken", authToken);
+                        }
+                        
+                        // Set login timestamp
+                        HttpContext.Session.SetString("LoginTime", DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"));
+                        
+                        // Set session timeout to 24 hours
+                        HttpContext.Session.SetString("SessionExpiry", DateTime.UtcNow.AddHours(24).ToString("yyyy-MM-dd HH:mm:ss"));
+                        
+                        Console.WriteLine($"User session created for: {HttpContext.Session.GetString("UserEmail")} with role: {userRole}");
+                    }
+                    catch (Exception sessionEx)
+                    {
+                        Console.WriteLine($"Failed to create user session: {sessionEx.Message}");
+                        // Continue anyway - the user is still authenticated via API
+                    }
                 }
                 
                 var response = new { 
                     success = success,
                     message = message,
-                    user = userInfo.ValueKind != JsonValueKind.Undefined ? userInfo : (object?)null
+                    user = userInfo.ValueKind != JsonValueKind.Undefined ? userInfo : (object?)null,
+                    token = !string.IsNullOrEmpty(authToken) ? authToken : (object?)null,
+                    redirect_url = success ? redirectUrl : (object?)null,
+                    user_role = success ? userRole : (object?)null
                 };
                 
                 return Json(response);
             }
             catch (Exception ex)
             {
-                // Log the actual error for debugging but show user-friendly message
                 Console.WriteLine($"Login OTP verification error: {ex.Message}");
                 
                 return Json(new { 
                     success = false, 
                     message = "Unable to verify code at this time. Please try again.",
-                    user = (object?)null
+                    user = (object?)null,
+                    token = (object?)null,
+                    redirect_url = (object?)null,
+                    user_role = (object?)null
                 });
             }
         }

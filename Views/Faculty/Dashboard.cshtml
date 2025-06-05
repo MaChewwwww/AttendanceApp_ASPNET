@@ -1,0 +1,79 @@
+@{
+    ViewData["Title"] = "Faculty Dashboard";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <!-- Header -->
+        <div class="col-12 mb-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0">Welcome, @ViewBag.FirstName @ViewBag.LastName!</h1>
+                    <p class="text-muted">Employee Number: @ViewBag.EmployeeNumber | Department: @ViewBag.Department</p>
+                    @if (ViewBag.Verified == "1")
+                    {
+                        <span class="badge bg-success">Verified Account</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-warning">Pending Verification</span>
+                    }
+                </div>
+                <div>
+                    <form asp-controller="Faculty" asp-action="Logout" method="post" class="d-inline">
+                        <button type="submit" class="btn btn-outline-danger">Logout</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- User Info Card -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Faculty Information</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Email:</strong> @ViewBag.UserEmail</p>
+                    <p><strong>Employee Number:</strong> @ViewBag.EmployeeNumber</p>
+                    <p><strong>Department:</strong> @ViewBag.Department</p>
+                    <p><strong>Role:</strong> @ViewBag.UserRole</p>
+                    <p><strong>User ID:</strong> @ViewBag.UserId</p>
+                    <p><strong>Login Time:</strong> @ViewBag.LoginTime</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Faculty Dashboard Functions -->
+        <div class="col-lg-8 col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Faculty Dashboard</h5>
+                </div>
+                <div class="card-body">
+                    <p>Welcome to your faculty dashboard. Here you can:</p>
+                    <ul>
+                        <li>Manage class attendance records</li>
+                        <li>View student attendance reports</li>
+                        <li>Create and manage class schedules</li>
+                        <li>Generate attendance statistics</li>
+                        <li>Manage enrolled students</li>
+                        <li>Update class information</li>
+                    </ul>
+                    <div class="row mt-4">
+                        <div class="col-md-4">
+                            <button class="btn btn-primary btn-block">Manage Classes</button>
+                        </div>
+                        <div class="col-md-4">
+                            <button class="btn btn-info btn-block">View Reports</button>
+                        </div>
+                        <div class="col-md-4">
+                            <button class="btn btn-success btn-block">Student Records</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

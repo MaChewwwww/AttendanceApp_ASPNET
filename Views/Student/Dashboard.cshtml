@@ -1,0 +1,77 @@
+@{
+    ViewData["Title"] = "Student Dashboard";
+    Layout = "_Layout";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <!-- Header -->
+        <div class="col-12 mb-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-0">Welcome back, @ViewBag.FirstName @ViewBag.LastName!</h1>
+                    <p class="text-muted">Student Number: @ViewBag.StudentNumber</p>
+                    @if (ViewBag.Verified == "1")
+                    {
+                        <span class="badge bg-success">Verified Account</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-warning">Pending Verification</span>
+                    }
+                </div>
+                <div>
+                    <form asp-controller="Student" asp-action="Logout" method="post" class="d-inline">
+                        <button type="submit" class="btn btn-outline-danger">Logout</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- User Info Card -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Student Information</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Email:</strong> @ViewBag.UserEmail</p>
+                    <p><strong>Student Number:</strong> @ViewBag.StudentNumber</p>
+                    <p><strong>Role:</strong> @ViewBag.UserRole</p>
+                    <p><strong>User ID:</strong> @ViewBag.UserId</p>
+                    <p><strong>Login Time:</strong> @ViewBag.LoginTime</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Student Dashboard Functions -->
+        <div class="col-lg-8 col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Student Dashboard</h5>
+                </div>
+                <div class="card-body">
+                    <p>Welcome to your student dashboard. Here you can:</p>
+                    <ul>
+                        <li>View your attendance records</li>
+                        <li>Check class schedules</li>
+                        <li>Mark attendance using face recognition</li>
+                        <li>View attendance statistics</li>
+                        <li>Update your profile information</li>
+                    </ul>
+                    <div class="row mt-4">
+                        <div class="col-md-4">
+                            <button class="btn btn-primary btn-block">Mark Attendance</button>
+                        </div>
+                        <div class="col-md-4">
+                            <button class="btn btn-info btn-block">View Records</button>
+                        </div>
+                        <div class="col-md-4">
+                            <button class="btn btn-success btn-block">My Profile</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

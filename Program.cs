@@ -8,14 +8,16 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
-// Configure session
+// Add session services
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
 {
-    var sessionConfig = builder.Configuration.GetSection("SessionOptions");
-    options.IdleTimeout = TimeSpan.Parse(sessionConfig["IdleTimeout"] ?? "00:30:00");
-    options.Cookie.HttpOnly = bool.Parse(sessionConfig["Cookie:HttpOnly"] ?? "true");
-    options.Cookie.IsEssential = bool.Parse(sessionConfig["Cookie:IsEssential"] ?? "true");
+    options.IdleTimeout = TimeSpan.FromMinutes(30); // Session timeout
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+    options.Cookie.Name = "AttendanceApp.Session";
+    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
 });
 
 // Configure API settings
@@ -35,22 +37,20 @@ builder.Services.AddAntiforgery(options => {
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseDeveloperExceptionPage(); // Enables detailed error pages
-}
-else
+if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();  // Enforce HTTPS redirection
+app.UseHttpsRedirection();
 app.UseStaticFiles();
-app.UseRouting();
-app.UseSession();  // Enable session before checking it
 
-app.UseAuthentication();
+app.UseRouting();
+
+// Add session middleware BEFORE authorization
+app.UseSession();
+
 app.UseAuthorization();
 
 // Add antiforgery middleware
@@ -60,5 +60,11 @@ app.UseAntiforgery();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Auth}/{action=Login}/{id?}");
+
+// Add specific route for student dashboard
+app.MapControllerRoute(
+    name: "student",
+    pattern: "Dashboard",
+    defaults: new { controller = "Student", action = "Dashboard" });
 
 app.Run();

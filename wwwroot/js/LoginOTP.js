@@ -300,7 +300,9 @@ function verifyFallbackOTP() {
                 
                 setTimeout(() => {
                     closeFallbackOTPModal();
-                    window.location.href = '/Dashboard';
+                    // Use the redirect_url from API response or default based on role
+                    const redirectUrl = result.redirect_url || '/Student/Dashboard';
+                    window.location.href = redirectUrl;
                 }, 2000);
             } else {
                 // Show specific error message
@@ -441,7 +443,9 @@ async function verifyLoginOTP() {
             // Wait for user to see success message then redirect
             setTimeout(() => {
                 closeOTPModal();
-                window.location.href = '/Dashboard';
+                // Use the redirect_url from API response or default based on role
+                const redirectUrl = result.redirect_url || '/Student/Dashboard';
+                window.location.href = redirectUrl;
             }, 2000);
             
         } else {
