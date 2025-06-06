@@ -704,10 +704,12 @@ namespace AttendanceApp_ASPNET.Controllers
                     }
                 }
                 
-                // Safely extract user information
+                // Safely extract user information - matching Python API response structure
                 if (apiResponse.TryGetProperty("user", out var userProperty) && userProperty.ValueKind != JsonValueKind.Null)
                 {
                     userInfo = userProperty;
+                    
+                    // Extract role from Python API response structure
                     if (userInfo.TryGetProperty("role", out var roleProp))
                     {
                         userRole = roleProp.GetString()?.ToLower() ?? "student";
@@ -752,13 +754,14 @@ namespace AttendanceApp_ASPNET.Controllers
                     }
                 }
 
-                // Store session data if successful and user info exists
+                // Store session data if successful and user info exists - using Python API field names
                 if (success && userInfo.ValueKind != JsonValueKind.Undefined)
                 {
                     HttpContext.Session.SetString("IsAuthenticated", "true");
                     HttpContext.Session.SetString("UserRole", userRole);
                     
-                    if (userInfo.TryGetProperty("id", out var userIdProp))
+                    // Map Python API response fields to session
+                    if (userInfo.TryGetProperty("user_id", out var userIdProp))
                     {
                         HttpContext.Session.SetString("UserId", userIdProp.ToString());
                     }
@@ -766,14 +769,44 @@ namespace AttendanceApp_ASPNET.Controllers
                     {
                         HttpContext.Session.SetString("UserEmail", emailProp.GetString() ?? "");
                     }
-                    if (userInfo.TryGetProperty("first_name", out var firstNameProp))
+                    if (userInfo.TryGetProperty("name", out var nameProp))
                     {
-                        HttpContext.Session.SetString("FirstName", firstNameProp.GetString() ?? "");
+                        var fullName = nameProp.GetString() ?? "";
+                        var nameParts = fullName.Split(' ');
+                        HttpContext.Session.SetString("FirstName", nameParts.Length > 0 ? nameParts[0] : "");
+                        HttpContext.Session.SetString("LastName", nameParts.Length > 1 ? string.Join(" ", nameParts.Skip(1)) : "");
+                        HttpContext.Session.SetString("FullName", fullName);
                     }
-                    if (userInfo.TryGetProperty("last_name", out var lastNameProp))
+                    if (userInfo.TryGetProperty("student_number", out var studentNumberProp))
                     {
-                        HttpContext.Session.SetString("LastName", lastNameProp.GetString() ?? "");
+                        HttpContext.Session.SetString("StudentNumber", studentNumberProp.GetString() ?? "");
                     }
+                    if (userInfo.TryGetProperty("role", out var roleSessionProp))
+                    {
+                        HttpContext.Session.SetString("UserRoleOriginal", roleSessionProp.GetString() ?? "");
+                    }
+                    if (userInfo.TryGetProperty("verified", out var verifiedProp))
+                    {
+                        HttpContext.Session.SetString("Verified", verifiedProp.ToString());
+                    }
+                    if (userInfo.TryGetProperty("status_id", out var statusIdProp))
+                    {
+                        HttpContext.Session.SetString("StatusId", statusIdProp.ToString());
+                    }
+                    
+                    // Store auth token if provided
+                    if (!string.IsNullOrEmpty(token))
+                    {
+                        HttpContext.Session.SetString("AuthToken", token);
+                    }
+                    
+                    // Set login timestamp
+                    HttpContext.Session.SetString("LoginTime", DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"));
+                    
+                    // Set session timeout to 24 hours
+                    HttpContext.Session.SetString("SessionExpiry", DateTime.UtcNow.AddHours(24).ToString("yyyy-MM-dd HH:mm:ss"));
+                    
+                    Console.WriteLine($"User session created for: {HttpContext.Session.GetString("UserEmail")} with role: {userRole}");
                 }
                 
                 var response = new { 
@@ -781,19 +814,23 @@ namespace AttendanceApp_ASPNET.Controllers
                     message = message,
                     user = userInfo.ValueKind != JsonValueKind.Undefined ? userInfo : (object)null,
                     token = !string.IsNullOrEmpty(token) ? token : (object)null,
-                    redirect_url = redirectUrl
+                    redirect_url = redirectUrl,
+                    user_role = userRole
                 };
                 
                 return Json(response);
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"Login OTP verification error: {ex.Message}");
+                
                 return Json(new { 
                     success = false, 
                     message = "Unable to verify code at this time. Please try again.",
                     user = (object)null,
                     token = (object)null,
-                    redirect_url = (object)null
+                    redirect_url = (object)null,
+                    user_role = (object)null
                 });
             }
         }
