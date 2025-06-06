@@ -221,6 +221,43 @@
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2), 0 4px 12px rgba(59, 130, 246, 0.15);
             border-color: #3b82f6;
         }
+        
+        /* Strikethrough animation for OTP resend buttons */
+        .strikethrough-animate {
+            position: relative;
+            text-decoration: none !important;
+            transition: color 0.3s ease-out;
+        }
+
+        .strikethrough-animate::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            width: 0;
+            height: 1px;
+            background-color: currentColor;
+            transition: width 0.3s ease-out;
+        }
+
+        .strikethrough-animate.active::after {
+            width: 100%;
+        }
+
+        .strikethrough-animate.active {
+            color: #9ca3af !important;
+            cursor: not-allowed !important;
+        }
+
+        .strikethrough-animate.active:hover {
+            color: #9ca3af !important;
+        }
+        
+        /* Resend button disabled state */
+        button:disabled.strikethrough-animate {
+            opacity: 0.6;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen overflow-hidden">

@@ -111,6 +111,43 @@
 </div>
 
 <script>
+// Move display functions to global scope
+function displayError(message) {
+    const errorList = document.getElementById('errorList');
+    const validationMessages = document.getElementById('validationMessages');
+    
+    if (errorList && validationMessages) {
+        errorList.innerHTML = `<li>${message}</li>`;
+        validationMessages.classList.remove('hidden');
+    }
+    
+    // Hide success message
+    const successMessage = document.getElementById('successMessage');
+    if (successMessage) {
+        successMessage.classList.add('hidden');
+    }
+    
+    // Scroll to top to show error
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function displaySuccess(message) {
+    const successMessage = document.getElementById('successMessage');
+    if (successMessage) {
+        successMessage.querySelector('p').textContent = message;
+        successMessage.classList.remove('hidden');
+    }
+    
+    // Hide error messages
+    const validationMessages = document.getElementById('validationMessages');
+    if (validationMessages) {
+        validationMessages.classList.add('hidden');
+    }
+    
+    // Scroll to top to show success
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // Check if user switched to login (which would clear data)
     const switchedToLogin = localStorage.getItem('switchedToLogin');
@@ -207,42 +244,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Focus first input
     if (otpInputs.length > 0) {
         otpInputs[0].focus();
-    }
-    
-    function displayError(message) {
-        const errorList = document.getElementById('errorList');
-        const validationMessages = document.getElementById('validationMessages');
-        
-        if (errorList && validationMessages) {
-            errorList.innerHTML = `<li>${message}</li>`;
-            validationMessages.classList.remove('hidden');
-        }
-        
-        // Hide success message
-        const successMessage = document.getElementById('successMessage');
-        if (successMessage) {
-            successMessage.classList.add('hidden');
-        }
-        
-        // Scroll to top to show error
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-    
-    function displaySuccess(message) {
-        const successMessage = document.getElementById('successMessage');
-        if (successMessage) {
-            successMessage.querySelector('p').textContent = message;
-            successMessage.classList.remove('hidden');
-        }
-        
-        // Hide error messages
-        const validationMessages = document.getElementById('validationMessages');
-        if (validationMessages) {
-            validationMessages.classList.add('hidden');
-        }
-        
-        // Scroll to top to show success
-        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
     
     // Verify OTP button
@@ -454,10 +455,15 @@ async function verifyOTPAndCompleteRegistration(otpId, otpCode) {
 // Resend OTP functionality
 async function resendOTP() {
     const resendBtn = document.getElementById('resendOtpBtn');
-    const registrationData = JSON.parse(sessionStorage.getItem('registrationData') || '{}');
+    const registrationData = sessionStorage.getItem('registrationData');
     const faceImage = sessionStorage.getItem('faceImage');
     
+    console.log('Resend OTP called');
+    console.log('Has registration data:', !!registrationData);
+    console.log('Has face image:', !!faceImage);
+    
     if (!registrationData || !faceImage) {
+        console.error('Missing required data for resend');
         displayError('Missing registration data. Please start over.');
         setTimeout(() => {
             window.location.href = '/Auth/Register';
@@ -465,17 +471,36 @@ async function resendOTP() {
         return;
     }
     
+    // Parse registration data
+    let parsedData;
+    try {
+        parsedData = JSON.parse(registrationData);
+        console.log('Parsed registration data:', parsedData);
+    } catch (e) {
+        console.error('Failed to parse registration data:', e);
+        displayError('Invalid registration data. Please start over.');
+        setTimeout(() => {
+            window.location.href = '/Auth/Register';
+        }, 2000);
+        return;
+    }
+    
     // Disable button and show loading
+    console.log('Setting button to loading state');
     resendBtn.disabled = true;
     resendBtn.textContent = 'Sending...';
+    resendBtn.classList.add('opacity-50', 'cursor-not-allowed');
     
     try {
-        const result = await sendResendOTP(registrationData, faceImage);
+        console.log('Calling sendResendOTP...');
+        const result = await sendResendOTP(parsedData, faceImage);
+        console.log('Resend OTP result:', result);
         
         if (result.success) {
             // Update OTP ID if provided
             if (result.otp_id) {
                 sessionStorage.setItem('otpId', result.otp_id);
+                console.log('Updated OTP ID:', result.otp_id);
             }
             
             displaySuccess(result.message || 'Verification code sent successfully!');
@@ -484,30 +509,53 @@ async function resendOTP() {
             startResendCooldown(60); // 60 seconds cooldown
             
         } else {
+            console.error('Resend failed:', result.message);
             displayError(result.message || 'Failed to resend verification code. Please try again.');
-            resendBtn.disabled = false;
-            resendBtn.textContent = 'Resend Code';
+            
+            // Reset button state on error
+            resetResendButton();
         }
         
     } catch (error) {
-        console.error('Resend OTP failed:', error);
+        console.error('Resend OTP failed with exception:', error);
         displayError('Failed to resend verification code. Please try again.');
+        
+        // Reset button state on error
+        resetResendButton();
+    }
+}
+
+// Helper function to reset resend button state
+function resetResendButton() {
+    console.log('Resetting resend button state');
+    const resendBtn = document.getElementById('resendOtpBtn');
+    if (resendBtn) {
         resendBtn.disabled = false;
         resendBtn.textContent = 'Resend Code';
+        resendBtn.classList.remove('opacity-50', 'cursor-not-allowed', 'strikethrough-animate', 'active');
     }
 }
 
 // Function to call resend OTP API
 async function sendResendOTP(registrationData, faceImage) {
+    console.log('sendResendOTP called with:', { 
+        hasRegistrationData: !!registrationData, 
+        hasFaceImage: !!faceImage 
+    });
+    
     try {
         const apiUrl = '/Auth/SendRegistrationOTP';
+        console.log('API URL:', apiUrl);
         
         const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+        console.log('Has CSRF token:', !!token);
         
         const requestData = {
             registration_data: registrationData,
             face_image: faceImage
         };
+        
+        console.log('Request data prepared');
         
         const requestOptions = {
             method: "POST",
@@ -522,15 +570,22 @@ async function sendResendOTP(registrationData, faceImage) {
             requestOptions.headers["RequestVerificationToken"] = token;
         }
 
+        console.log('Making API request...');
         const response = await fetch(apiUrl, requestOptions);
+        console.log('Response status:', response.status);
+        console.log('Response ok:', response.ok);
+        
         const responseText = await response.text();
+        console.log('Raw response:', responseText);
 
         // Parse response
         let result;
         try {
             result = JSON.parse(responseText);
+            console.log('Parsed response:', result);
         } catch (jsonError) {
             console.error('JSON Parse Error:', jsonError);
+            console.error('Response text that failed to parse:', responseText);
             return { 
                 success: false, 
                 message: 'Invalid response from server. Please try again.' 
@@ -557,6 +612,7 @@ async function sendResendOTP(registrationData, faceImage) {
                 errorMessage = 'Server error occurred. Please try again later.';
             }
             
+            console.error('API error response:', errorMessage);
             return { 
                 success: false, 
                 message: errorMessage 
@@ -564,14 +620,17 @@ async function sendResendOTP(registrationData, faceImage) {
         }
         
         // Handle successful response
-        return {
+        const finalResult = {
             success: result.success || false,
             message: result.message || 'Verification code sent successfully!',
             otp_id: result.otp_id || null
         };
         
+        console.log('Final result:', finalResult);
+        return finalResult;
+        
     } catch (error) {
-        console.error('Network/Request Error:', error);
+        console.error('Network/Request Error in sendResendOTP:', error);
         return { 
             success: false, 
             message: 'Network error. Please check your connection and try again.' 
@@ -581,7 +640,6 @@ async function sendResendOTP(registrationData, faceImage) {
 
 // Cooldown timer functionality
 function startResendCooldown(seconds) {
-    // ...existing code...
     const resendBtn = document.getElementById('resendOtpBtn');
     let timeLeft = seconds;
     
@@ -590,19 +648,52 @@ function startResendCooldown(seconds) {
     localStorage.setItem('otpCooldownEnd', cooldownEnd.toString());
     
     const countdown = setInterval(() => {
-        resendBtn.textContent = `Resend Code (${timeLeft}s)`;
-        resendBtn.disabled = true;
-        resendBtn.classList.add('strikethrough-animate', 'active');
+        if (resendBtn) {
+            resendBtn.textContent = `Resend Code (${timeLeft}s)`;
+            resendBtn.disabled = true;
+            resendBtn.classList.add('strikethrough-animate', 'active');
+            resendBtn.classList.remove('opacity-50'); // Remove generic opacity, use strikethrough styles
+        }
         
         timeLeft--;
         
         if (timeLeft < 0) {
             clearInterval(countdown);
-            resendBtn.textContent = 'Resend Code';
-            resendBtn.disabled = false;
-            resendBtn.classList.remove('strikethrough-animate', 'active');
+            resetResendButton();
             localStorage.removeItem('otpCooldownEnd');
         }
     }, 1000);
 }
 </script>
+
+<style>
+/* Add strikethrough animation styles */
+.strikethrough-animate {
+    position: relative;
+    text-decoration: none !important;
+}
+
+.strikethrough-animate::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 0;
+    height: 1px;
+    background-color: currentColor;
+    transition: width 0.3s ease-out;
+}
+
+.strikethrough-animate.active::after {
+    width: 100%;
+}
+
+.strikethrough-animate.active {
+    color: #9ca3af !important;
+    cursor: not-allowed !important;
+}
+
+.strikethrough-animate.active:hover {
+    color: #9ca3af !important;
+}
+</style>
