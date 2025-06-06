@@ -294,6 +294,102 @@
         </div>
     </div>
 
+    <!-- OTP Verification Modal - TOP LEVEL OUTSIDE ALL DYNAMIC CONTENT -->
+    <div id="otpModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-[100] hidden flex items-center justify-center">
+        <div id="otpModalContent" class="relative mx-auto p-8 border w-full max-w-md shadow-2xl rounded-xl bg-white transform transition-transform duration-300 scale-95">
+            <!-- Modal Header -->
+            <div class="text-center mb-8">
+                <div class="mx-auto w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center mb-6">
+                    <svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path>
+                        <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-3">Email Verification</h3>
+                <p class="text-gray-600 text-base">
+                    Enter the 6-digit verification code sent to your email
+                </p>
+            </div>
+
+            <!-- OTP Error Message -->
+            <div id="otpErrorMessage" class="hidden mb-6 rounded-lg bg-red-50 border border-red-200 p-4">
+                <div class="flex items-center">
+                    <svg class="w-5 h-5 text-red-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                    </svg>
+                    <p class="text-base font-medium text-red-800"></p>
+                </div>
+            </div>
+
+            <!-- OTP Success Message -->
+            <div id="otpSuccessMessage" class="hidden mb-6 rounded-lg bg-green-50 border border-green-200 p-4">
+                <div class="flex items-center">
+                    <svg class="w-5 h-5 text-green-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                    </svg>
+                    <p class="text-base font-medium text-green-800">Login successful! Redirecting...</p>
+                </div>
+            </div>
+
+            <!-- OTP Resend Success Message -->
+            <div id="otpResendSuccessMessage" class="hidden mb-6 rounded-lg bg-blue-50 border border-blue-200 p-4 animate-pulse">
+                <div class="flex items-center">
+                    <svg class="w-5 h-5 text-blue-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                    </svg>
+                    <p class="text-base font-medium text-blue-800">New verification code sent successfully!</p>
+                </div>
+            </div>
+
+            <!-- OTP Input Section -->
+            <div class="mb-8">
+                <label class="block text-base font-medium text-gray-700 mb-4 text-center">
+                    Enter Verification Code
+                </label>
+                
+                <!-- OTP Input Fields Container -->
+                <div class="flex justify-center space-x-3 mb-6">
+                    <input type="text" id="otpInput1" maxlength="1" autocomplete="off" inputmode="numeric" 
+                           class="w-12 h-12 text-center border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-xl font-semibold bg-white" />
+                    <input type="text" id="otpInput2" maxlength="1" autocomplete="off" inputmode="numeric"
+                           class="w-12 h-12 text-center border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-xl font-semibold bg-white" />
+                    <input type="text" id="otpInput3" maxlength="1" autocomplete="off" inputmode="numeric"
+                           class="w-12 h-12 text-center border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-xl font-semibold bg-white" />
+                    <input type="text" id="otpInput4" maxlength="1" autocomplete="off" inputmode="numeric"
+                           class="w-12 h-12 text-center border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-xl font-semibold bg-white" />
+                    <input type="text" id="otpInput5" maxlength="1" autocomplete="off" inputmode="numeric"
+                           class="w-12 h-12 text-center border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-xl font-semibold bg-white" />
+                    <input type="text" id="otpInput6" maxlength="1" autocomplete="off" inputmode="numeric"
+                           class="w-12 h-12 text-center border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 text-xl font-semibold bg-white" />
+                </div>
+                
+                <!-- Resend OTP -->
+                <div class="text-center">
+                    <button id="resendLoginOtpBtn" onclick="resendLoginOTP()" 
+                            class="text-blue-600 hover:text-blue-700 text-base font-medium underline transition-colors disabled:text-gray-400 disabled:line-through disabled:no-underline disabled:cursor-not-allowed bg-transparent border-none cursor-pointer">
+                        Resend Code
+                    </button>
+                </div>
+            </div>
+
+            <!-- Modal Buttons -->
+            <div class="flex space-x-4">
+                <button onclick="closeOTPModal()" 
+                        class="flex-1 bg-gray-300 text-gray-700 py-3 px-6 rounded-lg hover:bg-gray-400 transition-colors font-medium text-base">
+                    Cancel
+                </button>
+                <button id="verifyLoginOtpBtn" onclick="verifyLoginOTP()" disabled 
+                        class="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium text-base disabled:opacity-50 disabled:cursor-not-allowed">
+                    <span id="verifyLoginButtonText">Verify & Login</span>
+                    <svg id="verifyLoginSpinner" class="hidden animate-spin -mr-1 ml-2 h-5 w-5 text-white inline" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const loginTab = document.getElementById('loginTab');

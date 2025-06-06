@@ -1,28 +1,48 @@
 // Global variable for OTP functionality
 window.currentLoginOtpId = null;
 
+// Make showOTPModal globally available
+window.showOTPModal = showOTPModal;
+
 // OTP Modal Functions
 function showOTPModal() {
+    console.log('showOTPModal called - using top-level modal');
+    
     setTimeout(() => {
         const otpModal = document.getElementById('otpModal');
-        const otpModalContent = document.getElementById('otpModalContent');
         
         if (!otpModal) {
+            console.log('OTP modal not found, creating fallback');
             createOTPModalFallback();
             return;
         }
         
-        // Show modal with fade-in animation
+        console.log('OTP modal found, showing it');
+        
+        // Show modal
         otpModal.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
         
-        // Trigger scale-up animation
+        // Setup OTP inputs immediately
         setTimeout(() => {
-            if (otpModalContent) {
+            setupOTPInputs();
+            
+            // Focus first input
+            const firstInput = document.getElementById('otpInput1');
+            if (firstInput) {
+                firstInput.focus();
+                console.log('Focused first OTP input');
+            }
+        }, 100);
+        
+        // Trigger scale-up animation
+        const otpModalContent = document.getElementById('otpModalContent');
+        if (otpModalContent) {
+            setTimeout(() => {
                 otpModalContent.classList.remove('scale-95');
                 otpModalContent.classList.add('scale-100');
-            }
-        }, 10);
+            }, 10);
+        }
         
         // Clear any existing messages
         hideOTPMessages();
@@ -54,17 +74,139 @@ function showOTPModal() {
             verifySpinner.classList.add('hidden');
         }
         
-        // Focus first OTP input after a small delay
-        setTimeout(() => {
-            const firstInput = document.getElementById('otpInput1');
-            if (firstInput) {
-                firstInput.focus();
-            }
-        }, 200);
-        
-        // Setup enhanced OTP inputs
-        setupEnhancedOTPInputs();
     }, 100);
+}
+
+// Function to force visibility of all OTP elements
+function forceOTPElementsVisible() {
+    console.log('Forcing OTP elements to be visible...');
+    
+    // Force OTP input container visibility
+    const otpContainer = document.querySelector('.flex.justify-center.space-x-3');
+    if (otpContainer) {
+        otpContainer.style.setProperty('display', 'flex', 'important');
+        otpContainer.style.setProperty('visibility', 'visible', 'important');
+        otpContainer.style.setProperty('opacity', '1', 'important');
+        console.log('OTP container forced visible');
+    }
+    
+    // Force all OTP inputs to be visible
+    for (let i = 1; i <= 6; i++) {
+        const input = document.getElementById(`otpInput${i}`);
+        if (input) {
+            input.style.setProperty('display', 'block', 'important');
+            input.style.setProperty('visibility', 'visible', 'important');
+            input.style.setProperty('opacity', '1', 'important');
+            input.style.setProperty('width', '3rem', 'important');
+            input.style.setProperty('height', '3rem', 'important');
+            console.log(`OTP input ${i} forced visible`);
+        }
+    }
+    
+    // Force buttons to be visible
+    const buttonContainer = document.querySelector('.flex.space-x-4');
+    if (buttonContainer) {
+        buttonContainer.style.setProperty('display', 'flex', 'important');
+        buttonContainer.style.setProperty('visibility', 'visible', 'important');
+        buttonContainer.style.setProperty('opacity', '1', 'important');
+        console.log('Button container forced visible');
+    }
+    
+    const verifyBtn = document.getElementById('verifyLoginOtpBtn');
+    if (verifyBtn) {
+        verifyBtn.style.setProperty('display', 'block', 'important');
+        verifyBtn.style.setProperty('visibility', 'visible', 'important');
+        verifyBtn.style.setProperty('opacity', '1', 'important');
+        console.log('Verify button forced visible');
+    }
+    
+    const resendBtn = document.getElementById('resendLoginOtpBtn');
+    if (resendBtn) {
+        resendBtn.style.setProperty('display', 'inline-block', 'important');
+        resendBtn.style.setProperty('visibility', 'visible', 'important');
+        resendBtn.style.setProperty('opacity', '1', 'important');
+        console.log('Resend button forced visible');
+    }
+}
+
+// Setup OTP inputs with proper event handlers
+function setupOTPInputs() {
+    console.log('Setting up OTP inputs...');
+    
+    const otpInputs = [];
+    for (let i = 1; i <= 6; i++) {
+        const input = document.getElementById(`otpInput${i}`);
+        if (input) {
+            otpInputs.push(input);
+        }
+    }
+    
+    if (otpInputs.length !== 6) {
+        console.warn(`Only found ${otpInputs.length} OTP inputs out of 6`);
+    }
+    
+    function checkOTPComplete() {
+        const otpValue = otpInputs.map(input => input.value).join('');
+        const verifyBtn = document.getElementById('verifyLoginOtpBtn');
+        if (verifyBtn) {
+            verifyBtn.disabled = otpValue.length !== 6;
+        }
+    }
+    
+    // Setup event handlers for each input
+    otpInputs.forEach((input, index) => {
+        // Clear any existing event listeners by cloning
+        const newInput = input.cloneNode(true);
+        input.parentNode.replaceChild(newInput, input);
+        otpInputs[index] = newInput;
+        
+        // Force visibility again after cloning
+        newInput.style.setProperty('display', 'block', 'important');
+        newInput.style.setProperty('visibility', 'visible', 'important');
+        newInput.style.setProperty('opacity', '1', 'important');
+        
+        // Add input event handler
+        newInput.addEventListener('input', function(e) {
+            this.value = this.value.replace(/[^0-9]/g, '');
+            
+            if (this.value.length === 1 && index < otpInputs.length - 1) {
+                otpInputs[index + 1].focus();
+            }
+            
+            checkOTPComplete();
+        });
+        
+        // Add keydown event handler
+        newInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Backspace' && this.value === '' && index > 0) {
+                otpInputs[index - 1].focus();
+            }
+        });
+        
+        // Add paste event handler
+        newInput.addEventListener('paste', function(e) {
+            e.preventDefault();
+            const paste = (e.clipboardData || window.clipboardData).getData('text');
+            const pasteArray = paste.replace(/\D/g, '').split('').slice(0, 6);
+            
+            otpInputs.forEach(inp => inp.value = '');
+            
+            pasteArray.forEach((char, pasteIndex) => {
+                if (pasteIndex < otpInputs.length) {
+                    otpInputs[pasteIndex].value = char;
+                }
+            });
+            
+            const nextEmptyIndex = pasteArray.length < 6 ? pasteArray.length : 5;
+            if (nextEmptyIndex < otpInputs.length) {
+                otpInputs[nextEmptyIndex].focus();
+            }
+            
+            checkOTPComplete();
+        });
+    });
+    
+    console.log(`OTP inputs setup completed with ${otpInputs.length} inputs`);
 }
 
 function closeOTPModal() {
