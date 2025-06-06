@@ -879,14 +879,44 @@ async function resendLoginOTP() {
     
     const resendBtn = document.getElementById('resendLoginOtpBtn');
     
+    // Prevent multiple resend attempts
+    if (resendBtn.disabled) {
+        console.log('Resend already in progress, ignoring duplicate call');
+        return;
+    }
+    
     resendBtn.disabled = true;
     resendBtn.textContent = 'Sending...';
     resendBtn.classList.add('line-through', 'no-underline', 'text-gray-400');
     resendBtn.classList.remove('text-blue-600', 'hover:text-blue-700', 'underline');
     
     try {
-        // Use the global sendLoginOTP function
-        const result = await window.sendLoginOTP(window.loginEmail);
+        // Use the global sendLoginOTP function but bypass the duplicate check for resend
+        const apiUrl = '/Auth/SendLoginOTP';
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+        
+        const requestData = { email: window.loginEmail };
+        
+        const requestOptions = {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "RequestVerificationToken": token
+            },
+            body: JSON.stringify(requestData)
+        };
+
+        console.log('Resending OTP...');
+        const response = await fetch(apiUrl, requestOptions);
+        const responseText = await response.text();
+        
+        let result;
+        try {
+            result = JSON.parse(responseText);
+        } catch (parseError) {
+            throw new Error('Invalid server response');
+        }
         
         if (result.success) {
             window.currentLoginOtpId = result.otp_id;
@@ -902,6 +932,7 @@ async function resendLoginOTP() {
         }
         
     } catch (error) {
+        console.error('Resend OTP error:', error);
         showOTPError('Failed to resend verification code.');
         resetResendButton();
     }
@@ -915,14 +946,43 @@ function resendFallbackOTP() {
     
     const resendBtn = document.getElementById('resendFallbackOtpBtn');
     
+    // Prevent multiple resend attempts
+    if (resendBtn.disabled) {
+        console.log('Fallback resend already in progress, ignoring duplicate call');
+        return;
+    }
+    
     resendBtn.disabled = true;
     resendBtn.textContent = 'Sending...';
     resendBtn.classList.add('line-through', 'no-underline', 'text-gray-400');
     resendBtn.classList.remove('text-blue-600', 'hover:text-blue-700', 'underline');
     
-    // Use the global sendLoginOTP function
-    window.sendLoginOTP(window.loginEmail)
-        .then(result => {
+    // Direct API call for fallback resend
+    const apiUrl = '/Auth/SendLoginOTP';
+    const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+    
+    const requestData = { email: window.loginEmail };
+    
+    const requestOptions = {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "RequestVerificationToken": token
+        },
+        body: JSON.stringify(requestData)
+    };
+
+    fetch(apiUrl, requestOptions)
+        .then(response => response.text())
+        .then(responseText => {
+            let result;
+            try {
+                result = JSON.parse(responseText);
+            } catch (parseError) {
+                throw new Error('Invalid server response');
+            }
+            
             if (result.success) {
                 window.currentLoginOtpId = result.otp_id;
                 
@@ -936,6 +996,7 @@ function resendFallbackOTP() {
             }
         })
         .catch(error => {
+            console.error('Fallback resend error:', error);
             alert('Failed to resend verification code.');
             resetFallbackResendButton();
         });

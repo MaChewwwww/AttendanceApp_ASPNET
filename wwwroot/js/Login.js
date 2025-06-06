@@ -1,11 +1,18 @@
 // Global variables for login functionality
 let loginEmail = '';
+let isOTPBeingSent = false; // Add flag to prevent duplicate calls
 
 // Make loginEmail accessible globally
 window.loginEmail = '';
 
 // Ensure functions are available globally and re-attachable
 window.performLogin = async function() {
+    // Prevent multiple simultaneous login attempts
+    if (isOTPBeingSent) {
+        console.log('OTP sending already in progress, ignoring duplicate call');
+        return;
+    }
+    
     const emailInput = document.getElementById('loginEmail');
     const passwordInput = document.getElementById('loginPassword');
     const loginButton = document.getElementById('loginButton');
@@ -42,7 +49,8 @@ window.performLogin = async function() {
         return;
     }
     
-    // Set loading state
+    // Set loading state and flag
+    isOTPBeingSent = true;
     loginButton.disabled = true;
     loginButtonText.textContent = 'Validating...';
     hideMessages();
@@ -86,7 +94,8 @@ window.performLogin = async function() {
         console.error('Login error:', error);
         showLoginError('Login failed due to a network error. Please check your connection and try again.');
     } finally {
-        // Reset button state
+        // Reset button state and flag
+        isOTPBeingSent = false;
         loginButton.disabled = false;
         loginButtonText.textContent = 'Sign In';
     }
@@ -138,8 +147,18 @@ async function validateLoginWithAPI(loginData) {
     }
 }
 
-// Make the sendLoginOTP function globally accessible
+// Make the sendLoginOTP function globally accessible with duplicate prevention
 window.sendLoginOTP = async function(email) {
+    // Additional check to prevent duplicate calls
+    if (isOTPBeingSent && window.currentLoginOtpId) {
+        console.log('OTP already being sent or exists, skipping duplicate call');
+        return {
+            success: true,
+            message: 'OTP already sent',
+            otp_id: window.currentLoginOtpId
+        };
+    }
+    
     try {
         const apiUrl = '/Auth/SendLoginOTP';
         const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
@@ -156,6 +175,7 @@ window.sendLoginOTP = async function(email) {
             body: JSON.stringify(requestData)
         };
 
+        console.log('Sending OTP request to:', apiUrl);
         const response = await fetch(apiUrl, requestOptions);
         const responseText = await response.text();
         
@@ -171,6 +191,8 @@ window.sendLoginOTP = async function(email) {
             };
         }
         
+        console.log('OTP response:', result);
+        
         return {
             success: result.success || false,
             message: result.message || 'Failed to send verification code',
@@ -178,6 +200,7 @@ window.sendLoginOTP = async function(email) {
         };
         
     } catch (error) {
+        console.error('SendLoginOTP error:', error);
         return { 
             success: false, 
             message: "Network error. Please check your connection and try again.",

@@ -664,18 +664,58 @@
             }
             
             function bindLoginEventListeners() {
-                // Bind login button
+                // Bind login button with duplicate prevention
                 const loginBtn = document.getElementById('loginButton');
-                if (loginBtn) {
+                if (loginBtn && !loginBtn.hasAttribute('data-listener-bound')) {
+                    // Mark as bound to prevent duplicate listeners
+                    loginBtn.setAttribute('data-listener-bound', 'true');
+                    
                     // Remove any existing listeners first
                     loginBtn.replaceWith(loginBtn.cloneNode(true));
                     const newLoginBtn = document.getElementById('loginButton');
+                    newLoginBtn.setAttribute('data-listener-bound', 'true');
                     
-                    newLoginBtn.addEventListener('click', function() {
+                    newLoginBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
                         if (typeof performLogin === 'function') {
                             performLogin();
                         } else {
                             console.error('performLogin function not available');
+                        }
+                    });
+                }
+                
+                // Bind OTP modal buttons if they exist with duplicate prevention
+                const verifyOtpBtn = document.getElementById('verifyLoginOtpBtn');
+                if (verifyOtpBtn && !verifyOtpBtn.hasAttribute('data-listener-bound')) {
+                    verifyOtpBtn.setAttribute('data-listener-bound', 'true');
+                    verifyOtpBtn.removeAttribute('onclick');
+                    verifyOtpBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        if (typeof verifyLoginOTP === 'function') {
+                            verifyLoginOTP();
+                        } else {
+                            console.error('verifyLoginOTP function not available');
+                        }
+                    });
+                }
+                
+                const resendOtpBtn = document.getElementById('resendLoginOtpBtn');
+                if (resendOtpBtn && !resendOtpBtn.hasAttribute('data-listener-bound')) {
+                    resendOtpBtn.setAttribute('data-listener-bound', 'true');
+                    resendOtpBtn.removeAttribute('onclick');
+                    resendOtpBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        if (typeof resendLoginOTP === 'function') {
+                            resendLoginOTP();
+                        } else {
+                            console.error('resendLoginOTP function not available');
                         }
                     });
                 }
@@ -720,31 +760,6 @@
                         }
                     });
                 });
-                
-                // Bind OTP modal buttons if they exist
-                const verifyOtpBtn = document.getElementById('verifyLoginOtpBtn');
-                if (verifyOtpBtn) {
-                    verifyOtpBtn.removeAttribute('onclick');
-                    verifyOtpBtn.addEventListener('click', function() {
-                        if (typeof verifyLoginOTP === 'function') {
-                            verifyLoginOTP();
-                        } else {
-                            console.error('verifyLoginOTP function not available');
-                        }
-                    });
-                }
-                
-                const resendOtpBtn = document.getElementById('resendLoginOtpBtn');
-                if (resendOtpBtn) {
-                    resendOtpBtn.removeAttribute('onclick');
-                    resendOtpBtn.addEventListener('click', function() {
-                        if (typeof resendLoginOTP === 'function') {
-                            resendLoginOTP();
-                        } else {
-                            console.error('resendLoginOTP function not available');
-                        }
-                    });
-                }
                 
                 // Bind close OTP modal buttons
                 const closeOtpBtns = document.querySelectorAll('[onclick*="closeOTPModal"]');
