@@ -6,8 +6,9 @@ window.showOTPModal = showOTPModal;
 
 // OTP Modal Functions
 function showOTPModal() {
-    console.log('showOTPModal called - using top-level modal');
+    console.log('showOTPModal called - using top-level modal with enhanced animations');
     
+    // Reduced delay for faster appearance
     setTimeout(() => {
         const otpModal = document.getElementById('otpModal');
         
@@ -17,51 +18,82 @@ function showOTPModal() {
             return;
         }
         
-        console.log('OTP modal found, showing it');
+        console.log('OTP modal found, showing with enhanced animations');
         
-        // Show modal
+        // Show modal with enhanced entrance animation
         otpModal.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
         
-        // Setup OTP inputs immediately
-        setTimeout(() => {
-            setupOTPInputs();
-            
-            // Focus first input
-            const firstInput = document.getElementById('otpInput1');
-            if (firstInput) {
-                firstInput.focus();
-                console.log('Focused first OTP input');
-            }
-        }, 100);
+        // Enhanced backdrop fade-in animation
+        otpModal.style.opacity = '0';
+        otpModal.style.transition = 'opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
         
-        // Trigger scale-up animation
+        // Force reflow
+        otpModal.offsetHeight;
+        
+        // Start backdrop animation
+        setTimeout(() => {
+            otpModal.style.opacity = '1';
+        }, 10);
+        
+        // Enhanced modal content animation with bounce effect
         const otpModalContent = document.getElementById('otpModalContent');
         if (otpModalContent) {
+            // Start with smaller scale and animate up with bounce
+            otpModalContent.style.transform = 'scale(0.8) translateY(20px)';
+            otpModalContent.style.opacity = '0';
+            otpModalContent.style.transition = 'all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)';
+            
             setTimeout(() => {
-                otpModalContent.classList.remove('scale-95');
-                otpModalContent.classList.add('scale-100');
-            }, 10);
+                otpModalContent.style.transform = 'scale(1) translateY(0)';
+                otpModalContent.style.opacity = '1';
+            }, 150);
         }
+        
+        // Setup OTP inputs with staggered entrance animation
+        setTimeout(() => {
+            setupOTPInputs();
+            animateOTPInputsEntrance();
+            
+            // Focus first input with enhanced animation
+            setTimeout(() => {
+                const firstInput = document.getElementById('otpInput1');
+                if (firstInput) {
+                    firstInput.focus();
+                    // Add a subtle glow effect to indicate focus
+                    firstInput.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.2)';
+                    firstInput.style.transform = 'scale(1.05)';
+                    firstInput.style.transition = 'all 0.3s ease-out';
+                    
+                    setTimeout(() => {
+                        firstInput.style.boxShadow = '0 0 0 0 rgba(59, 130, 246, 0)';
+                        firstInput.style.transform = 'scale(1)';
+                    }, 1000);
+                    
+                    console.log('Focused first OTP input with enhanced animation');
+                }
+            }, 300);
+        }, 200);
         
         // Clear any existing messages
         hideOTPMessages();
         hideOTPResendSuccess();
         
-        // Clear OTP inputs
-        for (let i = 1; i <= 6; i++) {
-            const input = document.getElementById(`otpInput${i}`);
-            if (input) {
-                input.value = '';
-            }
-        }
-        
-        // Reset verify button
+        // Reset verify button with animation
         const verifyBtn = document.getElementById('verifyLoginOtpBtn');
         if (verifyBtn) {
             verifyBtn.disabled = true;
             verifyBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
             verifyBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+            
+            // Add entrance animation to button
+            verifyBtn.style.opacity = '0.7';
+            verifyBtn.style.transform = 'translateY(10px)';
+            setTimeout(() => {
+                verifyBtn.style.transition = 'all 0.3s ease-out';
+                verifyBtn.style.opacity = '1';
+                verifyBtn.style.transform = 'translateY(0)';
+            }, 400);
         }
         
         const verifyBtnText = document.getElementById('verifyLoginButtonText');
@@ -74,7 +106,35 @@ function showOTPModal() {
             verifySpinner.classList.add('hidden');
         }
         
-    }, 100);
+    }, 50); // Reduced from 100ms to 50ms for faster response
+}
+
+// New function to animate OTP inputs entrance
+function animateOTPInputsEntrance() {
+    for (let i = 1; i <= 6; i++) {
+        const input = document.getElementById(`otpInput${i}`);
+        if (input) {
+            // Start with slight offset and fade
+            input.style.transform = 'translateY(20px)';
+            input.style.opacity = '0';
+            input.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+            
+            // Stagger the animation for each input
+            setTimeout(() => {
+                input.style.transform = 'translateY(0)';
+                input.style.opacity = '1';
+                
+                // Add a subtle bounce when animation completes
+                setTimeout(() => {
+                    input.style.transform = 'scale(1.05)';
+                    setTimeout(() => {
+                        input.style.transform = 'scale(1)';
+                    }, 100);
+                }, 200);
+                
+            }, i * 80); // Stagger by 80ms for each input
+        }
+    }
 }
 
 // Function to force visibility of all OTP elements
@@ -214,22 +274,57 @@ function closeOTPModal() {
     const otpModalContent = document.getElementById('otpModalContent');
     
     if (otpModal && otpModalContent) {
-        // Start closing animation
-        otpModalContent.classList.remove('scale-100');
-        otpModalContent.classList.add('scale-95');
+        // Enhanced closing animation with bounce-out effect
+        otpModalContent.style.transition = 'all 0.4s cubic-bezier(0.55, 0.055, 0.675, 0.19)';
+        otpModalContent.style.transform = 'scale(0.8) translateY(20px)';
+        otpModalContent.style.opacity = '0';
+        
+        // Fade out backdrop with better timing
+        otpModal.style.transition = 'opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+        otpModal.style.opacity = '0';
+        
+        // Animate OTP inputs exit
+        for (let i = 1; i <= 6; i++) {
+            const input = document.getElementById(`otpInput${i}`);
+            if (input) {
+                setTimeout(() => {
+                    input.style.transition = 'all 0.2s ease-in';
+                    input.style.transform = 'translateY(-10px)';
+                    input.style.opacity = '0';
+                }, i * 30);
+            }
+        }
         
         // Wait for animation to complete before hiding
         setTimeout(() => {
             otpModal.classList.add('hidden');
             document.body.style.overflow = 'auto';
-        }, 300);
+            
+            // Reset styles for next time
+            otpModal.style.opacity = '';
+            otpModal.style.transition = '';
+            otpModalContent.style.transform = '';
+            otpModalContent.style.opacity = '';
+            otpModalContent.style.transition = '';
+            
+            // Reset input styles
+            for (let i = 1; i <= 6; i++) {
+                const input = document.getElementById(`otpInput${i}`);
+                if (input) {
+                    input.style.transform = '';
+                    input.style.opacity = '';
+                    input.style.transition = '';
+                }
+            }
+        }, 400);
     }
     
-    // Clear OTP inputs
+    // Clear OTP inputs and remove all animation classes
     for (let i = 1; i <= 6; i++) {
         const input = document.getElementById(`otpInput${i}`);
         if (input) {
             input.value = '';
+            input.classList.remove('otp-success', 'otp-error');
         }
     }
     
@@ -241,6 +336,9 @@ function closeOTPModal() {
     const verifyBtn = document.getElementById('verifyLoginOtpBtn');
     if (verifyBtn) {
         verifyBtn.disabled = true;
+        verifyBtn.style.opacity = '';
+        verifyBtn.style.transform = '';
+        verifyBtn.style.transition = '';
     }
 }
 

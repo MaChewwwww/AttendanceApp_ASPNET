@@ -137,60 +137,89 @@
         
         /* Smooth processing states */
         .processing-glow {
-            animation: processingGlow 2s ease-in-out infinite;
+            animation: processingGlow 1.5s ease-in-out infinite;
+            box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
         }
         
         @@keyframes processingGlow {
             0%, 100% { 
                 box-shadow: 0 0 5px rgba(59, 130, 246, 0.3);
+                transform: scale(1);
             }
             50% { 
                 box-shadow: 0 0 20px rgba(59, 130, 246, 0.6);
+                transform: scale(1.02);
             }
         }
         
-        /* Smooth transitions for all interactive elements */
-        .transition-smooth {
+        /* Enhanced modal entrance animations */
+        .modal-content-bounce {
+            animation: modalContentBounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        @@keyframes modalContentBounce {
+            0% { 
+                opacity: 0;
+                transform: scale(0.3) translateY(50px);
+            }
+            50% { 
+                opacity: 0.8;
+                transform: scale(1.05) translateY(-10px);
+            }
+            100% { 
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+        
+        /* Staggered input entrance animation */
+        .otp-input-entrance {
+            animation: otpInputEntrance 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+        
+        @@keyframes otpInputEntrance {
+            0% { 
+                opacity: 0;
+                transform: translateY(30px) scale(0.9);
+            }
+            70% { 
+                opacity: 0.8;
+                transform: translateY(-5px) scale(1.02);
+            }
+            100% { 
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        
+        /* Enhanced success message animation */
+        .success-message-glow {
+            animation: successMessageGlow 2s ease-in-out;
+        }
+        
+        @@keyframes successMessageGlow {
+            0%, 100% { 
+                box-shadow: 0 2px 8px rgba(34, 197, 94, 0.1);
+            }
+            50% { 
+                box-shadow: 0 8px 25px rgba(34, 197, 94, 0.3);
+            }
+        }
+        
+        /* Smooth button state transitions */
+        .button-state-transition {
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
-        /* Enhanced button animations */
-        .btn-smooth {
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            transform: translateZ(0);
+        /* Enhanced focus animations for OTP inputs */
+        .otp-input-focus-enhanced {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
-        .btn-smooth:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        }
-        
-        .btn-smooth:active {
-            transform: translateY(0);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        
-        /* Strikethrough animation for resend button */
-        .strikethrough-animate {
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .strikethrough-animate::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 0;
-            width: 100%;
-            height: 1px;
-            background: currentColor;
-            transform: translateY(-50%) scaleX(0);
-            transform-origin: left;
-            transition: transform 0.3s ease-in-out;
-        }
-        
-        .strikethrough-animate.active::after {
-            transform: translateY(-50%) scaleX(1);
+        .otp-input-focus-enhanced:focus {
+            transform: scale(1.08);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2), 0 4px 12px rgba(59, 130, 246, 0.15);
+            border-color: #3b82f6;
         }
     </style>
 </head>

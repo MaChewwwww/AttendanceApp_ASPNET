@@ -55,31 +55,45 @@ window.performLogin = async function() {
     loginButtonText.textContent = 'Validating...';
     hideMessages();
     
+    // Add subtle loading animation to button
+    loginButton.classList.add('processing-glow');
+    
     try {
         // First validate credentials
         const validationResult = await validateLoginWithAPI({ email, password });
         
         if (validationResult.success) {
-            // Credentials are valid - send OTP
-            loginButtonText.textContent = 'Sending verification code...';
+            // Show immediate success feedback
+            showLoginSuccess('Credentials validated! Preparing verification...');
+            showOTPPreparationSpinner();
             
-            const otpResult = await sendLoginOTP(email);
-            
-            if (otpResult.success) {
-                window.currentLoginOtpId = otpResult.otp_id;
+            // Quick visual feedback before sending OTP
+            setTimeout(async () => {
+                loginButtonText.textContent = 'Sending verification code...';
                 
-                // Show success and then OTP modal
-                showOTPSendingComplete();
+                const otpResult = await sendLoginOTP(email);
                 
-                setTimeout(() => {
-                    if (typeof window.showOTPModal === 'function') {
-                        window.showOTPModal();
-                    }
-                }, 2000);
-                
-            } else {
-                showLoginError(otpResult.message || 'Failed to send verification code. Please try again.');
-            }
+                if (otpResult.success) {
+                    window.currentLoginOtpId = otpResult.otp_id;
+                    
+                    // Show final success with enhanced transition
+                    showOTPSendingComplete();
+                    
+                    // Much faster transition to modal with smooth animation
+                    setTimeout(() => {
+                        // Pre-prepare modal elements for faster display
+                        prepareOTPModal();
+                        
+                        // Show modal with enhanced entrance
+                        if (typeof window.showOTPModal === 'function') {
+                            window.showOTPModal();
+                        }
+                    }, 800); // Reduced from 2000ms to 800ms
+                    
+                } else {
+                    showLoginError(otpResult.message || 'Failed to send verification code. Please try again.');
+                }
+            }, 300); // Brief delay for better UX flow
             
         } else {
             // Show validation errors
@@ -94,10 +108,13 @@ window.performLogin = async function() {
         console.error('Login error:', error);
         showLoginError('Login failed due to a network error. Please check your connection and try again.');
     } finally {
-        // Reset button state and flag
-        isOTPBeingSent = false;
-        loginButton.disabled = false;
-        loginButtonText.textContent = 'Sign In';
+        // Reset button state and flag after a delay to prevent jarring transitions
+        setTimeout(() => {
+            isOTPBeingSent = false;
+            loginButton.disabled = false;
+            loginButtonText.textContent = 'Sign In';
+            loginButton.classList.remove('processing-glow');
+        }, 1000);
     }
 };
 
@@ -260,18 +277,88 @@ function hideMessages() {
     }
 }
 
-function showOTPSendingComplete() {
+function showOTPPreparationSpinner() {
     const successIcon = document.getElementById('loginSuccessIcon');
     const successSpinner = document.getElementById('loginSuccessSpinner');
     const successText = document.getElementById('loginSuccessText');
     
     if (successIcon && successSpinner && successText) {
-        // Hide spinner and show check icon
+        // Show spinner and hide check icon
+        successIcon.classList.add('hidden');
+        successSpinner.classList.remove('hidden');
+        
+        // Update text with animated dots
+        successText.textContent = 'Preparing verification code';
+        
+        // Add animated dots effect
+        let dotCount = 0;
+        const dotInterval = setInterval(() => {
+            dotCount = (dotCount + 1) % 4;
+            successText.textContent = 'Preparing verification code' + '.'.repeat(dotCount);
+        }, 500);
+        
+        // Store interval ID for cleanup
+        window.preparationDotInterval = dotInterval;
+    }
+}
+
+function showOTPSendingComplete() {
+    // Clear any existing dot animation
+    if (window.preparationDotInterval) {
+        clearInterval(window.preparationDotInterval);
+        window.preparationDotInterval = null;
+    }
+    
+    const successIcon = document.getElementById('loginSuccessIcon');
+    const successSpinner = document.getElementById('loginSuccessSpinner');
+    const successText = document.getElementById('loginSuccessText');
+    
+    if (successIcon && successSpinner && successText) {
+        // Hide spinner and show check icon with animation
         successSpinner.classList.add('hidden');
         successIcon.classList.remove('hidden');
         
-        // Update text
-        successText.textContent = 'Verification code sent successfully! Check your email.';
+        // Add success animation to icon
+        successIcon.style.transform = 'scale(1.2)';
+        successIcon.style.transition = 'transform 0.3s ease-out';
+        setTimeout(() => {
+            successIcon.style.transform = 'scale(1)';
+        }, 300);
+        
+        // Update text with success message
+        successText.textContent = 'Verification code sent! Opening verification window...';
+        
+        // Add gentle glow effect to success message
+        const successMessage = document.getElementById('loginSuccessMessage');
+        if (successMessage) {
+            successMessage.style.boxShadow = '0 0 20px rgba(34, 197, 94, 0.3)';
+            setTimeout(() => {
+                successMessage.style.boxShadow = '';
+            }, 1000);
+        }
+    }
+}
+
+// New function to pre-prepare modal for faster display
+function prepareOTPModal() {
+    const otpModal = document.getElementById('otpModal');
+    if (otpModal) {
+        // Pre-position modal elements for smoother entrance
+        const otpModalContent = document.getElementById('otpModalContent');
+        if (otpModalContent) {
+            otpModalContent.style.transform = 'scale(0.9)';
+            otpModalContent.style.opacity = '0';
+        }
+        
+        // Pre-clear any existing OTP values
+        for (let i = 1; i <= 6; i++) {
+            const input = document.getElementById(`otpInput${i}`);
+            if (input) {
+                input.value = '';
+                input.style.transform = 'translateY(10px)';
+                input.style.opacity = '0.7';
+            }
+        }
     }
 }
 
