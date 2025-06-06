@@ -663,16 +663,6 @@ function createPasswordResetOTPModal() {
                 </div>
             </div>
 
-            <!-- Resend Success Message -->
-            <div id="passwordResetOTPResendSuccessMessage" class="hidden mb-6 rounded-lg bg-blue-50 border border-blue-200 p-4 animate-pulse">
-                <div class="flex items-center">
-                    <svg class="w-5 h-5 text-blue-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                    </svg>
-                    <p class="text-base font-medium text-blue-800">New verification code sent successfully!</p>
-                </div>
-            </div>
-
             <!-- OTP Input Section -->
             <div class="mb-8">
                 <label class="block text-base font-medium text-gray-700 mb-4 text-center">
@@ -693,13 +683,6 @@ function createPasswordResetOTPModal() {
                            class="w-12 h-12 text-center border-2 border-gray-300 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 text-xl font-semibold" />
                     <input type="text" id="passwordResetOtpInput6" maxlength="1" autocomplete="off" inputmode="numeric"
                            class="w-12 h-12 text-center border-2 border-gray-300 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 text-xl font-semibold" />
-                </div>
-                
-                <!-- Resend OTP -->
-                <div class="text-center">
-                    <button id="resendPasswordResetOtpBtn" onclick="resendPasswordResetOTP()" class="text-orange-600 hover:text-orange-700 text-base font-medium underline transition-colors disabled:text-gray-400 disabled:line-through disabled:no-underline disabled:cursor-not-allowed">
-                        Resend Code
-                    </button>
                 </div>
             </div>
 
@@ -783,9 +766,7 @@ function showPasswordResetOTPError(message) {
     
     // Hide other messages
     const successMessage = document.getElementById('passwordResetOTPSuccessMessage');
-    const resendMessage = document.getElementById('passwordResetOTPResendSuccessMessage');
     if (successMessage) successMessage.classList.add('hidden');
-    if (resendMessage) resendMessage.classList.add('hidden');
 }
 
 function showPasswordResetOTPSuccess(message = 'Password reset successful!') {
@@ -804,41 +785,15 @@ function showPasswordResetOTPSuccess(message = 'Password reset successful!') {
     
     // Hide other messages
     const errorMessage = document.getElementById('passwordResetOTPErrorMessage');
-    const resendMessage = document.getElementById('passwordResetOTPResendSuccessMessage');
     if (errorMessage) errorMessage.classList.add('hidden');
-    if (resendMessage) resendMessage.classList.add('hidden');
-}
-
-function showPasswordResetOTPResendSuccess(message = 'New verification code sent successfully!') {
-    const resendMessage = document.getElementById('passwordResetOTPResendSuccessMessage');
-    if (resendMessage) {
-        const resendText = resendMessage.querySelector('p');
-        if (resendText) {
-            resendText.textContent = message;
-        }
-        resendMessage.classList.remove('hidden');
-        
-        // Auto-hide after 5 seconds
-        setTimeout(() => {
-            resendMessage.classList.add('hidden');
-        }, 5000);
-    }
-    
-    // Hide error message
-    const errorMessage = document.getElementById('passwordResetOTPErrorMessage');
-    if (errorMessage) {
-        errorMessage.classList.add('hidden');
-    }
 }
 
 function hidePasswordResetOTPMessages() {
     const errorMessage = document.getElementById('passwordResetOTPErrorMessage');
     const successMessage = document.getElementById('passwordResetOTPSuccessMessage');
-    const resendMessage = document.getElementById('passwordResetOTPResendSuccessMessage');
     
     if (errorMessage) errorMessage.classList.add('hidden');
     if (successMessage) successMessage.classList.add('hidden');
-    if (resendMessage) resendMessage.classList.add('hidden');
 }
 
 // Form functions for password reset OTP
@@ -860,15 +815,6 @@ function resetPasswordResetOTPForm() {
     if (verifyBtn) verifyBtn.disabled = true;
     if (verifyBtnText) verifyBtnText.textContent = 'Verify & Reset';
     if (verifySpinner) verifySpinner.classList.add('hidden');
-    
-    // Reset resend button
-    const resendBtn = document.getElementById('resendPasswordResetOtpBtn');
-    if (resendBtn) {
-        resendBtn.textContent = 'Resend Code';
-        resendBtn.disabled = false;
-        resendBtn.classList.remove('line-through', 'no-underline', 'text-gray-400', 'cursor-not-allowed');
-        resendBtn.classList.add('text-orange-600', 'hover:text-orange-700', 'underline');
-    }
 }
 
 // Setup OTP inputs for password reset
@@ -1267,106 +1213,6 @@ async function verifyPasswordResetOTP() {
     }
 }
 
-// Resend password reset OTP
-async function resendPasswordResetOTP() {
-    if (!window.forgotPasswordEmail) {
-        showPasswordResetOTPError('Session expired. Please try again.');
-        return;
-    }
-    
-    const resendBtn = document.getElementById('resendPasswordResetOtpBtn');
-    
-    // Set loading state
-    resendBtn.disabled = true;
-    resendBtn.textContent = 'Sending...';
-    resendBtn.classList.add('text-gray-400', 'cursor-not-allowed');
-    resendBtn.classList.remove('text-orange-600', 'hover:text-orange-700', 'underline');
-    
-    try {
-        // Reuse the same SendPasswordResetOTP endpoint
-        const result = await sendPasswordResetOTPWithAPI(window.forgotPasswordEmail);
-        
-        console.log('=== RESEND OTP RESULT DEBUG ===');
-        console.log('Resend result:', result);
-        console.log('New OTP ID:', result.otp_id);
-        console.log('===============================');
-        
-        if (result.success && result.otp_id !== null && result.otp_id !== undefined) {
-            // Update the stored OTP ID with the new one
-            const otpIdToStore = typeof result.otp_id === 'string' ? parseInt(result.otp_id, 10) : result.otp_id;
-            window.currentForgotPasswordOtpId = otpIdToStore;
-            
-            console.log('=== NEW OTP ID STORAGE DEBUG ===');
-            console.log('New stored OTP ID:', window.currentForgotPasswordOtpId);
-            console.log('New stored type:', typeof window.currentForgotPasswordOtpId);
-            console.log('=================================');
-            
-            showPasswordResetOTPResendSuccess();
-            
-            // Clear OTP inputs
-            for (let i = 1; i <= 6; i++) {
-                const input = document.getElementById(`passwordResetOtpInput${i}`);
-                if (input) {
-                    input.value = '';
-                }
-            }
-            
-            // Focus first input
-            const firstInput = document.getElementById('passwordResetOtpInput1');
-            if (firstInput) {
-                firstInput.focus();
-            }
-            
-            // Start 5-minute cooldown with strikethrough
-            startPasswordResetResendCooldown(300); // 5 minutes = 300 seconds
-        } else {
-            showPasswordResetOTPError(result.message || 'Failed to resend verification code.');
-            resetPasswordResetResendButton();
-        }
-        
-    } catch (error) {
-        showPasswordResetOTPError('Failed to resend verification code.');
-        resetPasswordResetResendButton();
-    }
-}
-
-// Timer functions for password reset
-function startPasswordResetResendCooldown(seconds) {
-    const resendBtn = document.getElementById('resendPasswordResetOtpBtn');
-    let timeLeft = seconds;
-    
-    // Apply strikethrough styling
-    resendBtn.disabled = true;
-    resendBtn.classList.add('strikethrough-animate', 'active', 'text-gray-400', 'cursor-not-allowed', 'no-underline');
-    resendBtn.classList.remove('text-orange-600', 'hover:text-orange-700', 'underline');
-    
-    const countdown = setInterval(() => {
-        const minutes = Math.floor(timeLeft / 60);
-        const seconds = timeLeft % 60;
-        const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-        
-        resendBtn.textContent = `Resend Code (${timeString})`;
-        
-        timeLeft--;
-        
-        if (timeLeft < 0) {
-            clearInterval(countdown);
-            resetPasswordResetResendButton();
-        }
-    }, 1000);
-}
-
-function resetPasswordResetResendButton() {
-    const resendBtn = document.getElementById('resendPasswordResetOtpBtn');
-    
-    if (resendBtn) {
-        resendBtn.textContent = 'Resend Code';
-        resendBtn.disabled = false;
-        resendBtn.classList.remove('strikethrough-animate', 'active', 'text-gray-400', 'cursor-not-allowed', 'no-underline');
-        resendBtn.classList.add('text-orange-600', 'hover:text-orange-700', 'underline');
-    }
-}
-
 // Create success particles animation
 function createSuccessParticles() {
     const modal = document.getElementById('passwordResetOTPModal');
@@ -1542,7 +1388,6 @@ addSuccessAnimations();
 window.showPasswordResetOTPModal = showPasswordResetOTPModal;
 window.closePasswordResetOTPModal = closePasswordResetOTPModal;
 window.verifyPasswordResetOTP = verifyPasswordResetOTP;
-window.resendPasswordResetOTP = resendPasswordResetOTP;
 window.createSuccessParticles = createSuccessParticles;
 
 // Make functions globally accessible
