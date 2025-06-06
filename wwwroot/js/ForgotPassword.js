@@ -2,8 +2,15 @@
 window.currentForgotPasswordOtpId = null;
 window.forgotPasswordEmail = '';
 
+// Add transition flags to prevent premature session cleanup
+window.isTransitioningToPasswordReset = false;
+window.isTransitioningToNewPassword = false;
+
 // Show forgot password modal
 function showForgotPasswordModal() {
+    // Clear any existing password reset completion flags and reset for fresh start
+    window.passwordResetCompleted = false;
+    
     const modal = document.getElementById('forgotPasswordModal');
     const modalContent = document.getElementById('forgotPasswordModalContent');
     
@@ -56,10 +63,11 @@ function closeForgotPasswordModal() {
     // Reset form and clear data
     resetForgotPasswordForm();
     hideForgotPasswordMessages();
-    // DON'T clear the OTP ID here - we need it for verification
-    // window.currentForgotPasswordOtpId = null;
-    // DON'T clear the email when closing - keep it for OTP modal
-    // window.forgotPasswordEmail = '';
+    // Only clear session data if not transitioning to next step
+    if (!window.isTransitioningToPasswordReset) {
+        window.currentForgotPasswordOtpId = null;
+        window.forgotPasswordEmail = '';
+    }
 }
 
 // Create forgot password modal HTML
@@ -475,8 +483,14 @@ async function sendPasswordResetInstructions() {
     hideForgotPasswordMessages();
     
     try {
-        // Store email globally
+        // Store email globally for this session
         window.forgotPasswordEmail = email;
+        
+        // Clear any previous session data to start fresh
+        window.currentForgotPasswordOtpId = null;
+        window.currentPasswordResetSessionId = null;
+        window.newPasswordEmail = '';
+        window.passwordResetCompleted = false;
         
         // Validate email with API
         const validationResult = await validateForgotPasswordEmailWithAPI(email);
@@ -504,11 +518,15 @@ async function sendPasswordResetInstructions() {
                 console.log('Stored type:', typeof window.currentForgotPasswordOtpId);
                 console.log('============================');
                 
+                // Set transition flag to prevent premature cleanup
+                window.isTransitioningToPasswordReset = true;
+                
                 // Close this modal and show OTP modal
                 closeForgotPasswordModal();
                 
                 // Show OTP modal after a brief delay
                 setTimeout(() => {
+                    window.isTransitioningToPasswordReset = false;
                     showPasswordResetOTPModal();
                 }, 300);
                 
@@ -594,9 +612,13 @@ function closePasswordResetOTPModal() {
     // Reset form and clear data
     resetPasswordResetOTPForm();
     hidePasswordResetOTPMessages();
-    // Clear the session data only when completely closing the password reset flow
-    window.currentForgotPasswordOtpId = null;
-    window.forgotPasswordEmail = '';
+    // Only clear session data when explicitly closing, not when transitioning to new password
+    if (!window.isTransitioningToNewPassword) {
+        window.currentForgotPasswordOtpId = null;
+        window.forgotPasswordEmail = '';
+        window.currentPasswordResetSessionId = null;
+        window.newPasswordEmail = '';
+    }
 }
 
 // Create password reset OTP modal HTML
@@ -1053,6 +1075,9 @@ async function verifyPasswordResetOTP() {
                 window.currentPasswordResetSessionId = result.reset_token;
                 window.newPasswordEmail = window.forgotPasswordEmail;
                 
+                // Set transition flag to prevent premature cleanup
+                window.isTransitioningToNewPassword = true;
+                
                 // Fade out current modal with scale animation
                 const modalContent = document.getElementById('passwordResetOTPModalContent');
                 if (modalContent) {
@@ -1065,6 +1090,9 @@ async function verifyPasswordResetOTP() {
                 // Close OTP modal and show new password modal
                 setTimeout(() => {
                     closePasswordResetOTPModal();
+                    
+                    // Clear transition flag
+                    window.isTransitioningToNewPassword = false;
                     
                     // Show new password modal with slide-in effect
                     setTimeout(() => {
@@ -1522,3 +1550,36 @@ window.showForgotPasswordModal = showForgotPasswordModal;
 window.closeForgotPasswordModal = closeForgotPasswordModal;
 window.sendPasswordResetInstructions = sendPasswordResetInstructions;
 window.goBackToLogin = goBackToLogin;
+
+// Go back to forgot password from OTP modal
+function goBackToForgotPassword() {
+    closePasswordResetOTPModal();
+    setTimeout(() => {
+        showForgotPasswordModal();
+    }, 300);
+}
+
+// Back to login from forgot password
+function backToLogin() {
+    closeForgotPasswordModal();
+}
+
+// Helper function to check if session is valid
+function isPasswordResetSessionValid() {
+    return window.currentForgotPasswordOtpId !== null && 
+           window.currentForgotPasswordOtpId !== undefined &&
+           window.forgotPasswordEmail !== null &&
+           window.forgotPasswordEmail !== undefined &&
+           window.forgotPasswordEmail.trim() !== '';
+}
+
+// Helper function to clear all password reset session data
+function clearPasswordResetSession() {
+    window.currentForgotPasswordOtpId = null;
+    window.forgotPasswordEmail = '';
+    window.currentPasswordResetSessionId = null;
+    window.newPasswordEmail = '';
+    window.isTransitioningToNewPassword = false;
+    window.isTransitioningToPasswordReset = false;
+    window.passwordResetCompleted = false;
+}

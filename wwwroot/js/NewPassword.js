@@ -1,6 +1,7 @@
 // Global variables for new password functionality
 window.currentPasswordResetSessionId = null;
 window.newPasswordEmail = '';
+window.passwordResetCompleted = false;
 
 // Show new password modal
 function showNewPasswordModal() {
@@ -56,8 +57,12 @@ function closeNewPasswordModal() {
     // Reset form and clear data
     resetNewPasswordForm();
     hideNewPasswordMessages();
-    window.currentPasswordResetSessionId = null;
-    window.newPasswordEmail = '';
+    
+    // Only clear session data if password reset was not completed successfully
+    if (!window.passwordResetCompleted) {
+        window.currentPasswordResetSessionId = null;
+        window.newPasswordEmail = '';
+    }
 }
 
 // Create new password modal HTML
@@ -601,6 +606,9 @@ async function updatePassword() {
         const result = await resetPasswordWithAPI(window.currentPasswordResetSessionId, newPassword);
         
         if (result.success) {
+            // Mark password reset as completed
+            window.passwordResetCompleted = true;
+            
             // Enhanced success flow
             
             // Step 1: Input success animation
@@ -652,13 +660,30 @@ async function updatePassword() {
             setTimeout(() => {
                 closeNewPasswordModal();
                 
-                // Clear all password reset data
-                window.currentPasswordResetSessionId = null;
-                window.newPasswordEmail = '';
-                window.currentForgotPasswordOtpId = null;
-                window.forgotPasswordEmail = '';
+                // Clear all password reset data after successful completion
+                setTimeout(() => {
+                    window.currentPasswordResetSessionId = null;
+                    window.newPasswordEmail = '';
+                    window.currentForgotPasswordOtpId = null;
+                    window.forgotPasswordEmail = '';
+                    window.passwordResetCompleted = false;
+                    
+                    // Remove any lingering modal elements
+                    const existingModals = [
+                        'forgotPasswordModal',
+                        'passwordResetOTPModal',
+                        'newPasswordModal'
+                    ];
+                    
+                    existingModals.forEach(modalId => {
+                        const modal = document.getElementById(modalId);
+                        if (modal && modal.parentNode) {
+                            modal.parentNode.removeChild(modal);
+                        }
+                    });
+                }, 100);
                 
-                // Show success message in a modal and redirect to login, with a slight delay and animations
+                // Show success message in a modal and redirect to login
                 setTimeout(() => {
                     const modal = document.createElement('div');
                     modal.id = 'passwordSuccessModal';
@@ -700,9 +725,12 @@ async function updatePassword() {
                         setTimeout(() => {
                             if (modal.parentNode) modal.parentNode.removeChild(modal);
                             document.body.style.overflow = 'auto';
+                            
+                            // Switch to login tab if we're in the auth layout
                             if (typeof window.showLogin === 'function') {
                                 window.showLogin();
                             } else {
+                                // Fallback: redirect to login page
                                 window.location.href = '/Auth/Login';
                             }
                         }, 350);
@@ -742,14 +770,6 @@ async function updatePassword() {
                         .duration-400 { transition-duration: 0.4s; }
                     `;
                     document.head.appendChild(style);
-                }
-                
-                // If we're in the auth layout, switch to login tab
-                if (typeof window.showLogin === 'function') {
-                    window.showLogin();
-                } else {
-                    // Fallback: redirect to login page
-                    window.location.href = '/Auth/Login';
                 }
             }, 2500);
             
@@ -829,9 +849,48 @@ async function updatePassword() {
     }
 }
 
+// Helper function to clear all new password session data
+function clearNewPasswordSession() {
+    window.currentPasswordResetSessionId = null;
+    window.newPasswordEmail = '';
+    window.passwordResetCompleted = false;
+}
+
+// Global reset function for all password reset modals
+function resetAllPasswordResetModals() {
+    // Clear all global variables
+    window.currentForgotPasswordOtpId = null;
+    window.forgotPasswordEmail = '';
+    window.currentPasswordResetSessionId = null;
+    window.newPasswordEmail = '';
+    window.isTransitioningToNewPassword = false;
+    window.isTransitioningToPasswordReset = false;
+    window.passwordResetCompleted = false;
+    
+    // Remove all password reset modals
+    const modalIds = [
+        'forgotPasswordModal',
+        'passwordResetOTPModal', 
+        'newPasswordModal',
+        'passwordSuccessModal'
+    ];
+    
+    modalIds.forEach(id => {
+        const modal = document.getElementById(id);
+        if (modal && modal.parentNode) {
+            modal.parentNode.removeChild(modal);
+        }
+    });
+    
+    // Reset body overflow
+    document.body.style.overflow = 'auto';
+}
+
 // Make functions globally accessible
 window.showNewPasswordModal = showNewPasswordModal;
 window.closeNewPasswordModal = closeNewPasswordModal;
 window.toggleNewPassword = toggleNewPassword;
 window.toggleConfirmNewPassword = toggleConfirmNewPassword;
 window.updatePassword = updatePassword;
+window.clearNewPasswordSession = clearNewPasswordSession;
+window.resetAllPasswordResetModals = resetAllPasswordResetModals;
