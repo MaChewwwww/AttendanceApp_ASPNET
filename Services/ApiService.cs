@@ -272,14 +272,46 @@ namespace AttendanceApp_ASPNET.Services
                 
                 if (!response.IsSuccessStatusCode)
                 {
-                    throw new Exception($"Verify login OTP API returned {response.StatusCode}: {responseContent}");
+                    // Return a structured error response instead of throwing
+                    var errorResponse = new
+                    {
+                        success = false,
+                        message = $"API returned {response.StatusCode}: {responseContent}",
+                        user = (object)null,
+                        token = (object)null,
+                        redirect_url = (object)null
+                    };
+                    return JsonSerializer.Serialize(errorResponse);
+                }
+                
+                // Ensure we always return valid JSON
+                if (string.IsNullOrWhiteSpace(responseContent))
+                {
+                    var emptyResponse = new
+                    {
+                        success = false,
+                        message = "Empty response from API",
+                        user = (object)null,
+                        token = (object)null,
+                        redirect_url = (object)null
+                    };
+                    return JsonSerializer.Serialize(emptyResponse);
                 }
                 
                 return responseContent;
             }
             catch (Exception ex)
             {
-                throw new Exception($"Verify login OTP failed: {ex.Message}", ex);
+                // Return structured error response instead of throwing
+                var errorResponse = new
+                {
+                    success = false,
+                    message = $"OTP verification failed: {ex.Message}",
+                    user = (object)null,
+                    token = (object)null,
+                    redirect_url = (object)null
+                };
+                return JsonSerializer.Serialize(errorResponse);
             }
         }
 

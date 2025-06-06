@@ -586,43 +586,103 @@ namespace AttendanceApp_ASPNET.Controllers
         {
             try
             {
-                // Extract OTP ID and OTP code
-                var otpId = requestData.GetProperty("otp_id").GetString() ?? "";
-                var otpCode = requestData.GetProperty("otp_code").GetString() ?? "";
+                // Safely extract OTP ID and code with null checks
+                string otpId = "";
+                string otpCode = "";
+                
+                if (requestData.TryGetProperty("otp_id", out var otpIdProperty))
+                {
+                    otpId = otpIdProperty.GetString() ?? "";
+                }
+                
+                if (requestData.TryGetProperty("otp_code", out var otpCodeProperty))
+                {
+                    otpCode = otpCodeProperty.GetString() ?? "";
+                }
+                
+                // Validate input
+                if (string.IsNullOrEmpty(otpId))
+                {
+                    return Json(new { 
+                        success = false, 
+                        message = "OTP session expired. Please try logging in again.",
+                        user = (object)null,
+                        token = (object)null,
+                        redirect_url = (object)null
+                    });
+                }
+                
+                if (string.IsNullOrEmpty(otpCode))
+                {
+                    return Json(new { 
+                        success = false, 
+                        message = "Please enter the verification code.",
+                        user = (object)null,
+                        token = (object)null,
+                        redirect_url = (object)null
+                    });
+                }
 
                 // Convert to the format expected by Python API
-                var verifyLoginOtpData = new
+                var verifyOtpData = new
                 {
                     otp_id = otpId,
                     otp_code = otpCode
                 };
 
-                var result = await _apiService.VerifyLoginOTPAsync(verifyLoginOtpData);
+                var result = await _apiService.VerifyLoginOTPAsync(verifyOtpData);
                 
-                // Parse the API response
-                var apiResponse = JsonSerializer.Deserialize<JsonElement>(result);
+                // Handle null or empty API response
+                if (string.IsNullOrWhiteSpace(result))
+                {
+                    return Json(new { 
+                        success = false, 
+                        message = "Unable to verify code at this time. Please try again.",
+                        user = (object)null,
+                        token = (object)null,
+                        redirect_url = (object)null
+                    });
+                }
+                
+                // Parse the API response with null safety
+                JsonElement apiResponse;
+                try
+                {
+                    apiResponse = JsonSerializer.Deserialize<JsonElement>(result);
+                }
+                catch (JsonException)
+                {
+                    return Json(new { 
+                        success = false, 
+                        message = "Invalid server response. Please try again.",
+                        user = (object)null,
+                        token = (object)null,
+                        redirect_url = (object)null
+                    });
+                }
                 
                 bool success = false;
-                string message = "Invalid verification code. Please check your code and try again.";
+                string message = "Verification failed";
                 JsonElement userInfo = default;
-                string authToken = "";
-                string userRole = "";
+                string token = "";
+                string userRole = "student";
+                string redirectUrl = "/Student/Dashboard";
                 
+                // Safely extract success property
                 if (apiResponse.TryGetProperty("success", out var successProperty))
                 {
                     success = successProperty.GetBoolean();
                 }
                 
+                // Safely extract message property
                 if (apiResponse.TryGetProperty("message", out var messageProperty))
                 {
                     var apiMessage = messageProperty.GetString() ?? "";
-                    
-                    // Provide user-friendly messages based on API response
                     if (!success)
                     {
                         if (apiMessage.Contains("expired", StringComparison.OrdinalIgnoreCase))
                         {
-                            message = "Your verification code has expired. Please request a new code.";
+                            message = "Verification code has expired. Please request a new code.";
                         }
                         else if (apiMessage.Contains("invalid", StringComparison.OrdinalIgnoreCase) || 
                                 apiMessage.Contains("incorrect", StringComparison.OrdinalIgnoreCase))
@@ -631,49 +691,45 @@ namespace AttendanceApp_ASPNET.Controllers
                         }
                         else if (apiMessage.Contains("not found", StringComparison.OrdinalIgnoreCase))
                         {
-                            message = "Verification session expired. Please try logging in again.";
+                            message = "OTP session not found. Please try logging in again.";
                         }
                         else
                         {
-                            message = "Invalid verification code. Please check your code and try again.";
+                            message = !string.IsNullOrEmpty(apiMessage) ? apiMessage : "Unable to verify code at this time. Please try again.";
                         }
                     }
                     else
                     {
-                        message = "Login successful!";
+                        message = !string.IsNullOrEmpty(apiMessage) ? apiMessage : "Login successful!";
                     }
                 }
                 
-                if (apiResponse.TryGetProperty("user", out var userProperty))
+                // Safely extract user information
+                if (apiResponse.TryGetProperty("user", out var userProperty) && userProperty.ValueKind != JsonValueKind.Null)
                 {
                     userInfo = userProperty;
-                    
-                    // Extract user role for routing decision
                     if (userInfo.TryGetProperty("role", out var roleProp))
                     {
-                        userRole = roleProp.GetString()?.ToLower() ?? "";
+                        userRole = roleProp.GetString()?.ToLower() ?? "student";
                     }
-                    // Fallback: check if student_number exists to determine if it's a student
                     else if (userInfo.TryGetProperty("student_number", out var studentNumberProp) && 
                              !string.IsNullOrEmpty(studentNumberProp.GetString()))
                     {
                         userRole = "student";
                     }
-                    // Default to student if no role information is available
                     else
                     {
                         userRole = "student";
                     }
                 }
-                
-                // Check for authentication token from API
+
+                // Safely extract token
                 if (apiResponse.TryGetProperty("token", out var tokenProperty))
                 {
-                    authToken = tokenProperty.GetString() ?? "";
+                    token = tokenProperty.GetString() ?? "";
                 }
-                
-                // Determine redirect URL based on user role
-                string redirectUrl = "";
+
+                // Set redirect URL based on role if successful
                 if (success)
                 {
                     switch (userRole.ToLower())
@@ -691,103 +747,53 @@ namespace AttendanceApp_ASPNET.Controllers
                             redirectUrl = "/Admin/Dashboard";
                             break;
                         default:
-                            // Default to student dashboard if role is unclear
                             redirectUrl = "/Student/Dashboard";
-                            Console.WriteLine($"Unknown user role '{userRole}', defaulting to student dashboard");
                             break;
                     }
                 }
-                
-                // If login successful, create user session
+
+                // Store session data if successful and user info exists
                 if (success && userInfo.ValueKind != JsonValueKind.Undefined)
                 {
-                    try
+                    HttpContext.Session.SetString("IsAuthenticated", "true");
+                    HttpContext.Session.SetString("UserRole", userRole);
+                    
+                    if (userInfo.TryGetProperty("id", out var userIdProp))
                     {
-                        // Store user information in session
-                        HttpContext.Session.SetString("IsAuthenticated", "true");
-                        HttpContext.Session.SetString("UserInfo", userInfo.ToString());
-                        HttpContext.Session.SetString("UserRole", userRole);
-                        
-                        // Store specific user data for easy access
-                        if (userInfo.TryGetProperty("user_id", out var userIdProp))
-                        {
-                            HttpContext.Session.SetString("UserId", userIdProp.ToString());
-                        }
-                        if (userInfo.TryGetProperty("email", out var emailProp))
-                        {
-                            HttpContext.Session.SetString("UserEmail", emailProp.GetString() ?? "");
-                        }
-                        if (userInfo.TryGetProperty("name", out var nameProp))
-                        {
-                            var fullName = nameProp.GetString() ?? "";
-                            var nameParts = fullName.Split(' ');
-                            HttpContext.Session.SetString("FirstName", nameParts.Length > 0 ? nameParts[0] : "");
-                            HttpContext.Session.SetString("LastName", nameParts.Length > 1 ? string.Join(" ", nameParts.Skip(1)) : "");
-                        }
-                        if (userInfo.TryGetProperty("student_number", out var studentNumberProp))
-                        {
-                            HttpContext.Session.SetString("StudentNumber", studentNumberProp.GetString() ?? "");
-                        }
-                        if (userInfo.TryGetProperty("employee_number", out var employeeNumberProp))
-                        {
-                            HttpContext.Session.SetString("EmployeeNumber", employeeNumberProp.GetString() ?? "");
-                        }
-                        if (userInfo.TryGetProperty("department", out var departmentProp))
-                        {
-                            HttpContext.Session.SetString("Department", departmentProp.GetString() ?? "");
-                        }
-                        if (userInfo.TryGetProperty("status_id", out var statusIdProp))
-                        {
-                            HttpContext.Session.SetString("StatusId", statusIdProp.ToString());
-                        }
-                        if (userInfo.TryGetProperty("verified", out var verifiedProp))
-                        {
-                            HttpContext.Session.SetString("Verified", verifiedProp.ToString());
-                        }
-                        
-                        // Store auth token if provided
-                        if (!string.IsNullOrEmpty(authToken))
-                        {
-                            HttpContext.Session.SetString("AuthToken", authToken);
-                        }
-                        
-                        // Set login timestamp
-                        HttpContext.Session.SetString("LoginTime", DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss"));
-                        
-                        // Set session timeout to 24 hours
-                        HttpContext.Session.SetString("SessionExpiry", DateTime.UtcNow.AddHours(24).ToString("yyyy-MM-dd HH:mm:ss"));
-                        
-                        Console.WriteLine($"User session created for: {HttpContext.Session.GetString("UserEmail")} with role: {userRole}");
+                        HttpContext.Session.SetString("UserId", userIdProp.ToString());
                     }
-                    catch (Exception sessionEx)
+                    if (userInfo.TryGetProperty("email", out var emailProp))
                     {
-                        Console.WriteLine($"Failed to create user session: {sessionEx.Message}");
-                        // Continue anyway - the user is still authenticated via API
+                        HttpContext.Session.SetString("UserEmail", emailProp.GetString() ?? "");
+                    }
+                    if (userInfo.TryGetProperty("first_name", out var firstNameProp))
+                    {
+                        HttpContext.Session.SetString("FirstName", firstNameProp.GetString() ?? "");
+                    }
+                    if (userInfo.TryGetProperty("last_name", out var lastNameProp))
+                    {
+                        HttpContext.Session.SetString("LastName", lastNameProp.GetString() ?? "");
                     }
                 }
                 
                 var response = new { 
                     success = success,
                     message = message,
-                    user = userInfo.ValueKind != JsonValueKind.Undefined ? userInfo : (object?)null,
-                    token = !string.IsNullOrEmpty(authToken) ? authToken : (object?)null,
-                    redirect_url = success ? redirectUrl : (object?)null,
-                    user_role = success ? userRole : (object?)null
+                    user = userInfo.ValueKind != JsonValueKind.Undefined ? userInfo : (object)null,
+                    token = !string.IsNullOrEmpty(token) ? token : (object)null,
+                    redirect_url = redirectUrl
                 };
                 
                 return Json(response);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Login OTP verification error: {ex.Message}");
-                
                 return Json(new { 
                     success = false, 
                     message = "Unable to verify code at this time. Please try again.",
-                    user = (object?)null,
-                    token = (object?)null,
-                    redirect_url = (object?)null,
-                    user_role = (object?)null
+                    user = (object)null,
+                    token = (object)null,
+                    redirect_url = (object)null
                 });
             }
         }

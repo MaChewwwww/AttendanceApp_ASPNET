@@ -545,7 +545,7 @@ function verifyFallbackOTP() {
                     window.location.href = redirectUrl;
                 }, 2000);
             } else {
-                // Show specific error message
+                // Show specific error message from API
                 const errorMessage = result.message || 'Invalid verification code. Please check your code and try again.';
                 showFallbackOTPError(errorMessage);
                 
@@ -555,7 +555,7 @@ function verifyFallbackOTP() {
                 // Clear inputs and add visual feedback
                 otpInputs.forEach(input => {
                     input.value = '';
-                    input.style.borderColor = '#ef4444'; // Red border
+                    input.style.borderColor = '#ef4444';
                 });
                 
                 // Remove red border after 3 seconds
@@ -569,6 +569,7 @@ function verifyFallbackOTP() {
             }
         })
         .catch(error => {
+            console.error('Fallback OTP verification error:', error);
             showFallbackOTPError('Verification failed due to a network error. Please check your connection and try again.');
             if (verifyBtn) verifyBtn.disabled = false;
             if (verifyBtnText) verifyBtnText.textContent = 'Verify & Login';
@@ -619,7 +620,8 @@ async function verifyLoginOTPWithAPI(otpId, otpCode) {
             success: result.success || false,
             message: result.message || 'Verification failed',
             user: result.user || null,
-            token: result.token || null
+            token: result.token || null,
+            redirect_url: result.redirect_url || null
         };
         
     } catch (error) {
@@ -726,6 +728,7 @@ async function verifyLoginOTP() {
         }
         
     } catch (error) {
+        console.error('OTP verification error:', error);
         showOTPError('Verification failed due to a network error. Please check your connection and try again.');
         
         // Reset button state
