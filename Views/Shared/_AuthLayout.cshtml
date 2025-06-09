@@ -99,40 +99,67 @@
             }
         }
         
-        /* Page transition animations */
-        .page-transition-enter {
-            animation: pageSlideIn 0.5s ease-out forwards;
+        /* Page transition animations for layout switching */
+        .page-exit-animation {
+            animation: pageExitAnimation 0.6s ease-in-out forwards;
         }
         
-        .page-transition-exit {
-            animation: pageSlideOut 0.5s ease-in forwards;
-        }
-        
-        @@keyframes pageSlideIn {
-            from { 
-                opacity: 0; 
-                transform: translateX(20px); 
+        @@keyframes pageExitAnimation {
+            0% { 
+                opacity: 1;
+                transform: scale(1);
             }
-            to { 
-                opacity: 1; 
-                transform: translateX(0); 
+            50% { 
+                opacity: 0.3;
+                transform: scale(0.98);
             }
-        }
-        
-        @@keyframes pageSlideOut {
-            from { 
-                opacity: 1; 
-                transform: translateX(0); 
-            }
-            to { 
-                opacity: 0; 
-                transform: translateX(-20px); 
+            100% { 
+                opacity: 0;
+                transform: scale(0.95);
+                visibility: hidden;
             }
         }
         
-        /* Camera modal animations */
-        .animate-fade-in {
-            animation: fadeIn 0.3s ease-out;
+        /* Success animation for smooth transition to dashboard */
+        .login-success-transition {
+            animation: loginSuccessTransition 1.2s ease-in-out forwards;
+        }
+        
+        @@keyframes loginSuccessTransition {
+            0% { 
+                opacity: 1;
+                transform: scale(1);
+            }
+            30% { 
+                opacity: 1;
+                transform: scale(1.02);
+                filter: brightness(1.1);
+            }
+            70% { 
+                opacity: 0.6;
+                transform: scale(0.98);
+                filter: brightness(0.9);
+            }
+            100% { 
+                opacity: 0;
+                transform: scale(0.95);
+                filter: brightness(0.8);
+            }
+        }
+        
+        /* Enhanced modal success state */
+        .modal-success-glow {
+            animation: modalSuccessGlow 1s ease-in-out;
+            box-shadow: 0 0 20px rgba(34, 197, 94, 0.4);
+        }
+        
+        @@keyframes modalSuccessGlow {
+            0%, 100% { 
+                box-shadow: 0 0 20px rgba(34, 197, 94, 0.4);
+            }
+            50% { 
+                box-shadow: 0 0 30px rgba(34, 197, 94, 0.6);
+            }
         }
         
         /* Smooth processing states */
@@ -258,10 +285,50 @@
             opacity: 0.6;
             pointer-events: none;
         }
+        
+        /* Auth layout entrance animation (from logout) */
+        .auth-entrance-from-logout {
+            animation: authEntranceFromLogout 0.8s ease-out forwards;
+        }
+        
+        @@keyframes authEntranceFromLogout {
+            0% { 
+                opacity: 0;
+                transform: scale(1.1);
+                filter: blur(3px);
+            }
+            50% { 
+                opacity: 0.6;
+                transform: scale(1.02);
+                filter: blur(1px);
+            }
+            100% { 
+                opacity: 1;
+                transform: scale(1);
+                filter: blur(0);
+            }
+        }
+        
+        /* Welcome back message animation */
+        .welcome-back-message {
+            animation: welcomeBackMessage 0.6s ease-out 0.4s forwards;
+            opacity: 0;
+        }
+        
+        @@keyframes welcomeBackMessage {
+            0% { 
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            100% { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen overflow-hidden">
-    <div class="flex items-center justify-center min-h-screen p-4">
+    <div id="authLayoutContainer" class="flex items-center justify-center min-h-screen p-4">
         <div class="w-full max-w-6xl h-[700px] bg-white rounded-2xl shadow-2xl overflow-hidden relative">
             
             <!-- Navigation Tabs -->
@@ -307,6 +374,11 @@
                                 <!-- App Name -->
                                 <h1 class="text-4xl font-bold text-white mb-2">AttendanceApp</h1>
                                 <p class="text-blue-100 text-lg">Track. Learn. Succeed.</p>
+                                
+                                <!-- Welcome back message (shown after logout) -->
+                                <div id="welcomeBackMessage" class="welcome-back-message hidden mt-4">
+                                    <p class="text-blue-100 text-sm">You have been logged out successfully</p>
+                                </div>
                             </div>
                             
                             <!-- Features -->
@@ -1011,6 +1083,39 @@
                     if (currentView !== 'login') showLogin();
                 }
             });
+            
+            // Check if user was redirected from logout
+            const urlParams = new URLSearchParams(window.location.search);
+            const fromLogout = urlParams.get('logout') === 'true';
+            
+            if (fromLogout) {
+                // Add entrance animation from logout
+                const authContainer = document.getElementById('authLayoutContainer');
+                const welcomeMessage = document.getElementById('welcomeBackMessage');
+                
+                if (authContainer) {
+                    authContainer.classList.add('auth-entrance-from-logout');
+                }
+                
+                if (welcomeMessage) {
+                    welcomeMessage.classList.remove('hidden');
+                }
+                
+                // Hide welcome message after a few seconds
+                setTimeout(() => {
+                    if (welcomeMessage) {
+                        welcomeMessage.style.animation = 'welcomeBackMessage 0.4s ease-in reverse';
+                        setTimeout(() => {
+                            welcomeMessage.classList.add('hidden');
+                            welcomeMessage.style.animation = '';
+                        }, 400);
+                    }
+                }, 3000);
+                
+                // Clean URL
+                const cleanUrl = window.location.pathname;
+                window.history.replaceState({}, document.title, cleanUrl);
+            }
         });
     </script>
 </body>

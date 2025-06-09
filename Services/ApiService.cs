@@ -22,6 +22,8 @@ namespace AttendanceApp_ASPNET.Services
         Task<string> ResetPasswordWithTokenAsync(object resetData);
         string GetApiKey();
         string GetApiBaseUrl();
+        Task<string> GetAuthenticatedDataAsync(string endpoint, string jwtToken);
+        Task<string> CheckStudentOnboardingStatusAsync(string jwtToken);
     }
 
     // INHERITANCE: ApiService implements IApiService interface
@@ -454,6 +456,86 @@ namespace AttendanceApp_ASPNET.Services
             catch (Exception ex)
             {
                 throw new Exception($"Reset password with token failed: {ex.Message}", ex);
+            }
+        }
+
+        public async Task<string> GetAuthenticatedDataAsync(string endpoint, string jwtToken)
+        {
+            try
+            {
+                var apiUrl = $"{_apiBaseUrl}/{endpoint}";
+                
+                _httpClient.DefaultRequestHeaders.Clear();
+                _httpClient.DefaultRequestHeaders.Add("AttendanceApp-API-Key", _apiKey);
+                _httpClient.DefaultRequestHeaders.Add("User-Agent", "AttendanceApp-ASPNET/1.0");
+                
+                // Add JWT token to Authorization header
+                if (!string.IsNullOrEmpty(jwtToken))
+                {
+                    _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {jwtToken}");
+                }
+                
+                var response = await _httpClient.GetAsync(apiUrl);
+                var responseContent = await response.Content.ReadAsStringAsync();
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new Exception($"Authenticated API call failed {response.StatusCode}: {responseContent}");
+                }
+                
+                return responseContent;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Authenticated API call failed: {ex.Message}", ex);
+            }
+        }
+
+        public async Task<string> CheckStudentOnboardingStatusAsync(string jwtToken)
+        {
+            try
+            {
+                var apiUrl = $"{_apiBaseUrl}/student/onboarding/status";
+                
+                _httpClient.DefaultRequestHeaders.Clear();
+                _httpClient.DefaultRequestHeaders.Add("AttendanceApp-API-Key", _apiKey);
+                _httpClient.DefaultRequestHeaders.Add("User-Agent", "AttendanceApp-ASPNET/1.0");
+                
+                // Add JWT token to Authorization header
+                if (!string.IsNullOrEmpty(jwtToken))
+                {
+                    _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {jwtToken}");
+                }
+                
+                var response = await _httpClient.GetAsync(apiUrl);
+                var responseContent = await response.Content.ReadAsStringAsync();
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    // Return structured error response instead of throwing
+                    var errorResponse = new
+                    {
+                        is_onboarded = false,
+                        message = $"API returned {response.StatusCode}: {responseContent}",
+                        has_section = false,
+                        student_info = (object)null
+                    };
+                    return JsonSerializer.Serialize(errorResponse);
+                }
+                
+                return responseContent;
+            }
+            catch (Exception ex)
+            {
+                // Return structured error response instead of throwing
+                var errorResponse = new
+                {
+                    is_onboarded = false,
+                    message = $"Onboarding status check failed: {ex.Message}",
+                    has_section = false,
+                    student_info = (object)null
+                };
+                return JsonSerializer.Serialize(errorResponse);
             }
         }
     }

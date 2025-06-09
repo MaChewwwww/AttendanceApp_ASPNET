@@ -3,62 +3,621 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - ASP.NET_CRUD_DEMO</title>
+    <title>@ViewData["Title"] - Attendify</title>
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Dashboard entrance animation */
+        .dashboard-entrance {
+            animation: dashboardEntrance 0.8s ease-out forwards;
+        }
+        
+        @@keyframes dashboardEntrance {
+            0% { 
+                opacity: 0;
+                transform: scale(0.95);
+                filter: blur(2px);
+            }
+            50% { 
+                opacity: 0.7;
+                transform: scale(0.98);
+                filter: blur(1px);
+            }
+            100% { 
+                opacity: 1;
+                transform: scale(1);
+                filter: blur(0);
+            }
+        }
+        
+        /* Sidebar slide-in animation */
+        .sidebar-slide-in {
+            animation: sidebarSlideIn 0.6s ease-out forwards;
+        }
+        
+        @@keyframes sidebarSlideIn {
+            0% { 
+                opacity: 0;
+                transform: translateX(-100%);
+            }
+            100% { 
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        /* Main content fade-in animation */
+        .main-content-fade-in {
+            animation: mainContentFadeIn 0.8s ease-out 0.3s forwards;
+            opacity: 0;
+        }
+        
+        @@keyframes mainContentFadeIn {
+            0% { 
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            100% { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Navbar slide-down animation */
+        .navbar-slide-down {
+            animation: navbarSlideDown 0.6s ease-out 0.2s forwards;
+            opacity: 0;
+        }
+        
+        @@keyframes navbarSlideDown {
+            0% { 
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            100% { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Staggered animation for dashboard cards */
+        .dashboard-card-entrance {
+            animation: dashboardCardEntrance 0.6s ease-out forwards;
+            opacity: 0;
+        }
+        
+        @@keyframes dashboardCardEntrance {
+            0% { 
+                opacity: 0;
+                transform: translateY(30px) scale(0.9);
+            }
+            100% { 
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        
+        /* Apply staggered delays */
+        .dashboard-card-entrance:nth-child(1) { animation-delay: 0.5s; }
+        .dashboard-card-entrance:nth-child(2) { animation-delay: 0.6s; }
+        .dashboard-card-entrance:nth-child(3) { animation-delay: 0.7s; }
+        .dashboard-card-entrance:nth-child(4) { animation-delay: 0.8s; }
+        
+        /* Logout animation */
+        .logout-transition {
+            animation: logoutTransition 1.0s ease-in forwards;
+        }
+        
+        @@keyframes logoutTransition {
+            0% { 
+                opacity: 1;
+                transform: scale(1);
+                filter: blur(0);
+            }
+            30% { 
+                opacity: 0.8;
+                transform: scale(0.98);
+                filter: blur(1px);
+            }
+            70% { 
+                opacity: 0.4;
+                transform: scale(0.95);
+                filter: blur(2px);
+            }
+            100% { 
+                opacity: 0;
+                transform: scale(0.9);
+                filter: blur(3px);
+                visibility: hidden;
+            }
+        }
+        
+        /* Logout confirmation modal animation */
+        .logout-modal-entrance {
+            animation: logoutModalEntrance 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+        
+        @@keyframes logoutModalEntrance {
+            0% { 
+                opacity: 0;
+                transform: scale(0.9) translateY(-20px);
+            }
+            100% { 
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+        
+        /* Onboarding modal blur effects - target specific containers */
+        .onboarding-modal-open #dashboardSidebar {
+            filter: blur(4px);
+            opacity: 0.6;
+            transition: all 0.3s ease-out;
+        }
+        
+        .onboarding-modal-open #dashboardNavbar {
+            filter: blur(4px);
+            opacity: 0.6;
+            transition: all 0.3s ease-out;
+        }
+        
+        .onboarding-modal-open #dashboardMain {
+            filter: blur(4px);
+            opacity: 0.6;
+            transition: all 0.3s ease-out;
+        }
+        
+        /* Ensure modal is always on top and never blurred */
+        #onboardingModal {
+            z-index: 9999 !important;
+            filter: none !important;
+            backdrop-filter: blur(8px) !important;
+        }
+        
+        /* Layout z-index management */
+        .dashboard-sidebar {
+            z-index: 10;
+        }
+        
+        .dashboard-navbar {
+            z-index: 20;
+        }
+        
+        .dashboard-main {
+            z-index: 5;
+        }
+    </style>
 </head>
-<body class="bg-gray-50 text-gray-800">
-    <!-- Header -->
-    <header class="bg-white shadow-md">
-        <nav class="container mx-auto flex items-center justify-between px-6 py-4">
-            <a class="text-2xl font-bold text-blue-600 transition hover:text-blue-700" asp-area="" asp-controller="Home" asp-action="Index">
-                ASP.NET_CRUD_DEMO
-            </a>
-            <button class="text-gray-600 focus:outline-none lg:hidden" id="menu-toggle">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
-                </svg>
-            </button>
-            <ul class="hidden space-x-6 lg:flex" id="menu">
-                <li>
-                    <a href="#" class="text-gray-600 transition hover:text-blue-600">Home</a>
-                </li>
-                <li>
-                    <a href="#" class="text-gray-600 transition hover:text-blue-600">About</a>
-                </li>
-                <li>
-                    <a href="#" class="text-gray-600 transition hover:text-blue-600">Contact</a>
-                </li>
-                <li>
-                    <a href="#" class="text-gray-600 transition hover:text-blue-600">Logout</a>
-                </li>
-            </ul>
-        </nav>
-    </header>
-
-    <!-- Main Content -->
-    <main class="container mx-auto px-6 py-8">
-        @RenderBody()
-    </main>
-
-    <!-- Footer -->
-    <footer class="mt-10 bg-gray-800 text-gray-300">
-        <div class="container mx-auto flex flex-col items-center justify-between px-6 py-6 md:flex-row">
-            <p class="text-sm">&copy; 2025 - ASP.NET_CRUD_DEMO</p>
-            <a class="text-sm text-blue-400 hover:underline" asp-area="" asp-controller="Profile" asp-action="Index">Profile</a>
+<body class="bg-gray-50">
+    <!-- Onboarding Modal - OUTSIDE dashboard container to avoid blur effects -->
+    @await Html.PartialAsync("_OnboardingModal")
+    
+    <div id="dashboardContainer" class="flex h-screen dashboard-entrance">
+        <!-- Sidebar -->
+        <div id="dashboardSidebar" class="w-64 bg-white shadow-lg flex-shrink-0 sidebar-slide-in dashboard-sidebar">
+            <div class="p-6">
+                <!-- Logo and Title -->
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-calendar-check text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-800">Attendify</h1>
+                        <p class="text-sm text-gray-500">Attendance App</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Navigation Menu -->
+            <nav class="mt-6">
+                <div class="px-6 pb-4">
+                    <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Menu</h3>
+                </div>
+                
+                <a href="/Student/Dashboard" class="flex items-center px-6 py-3 text-gray-700 bg-blue-50 border-r-4 border-blue-600">
+                    <i class="fas fa-home w-5 h-5 mr-3"></i>
+                    <span class="font-medium">Dashboard</span>
+                </a>
+                
+                <a href="#" class="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors duration-200">
+                    <i class="fas fa-book-open w-5 h-5 mr-3"></i>
+                    <span>Courses</span>
+                </a>
+                
+                <a href="#" class="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors duration-200">
+                    <i class="fas fa-clipboard-list w-5 h-5 mr-3"></i>
+                    <span>Attendance Log</span>
+                </a>
+                
+                <div class="border-t border-gray-200 mt-6 pt-6">
+                    <button type="button" onclick="confirmLogout()" class="flex items-center w-full px-6 py-3 text-gray-600 hover:bg-red-50 hover:text-red-700 transition-colors duration-200">
+                        <i class="fas fa-sign-out-alt w-5 h-5 mr-3"></i>
+                        <span>Logout</span>
+                    </button>
+                </div>
+            </nav>
         </div>
-    </footer>
+        
+        <!-- Main Content Area -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Top Navbar -->
+            <header id="dashboardNavbar" class="bg-white shadow-sm border-b border-gray-200 navbar-slide-down dashboard-navbar">
+                <div class="flex items-center justify-between px-6 py-4">
+                    <div class="flex items-center">
+                        <button class="text-gray-500 hover:text-gray-700 lg:hidden" id="mobile-menu-button">
+                            <i class="fas fa-bars w-6 h-6"></i>
+                        </button>
+                        <h2 class="text-lg font-semibold text-gray-800 ml-2 lg:ml-0">@ViewData["Title"]</h2>
+                    </div>
+                    
+                    <div class="flex items-center space-x-4">
+                        <!-- Current Date and Time -->
+                        <div class="text-right">
+                            <div class="text-sm font-medium text-gray-900" id="current-date"></div>
+                            <div class="text-xs text-gray-500" id="current-time"></div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            
+            <!-- Main Content -->
+            <main id="dashboardMain" class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 main-content-fade-in dashboard-main">
+                <div class="container mx-auto px-6 py-8">
+                    @RenderBody()
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Mobile Sidebar Overlay -->
+    <div class="fixed inset-0 z-50 lg:hidden hidden" id="mobile-sidebar-overlay">
+        <div class="fixed inset-0 bg-black opacity-50"></div>
+        <div class="fixed left-0 top-0 bottom-0 w-64 bg-white shadow-lg transform -translate-x-full transition-transform duration-300" id="mobile-sidebar">
+            <!-- Mobile sidebar content (same as desktop sidebar) -->
+            <div class="p-6">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-calendar-check text-white text-lg"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-xl font-bold text-gray-800">Attendify</h1>
+                            <p class="text-sm text-gray-500">Attendance App</p>
+                        </div>
+                    </div>
+                    <button class="text-gray-500 hover:text-gray-700" id="close-mobile-menu">
+                        <i class="fas fa-times w-6 h-6"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <nav class="mt-6">
+                <div class="px-6 pb-4">
+                    <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Menu</h3>
+                </div>
+                
+                <a href="/Student/Dashboard" class="flex items-center px-6 py-3 text-gray-700 bg-blue-50 border-r-4 border-blue-600">
+                    <i class="fas fa-home w-5 h-5 mr-3"></i>
+                    <span class="font-medium">Dashboard</span>
+                </a>
+                
+                <a href="#" class="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors duration-200">
+                    <i class="fas fa-book-open w-5 h-5 mr-3"></i>
+                    <span>Courses</span>
+                </a>
+                
+                <a href="#" class="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors duration-200">
+                    <i class="fas fa-clipboard-list w-5 h-5 mr-3"></i>
+                    <span>Attendance Log</span>
+                </a>
+                
+                <div class="border-t border-gray-200 mt-6 pt-6">
+                    <button type="button" onclick="confirmLogout()" class="flex items-center w-full px-6 py-3 text-gray-600 hover:bg-red-50 hover:text-red-700 transition-colors duration-200">
+                        <i class="fas fa-sign-out-alt w-5 h-5 mr-3"></i>
+                        <span>Logout</span>
+                    </button>
+                </div>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Logout Confirmation Modal -->
+    <div id="logoutModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-[100] hidden flex items-center justify-center">
+        <div id="logoutModalContent" class="relative mx-auto p-6 border w-full max-w-md shadow-2xl rounded-xl bg-white logout-modal-entrance">
+            <!-- Modal Header -->
+            <div class="text-center mb-6">
+                <div class="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                    <i class="fas fa-sign-out-alt text-red-600 text-2xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">Confirm Logout</h3>
+                <p class="text-gray-600">
+                    Are you sure you want to log out of your account?
+                </p>
+            </div>
+
+            <!-- Modal Buttons -->
+            <div class="flex space-x-4">
+                <button onclick="closeLogoutModal()" 
+                        class="flex-1 bg-gray-300 text-gray-700 py-3 px-6 rounded-lg hover:bg-gray-400 transition-colors font-medium">
+                    Cancel
+                </button>
+                <button id="logoutConfirmButton" onclick="performLogout()" 
+                        class="flex-1 bg-red-600 text-white py-3 px-6 rounded-lg hover:bg-red-700 transition-colors font-medium flex items-center justify-center">
+                    <span id="logoutButtonText">Logout</span>
+                    <!-- Centered SVG spinner -->
+                    <svg id="logoutSpinner" class="hidden w-4 h-4 text-white ml-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- Scripts -->
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     <script>
-        // Toggle mobile menu
-        document.getElementById('menu-toggle').addEventListener('click', function () {
-            const menu = document.getElementById('menu');
-            menu.classList.toggle('hidden');
+        // Mobile menu functionality
+        document.getElementById('mobile-menu-button').addEventListener('click', function() {
+            const overlay = document.getElementById('mobile-sidebar-overlay');
+            const sidebar = document.getElementById('mobile-sidebar');
+            overlay.classList.remove('hidden');
+            setTimeout(() => {
+                sidebar.classList.remove('-translate-x-full');
+            }, 10);
         });
+
+        document.getElementById('close-mobile-menu').addEventListener('click', function() {
+            const overlay = document.getElementById('mobile-sidebar-overlay');
+            const sidebar = document.getElementById('mobile-sidebar');
+            sidebar.classList.add('-translate-x-full');
+            setTimeout(() => {
+                overlay.classList.add('hidden');
+            }, 300);
+        });
+
+        // Close mobile menu when clicking overlay
+        document.getElementById('mobile-sidebar-overlay').addEventListener('click', function(e) {
+            if (e.target === this) {
+                document.getElementById('close-mobile-menu').click();
+            }
+        });
+
+        // Update date and time
+        function updateDateTime() {
+            const now = new Date();
+            const options = { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                weekday: 'long'
+            };
+            const timeOptions = {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true
+            };
+            
+            document.getElementById('current-date').textContent = now.toLocaleDateString('en-US', options);
+            document.getElementById('current-time').textContent = now.toLocaleTimeString('en-US', timeOptions);
+        }
+
+        // Update time every second
+        setInterval(updateDateTime, 1000);
+        updateDateTime(); // Initial call
+
+        // Initialize dashboard animations on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add entrance animations to dashboard cards
+            const dashboardCards = document.querySelectorAll('.bg-white.rounded-lg, .grid > div');
+            dashboardCards.forEach((card, index) => {
+                if (!card.classList.contains('dashboard-card-entrance')) {
+                    card.classList.add('dashboard-card-entrance');
+                    card.style.animationDelay = `${0.5 + (index * 0.1)}s`;
+                }
+            });
+            
+            // Smooth scroll behavior for better UX
+            document.documentElement.style.scrollBehavior = 'smooth';
+            
+            // Welcome animation for user name
+            const welcomeText = document.querySelector('h1');
+            if (welcomeText && welcomeText.textContent.includes('Welcome back')) {
+                welcomeText.style.animation = 'dashboardCardEntrance 0.8s ease-out 0.9s forwards';
+                welcomeText.style.opacity = '0';
+            }
+            
+            console.log('Dashboard animations initialized');
+        });
+        
+        // Enhanced mobile menu with animations
+        document.getElementById('mobile-menu-button').addEventListener('click', function() {
+            const overlay = document.getElementById('mobile-sidebar-overlay');
+            const sidebar = document.getElementById('mobile-sidebar');
+            
+            overlay.classList.remove('hidden');
+            overlay.style.animation = 'fadeIn 0.3s ease-out forwards';
+            
+            setTimeout(() => {
+                sidebar.style.transform = 'translateX(0)';
+                sidebar.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+            }, 10);
+        });
+
+        document.getElementById('close-mobile-menu').addEventListener('click', function() {
+            const overlay = document.getElementById('mobile-sidebar-overlay');
+            const sidebar = document.getElementById('mobile-sidebar');
+            
+            sidebar.style.transform = 'translateX(-100%)';
+            sidebar.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+            
+            setTimeout(() => {
+                overlay.style.animation = 'fadeOut 0.3s ease-in forwards';
+                setTimeout(() => {
+                    overlay.classList.add('hidden');
+                    overlay.style.animation = '';
+                }, 300);
+            }, 300);
+        });
+        
+        // Logout functionality with animation
+        function confirmLogout() {
+            const logoutModal = document.getElementById('logoutModal');
+            const logoutModalContent = document.getElementById('logoutModalContent');
+            
+            logoutModal.classList.remove('hidden');
+            logoutModalContent.classList.add('logout-modal-entrance');
+        }
+        
+        function closeLogoutModal() {
+            const logoutModal = document.getElementById('logoutModal');
+            const logoutModalContent = document.getElementById('logoutModalContent');
+            
+            logoutModalContent.style.animation = 'logoutModalEntrance 0.3s ease-in reverse';
+            
+            setTimeout(() => {
+                logoutModal.classList.add('hidden');
+                logoutModalContent.style.animation = '';
+                logoutModalContent.classList.remove('logout-modal-entrance');
+            }, 300);
+        }
+        
+        function performLogout() {
+            const logoutButtonText = document.getElementById('logoutButtonText');
+            const logoutSpinner = document.getElementById('logoutSpinner');
+            const dashboardContainer = document.getElementById('dashboardContainer');
+            const logoutConfirmButton = document.getElementById('logoutConfirmButton');
+            
+            // Disable the logout button to prevent multiple clicks
+            logoutConfirmButton.disabled = true;
+            logoutConfirmButton.classList.add('opacity-75', 'cursor-not-allowed');
+            
+            // Show loading state
+            logoutButtonText.textContent = 'Logging out...';
+            logoutSpinner.classList.remove('hidden');
+            
+            // Start logout animation
+            setTimeout(() => {
+                if (dashboardContainer) {
+                    dashboardContainer.classList.add('logout-transition');
+                }
+                
+                // Perform actual logout after animation starts
+                setTimeout(() => {
+                    // Create and submit logout form
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = '/Student/Logout';
+                    
+                    // Add CSRF token if available
+                    const token = document.querySelector('input[name="__RequestVerificationToken"]');
+                    if (token) {
+                        const tokenInput = document.createElement('input');
+                        tokenInput.type = 'hidden';
+                        tokenInput.name = '__RequestVerificationToken';
+                        tokenInput.value = token.value;
+                        form.appendChild(tokenInput);
+                    }
+                    
+                    document.body.appendChild(form);
+                    form.submit();
+                }, 500); // Wait for animation to progress
+                
+            }, 200); // Small delay to show loading state
+        }
+        
+        // Close modal when clicking outside
+        document.getElementById('logoutModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeLogoutModal();
+            }
+        });
+        
+        function confirmLogout() {
+            const logoutModal = document.getElementById('logoutModal');
+            const logoutModalContent = document.getElementById('logoutModalContent');
+            const logoutButtonText = document.getElementById('logoutButtonText');
+            const logoutSpinner = document.getElementById('logoutSpinner');
+            const logoutConfirmButton = document.getElementById('logoutConfirmButton');
+            
+            // Reset button to initial state when opening modal
+            logoutButtonText.textContent = 'Logout';
+            logoutSpinner.classList.add('hidden');
+            logoutConfirmButton.disabled = false;
+            logoutConfirmButton.classList.remove('opacity-75', 'cursor-not-allowed');
+            
+            logoutModal.classList.remove('hidden');
+            logoutModalContent.classList.add('logout-modal-entrance');
+        }
+        
+        function closeLogoutModal() {
+            const logoutModal = document.getElementById('logoutModal');
+            const logoutModalContent = document.getElementById('logoutModalContent');
+            const logoutButtonText = document.getElementById('logoutButtonText');
+            const logoutSpinner = document.getElementById('logoutSpinner');
+            const logoutConfirmButton = document.getElementById('logoutConfirmButton');
+            
+            // Reset button state when closing modal
+            logoutButtonText.textContent = 'Logout';
+            logoutSpinner.classList.add('hidden');
+            logoutConfirmButton.disabled = false;
+            logoutConfirmButton.classList.remove('opacity-75', 'cursor-not-allowed');
+            
+            logoutModalContent.style.animation = 'logoutModalEntrance 0.3s ease-in reverse';
+            
+            setTimeout(() => {
+                logoutModal.classList.add('hidden');
+                logoutModalContent.style.animation = '';
+                logoutModalContent.classList.remove('logout-modal-entrance');
+            }, 300);
+        }
+        
+        function performLogout() {
+            const logoutButtonText = document.getElementById('logoutButtonText');
+            const logoutSpinner = document.getElementById('logoutSpinner');
+            const dashboardContainer = document.getElementById('dashboardContainer');
+            const logoutConfirmButton = document.getElementById('logoutConfirmButton');
+            
+            // Disable the logout button to prevent multiple clicks
+            logoutConfirmButton.disabled = true;
+            logoutConfirmButton.classList.add('opacity-75', 'cursor-not-allowed');
+            
+            // Show loading state
+            logoutButtonText.textContent = 'Logging out...';
+            logoutSpinner.classList.remove('hidden');
+            
+            // Start logout animation
+            setTimeout(() => {
+                if (dashboardContainer) {
+                    dashboardContainer.classList.add('logout-transition');
+                }
+                
+                // Perform actual logout after animation starts
+                setTimeout(() => {
+                    // Create and submit logout form
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = '/Student/Logout';
+                    
+                    // Add CSRF token if available
+                    const token = document.querySelector('input[name="__RequestVerificationToken"]');
+                    if (token) {
+                        const tokenInput = document.createElement('input');
+                        tokenInput.type = 'hidden';
+                        tokenInput.name = '__RequestVerificationToken';
+                        tokenInput.value = token.value;
+                        form.appendChild(tokenInput);
+                    }
+                    
+                    document.body.appendChild(form);
+                    form.submit();
+                }, 500); // Wait for animation to progress
+                
+            }, 200); // Small delay to show loading state
+        }
     </script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>

@@ -815,7 +815,8 @@ namespace AttendanceApp_ASPNET.Controllers
                     user = userInfo.ValueKind != JsonValueKind.Undefined ? userInfo : (object)null,
                     token = !string.IsNullOrEmpty(token) ? token : (object)null,
                     redirect_url = redirectUrl,
-                    user_role = userRole
+                    user_role = userRole,
+                    transition_delay = 1200 // Add delay for smooth animation transition
                 };
                 
                 return Json(response);
