@@ -663,7 +663,7 @@ namespace AttendanceApp_ASPNET.Services
                 var errorResponse = new
                 {
                     courses = new object[0],
-                    message = $"Failed to fetch courses: {ex.Message}"
+                    message = $"Failed to fetch assigned courses: {ex.Message}"
                 };
                 return JsonSerializer.Serialize(errorResponse);
             }

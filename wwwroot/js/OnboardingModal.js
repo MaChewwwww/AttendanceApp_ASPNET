@@ -452,7 +452,7 @@ async function loadAvailableCourses(sectionId) {
     
     try {
         // Show loading state
-        showLoading(coursesLoading, 'Loading courses...');
+        showLoading(coursesLoading, 'Loading assigned courses...');
         
         const response = await fetch(`/Student/GetAvailableCourses/${sectionId}`, {
             method: 'GET',
@@ -474,14 +474,108 @@ async function loadAvailableCourses(sectionId) {
             showCourses();
             updateCompleteButton();
         } else {
-            throw new Error(data.message || 'No courses available for this section');
+            throw new Error(data.message || 'No assigned courses available for this section');
         }
         
     } catch (error) {
-        console.error('Error loading courses:', error);
+        console.error('Error loading assigned courses:', error);
+        // Show empty courses section with error message
+        availableCourses = [];
+        populateCoursesList([]);
+        showCourses();
+        updateCompleteButton();
     } finally {
         hideLoading(coursesLoading);
     }
+}
+
+// Populate courses list in the UI
+function populateCoursesList(courses) {
+    const coursesList = document.getElementById('coursesList');
+    
+    // Clear existing courses
+    coursesList.innerHTML = '';
+    
+    if (!Array.isArray(courses) || courses.length === 0) {
+        coursesList.innerHTML = `
+            <div class="text-center py-8 text-gray-500">
+                <i class="fas fa-book-open text-4xl mb-3 opacity-50"></i>
+                <p class="text-lg font-medium">No assigned courses found</p>
+                <p class="text-sm">Please contact your administrator if this seems incorrect.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Add course cards
+    courses.forEach((course, index) => {
+        const courseCard = createCourseCard(course, index);
+        coursesList.appendChild(courseCard);
+    });
+}
+
+// Create individual course card element
+function createCourseCard(course, index) {
+    const courseCard = document.createElement('div');
+    courseCard.className = 'bg-white border border-green-200 rounded-lg p-4 hover:shadow-md transition-all duration-200 transform translate-x-4 opacity-0';
+    
+    // Extract course information with fallbacks
+    const courseName = course.course_name || course.name || 'Unknown Course';
+    const courseCode = course.course_code || course.code || 'N/A';
+    const facultyName = course.faculty_name || 'Unknown Faculty';
+    const room = course.room || 'TBA';
+    const semester = course.semester || 'N/A';
+    const academicYear = course.academic_year || 'N/A';
+    
+    courseCard.innerHTML = `
+        <div class="flex items-start justify-between mb-3">
+            <div class="flex-1">
+                <h5 class="font-semibold text-gray-800 text-lg">${courseName}</h5>
+                <p class="text-green-600 font-medium">${courseCode}</p>
+            </div>
+            <div class="flex-shrink-0 ml-4">
+                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    <i class="fas fa-graduation-cap mr-1"></i>
+                    Active
+                </span>
+            </div>
+        </div>
+        
+        <div class="space-y-2 text-sm text-gray-600">
+            <div class="flex items-center">
+                <i class="fas fa-chalkboard-teacher w-4 text-green-500 mr-2"></i>
+                <span class="font-medium">Faculty:</span>
+                <span class="ml-1">${facultyName}</span>
+            </div>
+            
+            <div class="flex items-center">
+                <i class="fas fa-door-open w-4 text-green-500 mr-2"></i>
+                <span class="font-medium">Room:</span>
+                <span class="ml-1">${room}</span>
+            </div>
+            
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <i class="fas fa-calendar-alt w-4 text-green-500 mr-2"></i>
+                    <span class="font-medium">Semester:</span>
+                    <span class="ml-1">${semester}</span>
+                </div>
+                <div class="flex items-center">
+                    <i class="fas fa-clock w-4 text-green-500 mr-2"></i>
+                    <span class="font-medium">AY:</span>
+                    <span class="ml-1">${academicYear}</span>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Animate course card appearance
+    setTimeout(() => {
+        courseCard.classList.remove('translate-x-4', 'opacity-0');
+        courseCard.classList.add('translate-x-0', 'opacity-100');
+    }, 100 + (index * 50)); // Staggered animation
+    
+    return courseCard;
 }
 
 // Complete onboarding process
