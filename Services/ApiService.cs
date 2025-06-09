@@ -673,7 +673,7 @@ namespace AttendanceApp_ASPNET.Services
         {
             try
             {
-                var apiUrl = $"{_apiBaseUrl}/student/onboarding/complete";
+                var apiUrl = $"{_apiBaseUrl}/student/onboarding/assign-section";
                 
                 var json = JsonSerializer.Serialize(onboardingData);
                 var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");

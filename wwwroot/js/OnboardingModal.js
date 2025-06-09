@@ -728,13 +728,13 @@ async function completeOnboarding() {
     try {
         // Show loading state
         completeButton.disabled = true;
-        buttonText.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Completing Setup...';
         spinner.classList.remove('hidden');
+        buttonText.innerHTML = 'Completing Setup...';
         hideError(errorDiv);
         hideSuccess(successDiv);
         
+        // Updated payload to match new endpoint requirement (only section_id needed)
         const onboardingData = {
-            program_id: selectedProgramId,
             section_id: selectedSectionId
         };
         
@@ -752,13 +752,17 @@ async function completeOnboarding() {
         const data = await response.json();
         
         if (data.success) {
-            // Show success message
-            showSuccess(successDiv, 'Account setup completed successfully!');
+            // Show success message with more details from the new endpoint
+            const message = data.message || 'Account setup completed successfully!';
+            const coursesInfo = data.assigned_courses_count ? 
+                ` You've been enrolled in ${data.assigned_courses_count} course(s).` : '';
+            
+            showSuccess(successDiv, message + coursesInfo);
             
             // Wait a moment then reload the page to reflect changes
             setTimeout(() => {
                 window.location.reload();
-            }, 2000);
+            }, 2500); // Slightly longer to show the detailed message
             
         } else {
             throw new Error(data.message || 'Failed to complete onboarding');
@@ -766,12 +770,24 @@ async function completeOnboarding() {
         
     } catch (error) {
         console.error('Error completing onboarding:', error);
-        showError(errorDiv, error.message || 'Failed to complete setup. Please try again.');
+        
+        // Enhanced error messages based on common scenarios
+        let errorMessage = error.message || 'Failed to complete setup. Please try again.';
+        
+        if (errorMessage.includes('Section not found')) {
+            errorMessage = 'The selected section is no longer available. Please refresh and try again.';
+        } else if (errorMessage.includes('Student record not found')) {
+            errorMessage = 'Your student record could not be found. Please contact support.';
+        } else if (errorMessage.includes('already assigned')) {
+            errorMessage = 'You are already assigned to a section. Please refresh the page.';
+        }
+        
+        showError(errorDiv, errorMessage);
         
         // Reset button
         completeButton.disabled = false;
-        buttonText.innerHTML = '<i class="fas fa-check mr-2"></i>Complete Setup';
         spinner.classList.add('hidden');
+        buttonText.innerHTML = '<i class="fas fa-check mr-2"></i>Complete Setup';
     }
 }
 
@@ -1059,6 +1075,9 @@ function showLogoutConfirmation() {
         return;
     }
     
+    // Reset modal state before showing
+    resetLogoutModal();
+    
     // Ensure modal is properly set up for interaction
     modal.style.pointerEvents = 'auto';
     modal.style.zIndex = '10001';
@@ -1082,6 +1101,35 @@ function showLogoutConfirmation() {
     });
 }
 
+// Confirm logout action
+function confirmLogout() {
+    // Get button elements
+    const confirmButton = document.getElementById('logoutConfirmButton');
+    const buttonText = document.getElementById('logoutButtonText');
+    const spinner = document.getElementById('logoutSpinner');
+    const cancelButton = confirmButton.parentElement.querySelector('button:first-child');
+    
+    // Disable buttons to prevent double-clicks
+    confirmButton.disabled = true;
+    cancelButton.disabled = true;
+    confirmButton.style.opacity = '0.8';
+    cancelButton.style.opacity = '0.6';
+    confirmButton.style.cursor = 'not-allowed';
+    cancelButton.style.cursor = 'not-allowed';
+    
+    // Show spinner and update text
+    spinner.classList.remove('hidden');
+    buttonText.innerHTML = 'Logging out...';
+    
+    // Hide the confirmation modal first
+    hideLogoutConfirmation();
+    
+    // Then proceed with logout
+    setTimeout(() => {
+        cancelOnboarding();
+    }, 300);
+}
+
 // Hide logout confirmation modal
 function hideLogoutConfirmation() {
     const modal = document.getElementById('logoutConfirmationModal');
@@ -1099,28 +1147,40 @@ function hideLogoutConfirmation() {
         modal.style.zIndex = '';
         modal.style.pointerEvents = '';
         modalContent.style.pointerEvents = '';
+        
+        // Reset button states when modal is hidden
+        resetLogoutModal();
     }, 300);
 }
 
-// Confirm logout action
-function confirmLogout() {
-    // Disable buttons to prevent double-clicks
-    const confirmButton = event.target;
-    const cancelButton = confirmButton.parentElement.querySelector('button:first-child');
+// Reset logout modal button states
+function resetLogoutModal() {
+    const confirmButton = document.getElementById('logoutConfirmButton');
+    const buttonText = document.getElementById('logoutButtonText');
+    const spinner = document.getElementById('logoutSpinner');
+    const cancelButton = document.querySelector('#logoutConfirmationModal button:first-child');
     
-    confirmButton.disabled = true;
-    cancelButton.disabled = true;
+    // Reset button states
+    if (confirmButton) {
+        confirmButton.disabled = false;
+        confirmButton.style.opacity = '';
+        confirmButton.style.cursor = '';
+    }
     
-    // Update button text to show processing
-    confirmButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Logging out...';
+    if (cancelButton) {
+        cancelButton.disabled = false;
+        cancelButton.style.opacity = '';
+        cancelButton.style.cursor = '';
+    }
     
-    // Hide the confirmation modal first
-    hideLogoutConfirmation();
+    // Hide spinner and reset text
+    if (spinner) {
+        spinner.classList.add('hidden');
+    }
     
-    // Then proceed with logout
-    setTimeout(() => {
-        cancelOnboarding();
-    }, 300);
+    if (buttonText) {
+        buttonText.innerHTML = '<i class="fas fa-sign-out-alt mr-2"></i>Yes, Logout';
+    }
 }
 
 // Cancel onboarding and logout (updated to use AuthController)

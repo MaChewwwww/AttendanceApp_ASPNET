@@ -231,7 +231,7 @@
                 </a>
                 
                 <div class="border-t border-gray-200 mt-6 pt-6">
-                    <button type="button" onclick="confirmLogout()" class="flex items-center w-full px-6 py-3 text-gray-600 hover:bg-red-50 hover:text-red-700 transition-colors duration-200">
+                    <button type="button" onclick="showLayoutLogoutConfirmation()" class="flex items-center w-full px-6 py-3 text-gray-600 hover:bg-red-50 hover:text-red-700 transition-colors duration-200">
                         <i class="fas fa-sign-out-alt w-5 h-5 mr-3"></i>
                         <span>Logout</span>
                     </button>
@@ -313,7 +313,7 @@
                 </a>
                 
                 <div class="border-t border-gray-200 mt-6 pt-6">
-                    <button type="button" onclick="confirmLogout()" class="flex items-center w-full px-6 py-3 text-gray-600 hover:bg-red-50 hover:text-red-700 transition-colors duration-200">
+                    <button type="button" onclick="showLayoutLogoutConfirmation()" class="flex items-center w-full px-6 py-3 text-gray-600 hover:bg-red-50 hover:text-red-700 transition-colors duration-200">
                         <i class="fas fa-sign-out-alt w-5 h-5 mr-3"></i>
                         <span>Logout</span>
                     </button>
@@ -322,34 +322,37 @@
         </div>
     </div>
 
-    <!-- Logout Confirmation Modal -->
-    <div id="logoutModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-[100] hidden flex items-center justify-center">
-        <div id="logoutModalContent" class="relative mx-auto p-6 border w-full max-w-md shadow-2xl rounded-xl bg-white logout-modal-entrance">
+    <!-- Layout Logout Confirmation Modal -->
+    <div id="layoutLogoutConfirmationModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 overflow-y-auto h-full w-full z-[10002] hidden flex items-center justify-center backdrop-blur-sm">
+        <div id="layoutLogoutModalContent" class="relative mx-auto p-6 border w-full max-w-md shadow-2xl rounded-xl bg-white transform transition-all duration-300 scale-95 opacity-0 m-4">
+            
             <!-- Modal Header -->
-            <div class="text-center mb-6">
-                <div class="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
-                    <i class="fas fa-sign-out-alt text-red-600 text-2xl"></i>
+            <div class="text-center mb-5">
+                <div class="mx-auto w-16 h-16 bg-gradient-to-br from-red-500 to-red-700 rounded-full flex items-center justify-center mb-4">
+                    <i class="fas fa-sign-out-alt text-white text-2xl"></i>
                 </div>
                 <h3 class="text-xl font-bold text-gray-800 mb-2">Confirm Logout</h3>
-                <p class="text-gray-600">
-                    Are you sure you want to log out of your account?
+                <p class="text-gray-600 text-sm">
+                    Are you sure you want to log out of your account? You'll need to log in again to access your dashboard.
                 </p>
             </div>
 
             <!-- Modal Buttons -->
-            <div class="flex space-x-4">
-                <button onclick="closeLogoutModal()" 
-                        class="flex-1 bg-gray-300 text-gray-700 py-3 px-6 rounded-lg hover:bg-gray-400 transition-colors font-medium">
-                    Cancel
+            <div class="flex justify-center space-x-3">
+                <button type="button" onclick="hideLayoutLogoutConfirmation()" 
+                        class="bg-gray-600 text-white py-2 px-4 rounded text-sm hover:bg-gray-700 transition-colors font-semibold flex items-center">
+                    <i class="fas fa-arrow-left mr-2"></i>Stay Logged In
                 </button>
-                <button id="logoutConfirmButton" onclick="performLogout()" 
-                        class="flex-1 bg-red-600 text-white py-3 px-6 rounded-lg hover:bg-red-700 transition-colors font-medium flex items-center justify-center">
-                    <span id="logoutButtonText">Logout</span>
-                    <!-- Centered SVG spinner -->
-                    <svg id="logoutSpinner" class="hidden w-4 h-4 text-white ml-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                <button type="button" onclick="confirmLayoutLogout()" id="layoutLogoutConfirmButton"
+                        class="bg-red-600 text-white py-2 px-4 rounded text-sm hover:bg-red-700 transition-colors font-semibold flex items-center">
+                    <!-- Loading spinner - initially hidden -->
+                    <svg id="layoutLogoutSpinner" class="hidden w-4 h-4 text-white mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
+                    <span id="layoutLogoutButtonText">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Yes, Logout
+                    </span>
                 </button>
             </div>
         </div>
@@ -536,88 +539,167 @@
             }
         });
         
-        function confirmLogout() {
-            const logoutModal = document.getElementById('logoutModal');
-            const logoutModalContent = document.getElementById('logoutModalContent');
-            const logoutButtonText = document.getElementById('logoutButtonText');
-            const logoutSpinner = document.getElementById('logoutSpinner');
-            const logoutConfirmButton = document.getElementById('logoutConfirmButton');
+        // Layout logout functions
+        function showLayoutLogoutConfirmation() {
+            const modal = document.getElementById('layoutLogoutConfirmationModal');
+            const modalContent = document.getElementById('layoutLogoutModalContent');
             
-            // Reset button to initial state when opening modal
-            logoutButtonText.textContent = 'Logout';
-            logoutSpinner.classList.add('hidden');
-            logoutConfirmButton.disabled = false;
-            logoutConfirmButton.classList.remove('opacity-75', 'cursor-not-allowed');
+            if (!modal || !modalContent) {
+                // Fallback to direct logout if modal not found
+                performLayoutLogout();
+                return;
+            }
             
-            logoutModal.classList.remove('hidden');
-            logoutModalContent.classList.add('logout-modal-entrance');
+            // Reset modal state before showing
+            resetLayoutLogoutModal();
+            
+            // Show modal
+            modal.classList.remove('hidden');
+            
+            // Start entrance animation
+            setTimeout(() => {
+                modalContent.classList.remove('scale-95', 'opacity-0');
+                modalContent.classList.add('scale-100', 'opacity-100');
+            }, 50);
         }
         
-        function closeLogoutModal() {
-            const logoutModal = document.getElementById('logoutModal');
-            const logoutModalContent = document.getElementById('logoutModalContent');
-            const logoutButtonText = document.getElementById('logoutButtonText');
-            const logoutSpinner = document.getElementById('logoutSpinner');
-            const logoutConfirmButton = document.getElementById('logoutConfirmButton');
+        function hideLayoutLogoutConfirmation() {
+            const modal = document.getElementById('layoutLogoutConfirmationModal');
+            const modalContent = document.getElementById('layoutLogoutModalContent');
             
-            // Reset button state when closing modal
-            logoutButtonText.textContent = 'Logout';
-            logoutSpinner.classList.add('hidden');
-            logoutConfirmButton.disabled = false;
-            logoutConfirmButton.classList.remove('opacity-75', 'cursor-not-allowed');
+            if (!modal || !modalContent) return;
             
-            logoutModalContent.style.animation = 'logoutModalEntrance 0.3s ease-in reverse';
+            // Add exit animation
+            modalContent.classList.remove('scale-100', 'opacity-100');
+            modalContent.classList.add('scale-95', 'opacity-0');
             
+            // Hide modal after animation
             setTimeout(() => {
-                logoutModal.classList.add('hidden');
-                logoutModalContent.style.animation = '';
-                logoutModalContent.classList.remove('logout-modal-entrance');
+                modal.classList.add('hidden');
+                
+                // Reset button states when modal is hidden
+                resetLayoutLogoutModal();
             }, 300);
         }
         
-        function performLogout() {
-            const logoutButtonText = document.getElementById('logoutButtonText');
-            const logoutSpinner = document.getElementById('logoutSpinner');
+        function confirmLayoutLogout() {
+            // Get button elements
+            const confirmButton = document.getElementById('layoutLogoutConfirmButton');
+            const buttonText = document.getElementById('layoutLogoutButtonText');
+            const spinner = document.getElementById('layoutLogoutSpinner');
+            const cancelButton = document.querySelector('#layoutLogoutConfirmationModal button:first-child');
+            
+            // Disable buttons to prevent double-clicks
+            confirmButton.disabled = true;
+            cancelButton.disabled = true;
+            confirmButton.style.opacity = '0.8';
+            cancelButton.style.opacity = '0.6';
+            confirmButton.style.cursor = 'not-allowed';
+            cancelButton.style.cursor = 'not-allowed';
+            
+            // Show spinner and update text
+            spinner.classList.remove('hidden');
+            buttonText.innerHTML = 'Logging out...';
+            
+            // Hide the confirmation modal first
+            hideLayoutLogoutConfirmation();
+            
+            // Start logout animation and process
+            setTimeout(() => {
+                performLayoutLogout();
+            }, 300);
+        }
+        
+        function performLayoutLogout() {
             const dashboardContainer = document.getElementById('dashboardContainer');
-            const logoutConfirmButton = document.getElementById('logoutConfirmButton');
-            
-            // Disable the logout button to prevent multiple clicks
-            logoutConfirmButton.disabled = true;
-            logoutConfirmButton.classList.add('opacity-75', 'cursor-not-allowed');
-            
-            // Show loading state
-            logoutButtonText.textContent = 'Logging out...';
-            logoutSpinner.classList.remove('hidden');
             
             // Start logout animation
+            if (dashboardContainer) {
+                dashboardContainer.classList.add('logout-transition');
+            }
+            
+            // Perform actual logout
             setTimeout(() => {
-                if (dashboardContainer) {
-                    dashboardContainer.classList.add('logout-transition');
-                }
-                
-                // Perform actual logout after animation starts
-                setTimeout(() => {
-                    // Create and submit logout form
-                    const form = document.createElement('form');
-                    form.method = 'POST';
-                    form.action = '/Student/Logout';
-                    
-                    // Add CSRF token if available
-                    const token = document.querySelector('input[name="__RequestVerificationToken"]');
-                    if (token) {
-                        const tokenInput = document.createElement('input');
-                        tokenInput.type = 'hidden';
-                        tokenInput.name = '__RequestVerificationToken';
-                        tokenInput.value = token.value;
-                        form.appendChild(tokenInput);
+                fetch('/Auth/Logout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': getLayoutAntiForgeryToken()
                     }
-                    
-                    document.body.appendChild(form);
-                    form.submit();
-                }, 500); // Wait for animation to progress
-                
-            }, 200); // Small delay to show loading state
+                }).then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        window.location.href = data.redirect_url || '/Auth/Login?logout=true';
+                    } else {
+                        // Fallback redirect
+                        window.location.href = '/Auth/Login?logout=true';
+                    }
+                }).catch(() => {
+                    // Fallback - just redirect
+                    window.location.href = '/Auth/Login?logout=true';
+                });
+            }, 500);
         }
+        
+        function getLayoutAntiForgeryToken() {
+            const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+            return tokenInput ? tokenInput.value : '';
+        }
+        
+        // Remove old logout functions and replace with layout logout functions
+        function confirmLogout() {
+            showLayoutLogoutConfirmation();
+        }
+        
+        function closeLogoutModal() {
+            hideLayoutLogoutConfirmation();
+        }
+        
+        function resetLayoutLogoutModal() {
+            const confirmButton = document.getElementById('layoutLogoutConfirmButton');
+            const buttonText = document.getElementById('layoutLogoutButtonText');
+            const spinner = document.getElementById('layoutLogoutSpinner');
+            const cancelButton = document.querySelector('#layoutLogoutConfirmationModal button:first-child');
+            
+            // Reset button states
+            if (confirmButton) {
+                confirmButton.disabled = false;
+                confirmButton.style.opacity = '';
+                confirmButton.style.cursor = '';
+            }
+            
+            if (cancelButton) {
+                cancelButton.disabled = false;
+                cancelButton.style.opacity = '';
+                cancelButton.style.cursor = '';
+            }
+            
+            // Hide spinner and reset text
+            if (spinner) {
+                spinner.classList.add('hidden');
+            }
+            
+            if (buttonText) {
+                buttonText.innerHTML = '<i class="fas fa-sign-out-alt mr-2"></i>Yes, Logout';
+            }
+        }
+        
+        // Add backdrop click handler for layout logout modal
+        document.addEventListener('DOMContentLoaded', function() {
+            // ...existing code...
+            
+            // Add backdrop click handler for logout modal
+            const layoutLogoutModal = document.getElementById('layoutLogoutConfirmationModal');
+            if (layoutLogoutModal) {
+                layoutLogoutModal.addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        hideLayoutLogoutConfirmation();
+                    }
+                });
+            }
+            
+            console.log('Layout logout modal setup complete');
+        });
     </script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>

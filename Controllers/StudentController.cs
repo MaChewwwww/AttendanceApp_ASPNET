@@ -375,11 +375,26 @@ namespace AttendanceApp_ASPNET.Controllers
                     return Json(new { success = false, message = "Authentication required" });
                 }
 
+                // Validate that section_id is provided
+                if (!onboardingData.TryGetProperty("section_id", out var sectionIdProperty))
+                {
+                    return Json(new { success = false, message = "Section selection is required" });
+                }
+
+                var sectionId = sectionIdProperty.GetInt32();
+                if (sectionId <= 0)
+                {
+                    return Json(new { success = false, message = "Invalid section selection" });
+                }
+
                 var result = await _apiService.CompleteStudentOnboardingAsync(onboardingData, jwtToken);
                 var apiResponse = JsonSerializer.Deserialize<JsonElement>(result);
                 
                 bool success = false;
                 string message = "Failed to complete onboarding";
+                int assignedCoursesCount = 0;
+                int approvalRecordsCreated = 0;
+                string sectionName = "";
                 
                 if (apiResponse.TryGetProperty("success", out var successProperty))
                 {
@@ -391,15 +406,56 @@ namespace AttendanceApp_ASPNET.Controllers
                     message = messageProperty.GetString() ?? message;
                 }
                 
+                // Extract additional information from the new endpoint response
+                if (apiResponse.TryGetProperty("assigned_courses_count", out var coursesCountProperty))
+                {
+                    assignedCoursesCount = coursesCountProperty.GetInt32();
+                }
+                
+                if (apiResponse.TryGetProperty("approval_records_created", out var approvalsProperty))
+                {
+                    approvalRecordsCreated = approvalsProperty.GetInt32();
+                }
+                
+                if (apiResponse.TryGetProperty("section_name", out var sectionNameProperty))
+                {
+                    sectionName = sectionNameProperty.GetString() ?? "";
+                }
+
+                // Update session with successful assignment
+                if (success)
+                {
+                    HttpContext.Session.SetString("IsOnboarded", "true");
+                    HttpContext.Session.SetString("HasSection", "true");
+                    HttpContext.Session.SetString("SectionId", sectionId.ToString());
+                    
+                    if (!string.IsNullOrEmpty(sectionName))
+                    {
+                        HttpContext.Session.SetString("SectionName", sectionName);
+                    }
+                    
+                    // Log successful onboarding
+                    var userEmail = HttpContext.Session.GetString("UserEmail") ?? "Unknown";
+                    Console.WriteLine($"Student onboarding completed: {userEmail} assigned to section {sectionName} ({sectionId}) with {assignedCoursesCount} courses");
+                }
+                
                 return Json(new { 
                     success = success,
-                    message = message
+                    message = message,
+                    assigned_courses_count = assignedCoursesCount,
+                    approval_records_created = approvalRecordsCreated,
+                    section_name = sectionName,
+                    section_id = sectionId
                 });
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error completing onboarding: {ex.Message}");
-                return Json(new { success = false, message = "Unable to complete onboarding setup" });
+                return Json(new { 
+                    success = false, 
+                    message = "Unable to complete onboarding setup. Please try again.",
+                    error_details = ex.Message // For debugging - remove in production
+                });
             }
         }
     }

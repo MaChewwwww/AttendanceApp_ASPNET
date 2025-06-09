@@ -19,7 +19,7 @@ namespace AttendanceApp_ASPNET.Controllers.Base
 
         // Executes before any action in derived controllers.
         // Validates authentication, role, session status, and onboarding completion.
-        public override async void OnActionExecuting(ActionExecutingContext context)
+        public override void OnActionExecuting(ActionExecutingContext context)
         {
             // 1. Check if user is authenticated
             var isAuthenticated = HttpContext.Session.GetString("IsAuthenticated");
@@ -85,78 +85,13 @@ namespace AttendanceApp_ASPNET.Controllers.Base
             // Only check onboarding for main dashboard/app routes, not API endpoints
             if (IsMainApplicationRoute(currentController, currentAction))
             {
-                var authToken = HttpContext.Session.GetString("AuthToken");
-                if (!string.IsNullOrEmpty(authToken))
-                {
-                    try
-                    {
-                        var onboardingResult = await _apiService.CheckStudentOnboardingStatusAsync(authToken);
-                        var onboardingResponse = JsonSerializer.Deserialize<JsonElement>(onboardingResult);
-                        
-                        bool isOnboarded = false;
-                        bool hasSection = false;
-                        
-                        // Parse onboarding response
-                        if (onboardingResponse.TryGetProperty("is_onboarded", out var isOnboardedProp))
-                        {
-                            isOnboarded = isOnboardedProp.GetBoolean();
-                        }
-                        
-                        if (onboardingResponse.TryGetProperty("has_section", out var hasSectionProp))
-                        {
-                            hasSection = hasSectionProp.GetBoolean();
-                        }
-                        
-                        // Store onboarding status in session for performance
-                        HttpContext.Session.SetString("IsOnboarded", isOnboarded.ToString());
-                        HttpContext.Session.SetString("HasSection", hasSection.ToString());
-                        
-                        // If not onboarded and trying to access protected routes, force to dashboard with modal
-                        if (!isOnboarded && !IsDashboardRoute(currentController, currentAction))
-                        {
-                            LogSecurityEvent("Onboarding bypass attempt", $"Non-onboarded user attempted to access {currentController}/{currentAction}");
-                            
-                            TempData["ForceOnboarding"] = "true";
-                            TempData["InfoMessage"] = "Please complete your account setup to access all features.";
-                            context.Result = RedirectToAction("Dashboard", "Student");
-                            return;
-                        }
-                        
-                        // Update ViewBag with onboarding status
-                        ViewBag.IsOnboarded = isOnboarded;
-                        ViewBag.HasSection = hasSection;
-                        ViewBag.ShowOnboardingAlert = !isOnboarded;
-                        
-                        // Update student info with latest data from API if available
-                        if (onboardingResponse.TryGetProperty("student_info", out var studentInfoProp) && 
-                            studentInfoProp.ValueKind != JsonValueKind.Null)
-                        {
-                            UpdateSessionWithLatestStudentInfo(studentInfoProp);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        // Log error but don't block access - set conservative defaults
-                        LogSecurityEvent("Onboarding check error", $"Failed to check onboarding status: {ex.Message}");
-                        
-                        // Set fallback values - err on side of requiring onboarding
-                        ViewBag.IsOnboarded = false;
-                        ViewBag.HasSection = false;
-                        ViewBag.ShowOnboardingAlert = true;
-                        ViewBag.OnboardingAlertType = "warning";
-                        ViewBag.OnboardingAlertMessage = "Unable to verify account status. Please complete setup if needed.";
-                    }
-                }
-                else
-                {
-                    // No JWT token - shouldn't happen if auth check passed
-                    LogSecurityEvent("Missing JWT token", "Authenticated user missing JWT token");
-                    ViewBag.IsOnboarded = false;
-                    ViewBag.HasSection = false;
-                    ViewBag.ShowOnboardingAlert = true;
-                    ViewBag.OnboardingAlertType = "error";
-                    ViewBag.OnboardingAlertMessage = "Authentication error. Please log out and log back in.";
-                }
+                // Schedule onboarding check to run after the action
+                context.HttpContext.Items["RequireOnboardingCheck"] = true;
+                
+                // Set conservative defaults until check completes
+                ViewBag.IsOnboarded = false;
+                ViewBag.HasSection = false;
+                ViewBag.ShowOnboardingAlert = true;
             }
 
             // 5. Validate account status
@@ -188,6 +123,109 @@ namespace AttendanceApp_ASPNET.Controllers.Base
             AddSecurityHeaders();
 
             base.OnActionExecuting(context);
+        }
+
+        // Execute after action to perform async onboarding check
+        public override async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
+        {
+            // First run the synchronous checks
+            OnActionExecuting(context);
+            
+            // If we have a result from sync checks, return early
+            if (context.Result != null)
+            {
+                return;
+            }
+
+            // Execute the action
+            var executedContext = await next();
+
+            // Only proceed with onboarding check if action executed successfully and onboarding check is required
+            if (executedContext.Exception == null && 
+                context.HttpContext.Items.ContainsKey("RequireOnboardingCheck"))
+            {
+                await PerformOnboardingCheckAsync(context, executedContext);
+            }
+        }
+
+        // Perform async onboarding check
+        private async Task PerformOnboardingCheckAsync(ActionExecutingContext context, ActionExecutedContext executedContext)
+        {
+            try
+            {
+                var currentController = context.RouteData.Values["controller"]?.ToString();
+                var currentAction = context.RouteData.Values["action"]?.ToString();
+                
+                var authToken = HttpContext.Session.GetString("AuthToken");
+                if (!string.IsNullOrEmpty(authToken))
+                {
+                    var onboardingResult = await _apiService.CheckStudentOnboardingStatusAsync(authToken);
+                    var onboardingResponse = JsonSerializer.Deserialize<JsonElement>(onboardingResult);
+                    
+                    bool isOnboarded = false;
+                    bool hasSection = false;
+                    
+                    // Parse onboarding response
+                    if (onboardingResponse.TryGetProperty("is_onboarded", out var isOnboardedProp))
+                    {
+                        isOnboarded = isOnboardedProp.GetBoolean();
+                    }
+                    
+                    if (onboardingResponse.TryGetProperty("has_section", out var hasSectionProp))
+                    {
+                        hasSection = hasSectionProp.GetBoolean();
+                    }
+                    
+                    // Store onboarding status in session for performance
+                    HttpContext.Session.SetString("IsOnboarded", isOnboarded.ToString());
+                    HttpContext.Session.SetString("HasSection", hasSection.ToString());
+                    
+                    // If not onboarded and trying to access protected routes, force redirect
+                    if (!isOnboarded && !IsDashboardRoute(currentController, currentAction))
+                    {
+                        LogSecurityEvent("Onboarding bypass attempt", $"Non-onboarded user attempted to access {currentController}/{currentAction}");
+                        
+                        TempData["ForceOnboarding"] = "true";
+                        TempData["InfoMessage"] = "Please complete your account setup to access all features.";
+                        executedContext.Result = RedirectToAction("Dashboard", "Student");
+                        return;
+                    }
+                    
+                    // Update ViewBag with actual status
+                    ViewBag.IsOnboarded = isOnboarded;
+                    ViewBag.HasSection = hasSection;
+                    ViewBag.ShowOnboardingAlert = !isOnboarded;
+                    
+                    // Update student info with latest data from API if available
+                    if (onboardingResponse.TryGetProperty("student_info", out var studentInfoProp) && 
+                        studentInfoProp.ValueKind != JsonValueKind.Null)
+                    {
+                        UpdateSessionWithLatestStudentInfo(studentInfoProp);
+                    }
+                }
+                else
+                {
+                    // No JWT token - shouldn't happen if auth check passed
+                    LogSecurityEvent("Missing JWT token", "Authenticated user missing JWT token");
+                    ViewBag.IsOnboarded = false;
+                    ViewBag.HasSection = false;
+                    ViewBag.ShowOnboardingAlert = true;
+                    ViewBag.OnboardingAlertType = "error";
+                    ViewBag.OnboardingAlertMessage = "Authentication error. Please log out and log back in.";
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log error but don't block access - set conservative defaults
+                LogSecurityEvent("Onboarding check error", $"Failed to check onboarding status: {ex.Message}");
+                
+                // Set fallback values - err on side of requiring onboarding
+                ViewBag.IsOnboarded = false;
+                ViewBag.HasSection = false;
+                ViewBag.ShowOnboardingAlert = true;
+                ViewBag.OnboardingAlertType = "warning";
+                ViewBag.OnboardingAlertMessage = "Unable to verify account status. Please complete setup if needed.";
+            }
         }
 
         // Checks if the current route is a main application route that requires onboarding
@@ -323,18 +361,26 @@ namespace AttendanceApp_ASPNET.Controllers.Base
         // Logs security-related events for monitoring and auditing.
         protected virtual void LogSecurityEvent(string eventType, string details)
         {
-            var userEmail = HttpContext.Session.GetString("UserEmail") ?? "Anonymous";
-            var userAgent = HttpContext.Request.Headers["User-Agent"].ToString();
-            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "Unknown";
-            var timestamp = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss UTC");
-            
-            // Log to console (in production, use proper logging framework)
-            Console.WriteLine($"[SECURITY EVENT] {timestamp} | {eventType} | User: {userEmail} | IP: {ipAddress} | Details: {details} | UserAgent: {userAgent}");
-            
-            // In production, you might want to:
-            // - Log to database
-            // - Send alerts for critical events
-            // - Integrate with SIEM systems
+            try
+            {
+                var userEmail = HttpContext?.Session?.GetString("UserEmail") ?? "Anonymous";
+                var userAgent = HttpContext?.Request?.Headers["User-Agent"].ToString() ?? "Unknown";
+                var ipAddress = HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "Unknown";
+                var timestamp = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss UTC");
+                
+                // Log to console (in production, use proper logging framework)
+                Console.WriteLine($"[SECURITY EVENT] {timestamp} | {eventType} | User: {userEmail} | IP: {ipAddress} | Details: {details} | UserAgent: {userAgent}");
+                
+                // In production, you might want to:
+                // - Log to database
+                // - Send alerts for critical events
+                // - Integrate with SIEM systems
+            }
+            catch (Exception ex)
+            {
+                // Fail silently for logging errors to prevent cascade failures
+                Console.WriteLine($"[LOG ERROR] Failed to log security event: {ex.Message}");
+            }
         }
 
         // Secure logout that clears all session data and logs the event.
