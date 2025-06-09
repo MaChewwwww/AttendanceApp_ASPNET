@@ -413,16 +413,17 @@ namespace AttendanceApp_ASPNET.Controllers.Base
         {
             return new StudentSessionInfo
             {
-                UserId = HttpContext.Session.GetString("UserId") ?? "",
-                Email = HttpContext.Session.GetString("UserEmail") ?? "",
+                StudentId = int.Parse(HttpContext.Session.GetString("StudentId") ?? "0"),
                 FirstName = HttpContext.Session.GetString("FirstName") ?? "",
                 LastName = HttpContext.Session.GetString("LastName") ?? "",
+                Email = HttpContext.Session.GetString("UserEmail") ?? "",
                 StudentNumber = HttpContext.Session.GetString("StudentNumber") ?? "",
-                Role = HttpContext.Session.GetString("UserRole") ?? "",
-                Verified = HttpContext.Session.GetString("Verified") == "1",
-                StatusId = HttpContext.Session.GetString("StatusId") ?? "",
-                LoginTime = DateTime.TryParse(HttpContext.Session.GetString("LoginTime"), out var login) ? login : DateTime.MinValue,
-                SessionExpiry = DateTime.TryParse(HttpContext.Session.GetString("SessionExpiry"), out var expiry) ? expiry : DateTime.MinValue
+                Verified = HttpContext.Session.GetString("IsVerified") == "true",
+                IsOnboarded = HttpContext.Session.GetString("IsOnboarded") == "true",
+                HasSection = HttpContext.Session.GetString("HasSection") == "true",
+                SectionName = HttpContext.Session.GetString("SectionName") ?? "No Section Assigned",
+                SectionId = int.TryParse(HttpContext.Session.GetString("SectionId"), out var sectionId) ? sectionId : null,
+                ProgramName = HttpContext.Session.GetString("ProgramName") ?? ""
             };
         }
 
@@ -442,19 +443,17 @@ namespace AttendanceApp_ASPNET.Controllers.Base
     // Data model for current student session information.
     public class StudentSessionInfo
     {
-        public string UserId { get; set; } = string.Empty;
-        public string Email { get; set; } = string.Empty;
+        public int StudentId { get; set; }
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
         public string StudentNumber { get; set; } = string.Empty;
-        public string Role { get; set; } = string.Empty;
         public bool Verified { get; set; }
-        public string StatusId { get; set; } = string.Empty;
-        public DateTime LoginTime { get; set; }
-        public DateTime SessionExpiry { get; set; }
-        
-        public string FullName => $"{FirstName} {LastName}".Trim();
-        public bool IsSessionValid => SessionExpiry > DateTime.UtcNow;
-        public TimeSpan TimeUntilExpiry => SessionExpiry - DateTime.UtcNow;
+        public bool IsOnboarded { get; set; }
+        public bool HasSection { get; set; }
+        public string SectionName { get; set; } = string.Empty;
+        public int? SectionId { get; set; }
+        public string ProgramName { get; set; } = string.Empty;
+        public string FullName => $"{FirstName} {LastName}";
     }
 }

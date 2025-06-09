@@ -30,13 +30,11 @@ builder.Services.AddHttpClient<IApiService, ApiService>();
 builder.Services.AddScoped<IApiService, ApiService>();
 
 // Register HTTP clients
-builder.Services.AddHttpClient<IWeatherService, WeatherService>();
-builder.Services.AddHttpClient<ILocationService, LocationService>();
+builder.Services.AddHttpClient<IEnvironmentService, EnvironmentService>();
 
-// Register services
-builder.Services.AddScoped<IWeatherService, WeatherService>();
-builder.Services.AddScoped<ILocationService, LocationService>();
-builder.Services.AddScoped<ISessionService, SessionService>();
+// Register consolidated services
+builder.Services.AddScoped<IEnvironmentService, EnvironmentService>();
+builder.Services.AddScoped<IStudentManagementService, StudentManagementService>();
 
 // Add antiforgery token services
 builder.Services.AddAntiforgery(options => {

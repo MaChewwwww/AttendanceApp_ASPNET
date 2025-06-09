@@ -1,11 +1,27 @@
-using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
 
 namespace AttendanceApp_ASPNET.Services
 {
-    public interface IWeatherService
+    public interface IEnvironmentService
     {
+        // Location methods
+        Task<string> GetUserLocationAsync(HttpContext httpContext);
+        Task<string?> GetLocationFromIPAsync(HttpContext httpContext);
+        string GetClientIPAddress(HttpContext httpContext);
+        bool SetUserLocation(HttpContext httpContext, string location);
+        LocationUpdateResult UpdateUserLocation(HttpContext httpContext, JsonElement locationData);
+        
+        // Weather methods
         Task<WeatherData> GetWeatherDataAsync(string location);
         Task<WeatherData> GetWeatherForUserAsync(HttpContext httpContext);
+        Task SetWeatherViewBagAsync(dynamic controller, HttpContext httpContext);
+    }
+
+    public class LocationUpdateResult
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; } = string.Empty;
+        public string? Location { get; set; }
     }
 
     public class WeatherData
