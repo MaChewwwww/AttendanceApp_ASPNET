@@ -29,6 +29,15 @@ builder.Services.AddHttpClient<IApiService, ApiService>();
 // Register API service
 builder.Services.AddScoped<IApiService, ApiService>();
 
+// Register HTTP clients
+builder.Services.AddHttpClient<IWeatherService, WeatherService>();
+builder.Services.AddHttpClient<ILocationService, LocationService>();
+
+// Register services
+builder.Services.AddScoped<IWeatherService, WeatherService>();
+builder.Services.AddScoped<ILocationService, LocationService>();
+builder.Services.AddScoped<ISessionService, SessionService>();
+
 // Add antiforgery token services
 builder.Services.AddAntiforgery(options => {
     options.HeaderName = "RequestVerificationToken";

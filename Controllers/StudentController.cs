@@ -8,8 +8,19 @@ namespace AttendanceApp_ASPNET.Controllers
     // Student dashboard controller with enhanced security and authentication.
     public class StudentController : StudentBaseController
     {
-        public StudentController(IApiService apiService) : base(apiService)
+        private readonly IWeatherService _weatherService;
+        private readonly ILocationService _locationService;
+        private readonly ISessionService _sessionService;
+
+        public StudentController(
+            IApiService apiService,
+            IWeatherService weatherService,
+            ILocationService locationService,
+            ISessionService sessionService) : base(apiService)
         {
+            _weatherService = weatherService;
+            _locationService = locationService;
+            _sessionService = sessionService;
         }
 
         public async Task<IActionResult> Dashboard()
@@ -30,7 +41,7 @@ namespace AttendanceApp_ASPNET.Controllers
             
             // Add any dashboard-specific data
             ViewBag.WelcomeMessage = $"Welcome back, {studentInfo.FirstName}!";
-            ViewBag.IsNearExpiry = IsSessionNearExpiry();
+            ViewBag.IsNearExpiry = _sessionService.IsSessionNearExpiry(HttpContext);
             
             // Check for any important notifications
             if (!studentInfo.Verified)
@@ -38,8 +49,8 @@ namespace AttendanceApp_ASPNET.Controllers
                 ViewBag.ShowVerificationAlert = true;
             }
             
-            // Fetch weather data for Quezon City
-            await FetchWeatherDataAsync();
+            // Fetch weather data
+            await SetWeatherDataAsync();
             
             return View();
         }
@@ -71,31 +82,8 @@ namespace AttendanceApp_ASPNET.Controllers
         [HttpGet]
         public IActionResult CheckSessionStatus()
         {
-            var sessionExpiry = HttpContext.Session.GetString("SessionExpiry");
-            var isAuthenticated = HttpContext.Session.GetString("IsAuthenticated") == "true";
-            
-            if (DateTime.TryParse(sessionExpiry, out var expiryTime))
-            {
-                var timeUntilExpiry = expiryTime - DateTime.UtcNow;
-                
-                return Json(new {
-                    isAuthenticated = isAuthenticated,
-                    isValid = timeUntilExpiry.TotalSeconds > 0,
-                    hoursRemaining = Math.Max(0, (int)timeUntilExpiry.TotalHours),
-                    minutesRemaining = Math.Max(0, (int)timeUntilExpiry.TotalMinutes),
-                    secondsRemaining = Math.Max(0, (int)timeUntilExpiry.TotalSeconds),
-                    isNearExpiry = timeUntilExpiry.TotalHours <= 1
-                });
-            }
-
-            return Json(new {
-                isAuthenticated = isAuthenticated,
-                isValid = false,
-                hoursRemaining = 0,
-                minutesRemaining = 0,
-                secondsRemaining = 0,
-                isNearExpiry = true
-            });
+            var status = _sessionService.CheckSessionStatus(HttpContext);
+            return Json(status);
         }
 
         // Override the base logout to use the secure logout method.
@@ -462,326 +450,41 @@ namespace AttendanceApp_ASPNET.Controllers
             }
         }
 
-        private async Task FetchWeatherDataAsync()
+        private async Task SetWeatherDataAsync()
         {
             try
             {
-                const string apiKey = "87dbe1388ca54392a53202040250906";
+                var weatherData = await _weatherService.GetWeatherForUserAsync(HttpContext);
                 
-                // Get location dynamically - priority order:
-                // 1. User's stored location preference
-                // 2. IP-based location detection
-                // 3. Default to Manila, Philippines
-                string location = await GetUserLocationAsync();
+                ViewBag.WeatherDataAvailable = weatherData.IsAvailable;
+                ViewBag.WeatherError = weatherData.Error;
+                ViewBag.Temperature = weatherData.Temperature;
+                ViewBag.HeatIndex = weatherData.HeatIndex;
+                ViewBag.WeatherCondition = weatherData.Condition;
+                ViewBag.WeatherIcon = weatherData.Icon;
+                ViewBag.Humidity = weatherData.Humidity;
+                ViewBag.WindSpeed = weatherData.WindSpeed;
+                ViewBag.UVIndex = weatherData.UVIndex;
+                ViewBag.Visibility = weatherData.Visibility;
+                ViewBag.WeatherLocation = weatherData.Location;
+                ViewBag.WeatherRegion = weatherData.Region;
+                ViewBag.WeatherCountry = weatherData.Country;
+                ViewBag.WeatherTime = weatherData.LocalTime;
+                ViewBag.MaxTemperature = weatherData.MaxTemperature;
+                ViewBag.MinTemperature = weatherData.MinTemperature;
+                ViewBag.AvgTemperature = weatherData.AvgTemperature;
+                ViewBag.RainChance = weatherData.RainChance;
                 
-                var apiUrl = $"https://api.weatherapi.com/v1/forecast.json?key={apiKey}&q={location}&days=1&aqi=no&alerts=no";
-                
-                using var httpClient = new HttpClient();
-                httpClient.Timeout = TimeSpan.FromSeconds(10); // Set timeout to avoid hanging
-                
-                var response = await httpClient.GetAsync(apiUrl);
-                
-                if (response.IsSuccessStatusCode)
+                if (weatherData.IsAvailable)
                 {
-                    var weatherJson = await response.Content.ReadAsStringAsync();
-                    var weatherData = JsonSerializer.Deserialize<JsonElement>(weatherJson);
-                    
-                    // Extract current weather data
-                    if (weatherData.TryGetProperty("current", out var current))
-                    {
-                        // Temperature
-                        if (current.TryGetProperty("temp_c", out var tempC))
-                        {
-                            ViewBag.Temperature = Math.Round(tempC.GetDouble(), 1);
-                        }
-                        
-                        // Feels like temperature (heat index equivalent)
-                        if (current.TryGetProperty("feelslike_c", out var feelsLikeC))
-                        {
-                            ViewBag.HeatIndex = Math.Round(feelsLikeC.GetDouble(), 1);
-                        }
-                        
-                        // Weather condition
-                        if (current.TryGetProperty("condition", out var condition))
-                        {
-                            if (condition.TryGetProperty("text", out var conditionText))
-                            {
-                                ViewBag.WeatherCondition = conditionText.GetString();
-                            }
-                            if (condition.TryGetProperty("icon", out var conditionIcon))
-                            {
-                                ViewBag.WeatherIcon = conditionIcon.GetString();
-                            }
-                        }
-                        
-                        // Humidity
-                        if (current.TryGetProperty("humidity", out var humidity))
-                        {
-                            ViewBag.Humidity = humidity.GetInt32();
-                        }
-                        
-                        // Wind speed
-                        if (current.TryGetProperty("wind_kph", out var windKph))
-                        {
-                            ViewBag.WindSpeed = Math.Round(windKph.GetDouble(), 1);
-                        }
-                        
-                        // UV Index
-                        if (current.TryGetProperty("uv", out var uv))
-                        {
-                            ViewBag.UVIndex = Math.Round(uv.GetDouble(), 1);
-                        }
-                        
-                        // Visibility
-                        if (current.TryGetProperty("vis_km", out var visKm))
-                        {
-                            ViewBag.Visibility = Math.Round(visKm.GetDouble(), 1);
-                        }
-                    }
-                    
-                    // Extract location data
-                    if (weatherData.TryGetProperty("location", out var locationData))
-                    {
-                        if (locationData.TryGetProperty("name", out var locationName))
-                        {
-                            ViewBag.WeatherLocation = locationName.GetString();
-                        }
-                        if (locationData.TryGetProperty("region", out var region))
-                        {
-                            var regionName = region.GetString();
-                            if (!string.IsNullOrEmpty(regionName) && regionName != ViewBag.WeatherLocation?.ToString())
-                            {
-                                ViewBag.WeatherRegion = regionName;
-                                ViewBag.WeatherLocation = $"{ViewBag.WeatherLocation}, {regionName}";
-                            }
-                        }
-                        if (locationData.TryGetProperty("country", out var country))
-                        {
-                            ViewBag.WeatherCountry = country.GetString();
-                        }
-                        if (locationData.TryGetProperty("localtime", out var localTime))
-                        {
-                            ViewBag.WeatherTime = localTime.GetString();
-                        }
-                    }
-                    
-                    // Extract today's forecast for min/max temps
-                    if (weatherData.TryGetProperty("forecast", out var forecast) &&
-                        forecast.TryGetProperty("forecastday", out var forecastDays) &&
-                        forecastDays.ValueKind == JsonValueKind.Array)
-                    {
-                        var todayForecast = forecastDays.EnumerateArray().FirstOrDefault();
-                        if (todayForecast.ValueKind != JsonValueKind.Undefined &&
-                            todayForecast.TryGetProperty("day", out var day))
-                        {
-                            if (day.TryGetProperty("maxtemp_c", out var maxTemp))
-                            {
-                                ViewBag.MaxTemperature = Math.Round(maxTemp.GetDouble(), 1);
-                            }
-                            if (day.TryGetProperty("mintemp_c", out var minTemp))
-                            {
-                                ViewBag.MinTemperature = Math.Round(minTemp.GetDouble(), 1);
-                            }
-                            if (day.TryGetProperty("avgtemp_c", out var avgTemp))
-                            {
-                                ViewBag.AvgTemperature = Math.Round(avgTemp.GetDouble(), 1);
-                            }
-                            if (day.TryGetProperty("daily_chance_of_rain", out var rainChance))
-                            {
-                                ViewBag.RainChance = rainChance.GetInt32();
-                            }
-                        }
-                    }
-                    
-                    ViewBag.WeatherDataAvailable = true;
-                    
-                    // Log successful weather fetch
-                    Console.WriteLine($"Weather data fetched successfully for {ViewBag.WeatherLocation} - {ViewBag.Temperature}°C (Feels like {ViewBag.HeatIndex}°C)");
+                    Console.WriteLine($"Weather data fetched successfully for {weatherData.Location} - {weatherData.Temperature}°C (Feels like {weatherData.HeatIndex}°C)");
                 }
-                else
-                {
-                    ViewBag.WeatherDataAvailable = false;
-                    ViewBag.WeatherError = $"Weather service returned {response.StatusCode}";
-                    ViewBag.WeatherLocation = location; // Still show the location we tried
-                    Console.WriteLine($"Weather API error: {response.StatusCode} - {response.ReasonPhrase}");
-                }
-            }
-            catch (HttpRequestException httpEx)
-            {
-                ViewBag.WeatherDataAvailable = false;
-                ViewBag.WeatherError = "Network error fetching weather data";
-                Console.WriteLine($"Weather API network error: {httpEx.Message}");
-            }
-            catch (TaskCanceledException)
-            {
-                ViewBag.WeatherDataAvailable = false;
-                ViewBag.WeatherError = "Weather service timeout";
-                Console.WriteLine("Weather API request timed out");
-            }
-            catch (JsonException jsonEx)
-            {
-                ViewBag.WeatherDataAvailable = false;
-                ViewBag.WeatherError = "Invalid weather data format";
-                Console.WriteLine($"Weather API JSON error: {jsonEx.Message}");
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"Error setting weather data: {ex.Message}");
                 ViewBag.WeatherDataAvailable = false;
                 ViewBag.WeatherError = "Weather service unavailable";
-                Console.WriteLine($"Weather API unexpected error: {ex.Message}");
-            }
-        }
-
-        private async Task<string> GetUserLocationAsync()
-        {
-            try
-            {
-                // Priority 1: Check if user has a stored location preference
-                var storedLocation = HttpContext.Session.GetString("UserLocation");
-                if (!string.IsNullOrEmpty(storedLocation))
-                {
-                    Console.WriteLine($"Using stored user location: {storedLocation}");
-                    return storedLocation;
-                }
-
-                // Priority 2: Try to get location from IP address
-                var ipLocation = await GetLocationFromIPAsync();
-                if (!string.IsNullOrEmpty(ipLocation))
-                {
-                    Console.WriteLine($"Using IP-based location: {ipLocation}");
-                    return ipLocation;
-                }
-
-                // Priority 3: Default to Manila, Philippines for Filipino students
-                Console.WriteLine("Using default location: Quezon City");
-                return "Quezon City";
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error getting user location: {ex.Message}");
-                return "Manila, Philippines"; // Safe fallback
-            }
-        }
-
-        private async Task<string> GetLocationFromIPAsync()
-        {
-            try
-            {
-                // Get client IP address
-                var clientIP = GetClientIPAddress();
-                
-                // Skip local/private IPs
-                if (string.IsNullOrEmpty(clientIP) || 
-                    clientIP == "127.0.0.1" || 
-                    clientIP == "::1" || 
-                    clientIP.StartsWith("192.168.") ||
-                    clientIP.StartsWith("10.") ||
-                    clientIP.StartsWith("172."))
-                {
-                    return null; // Skip IP geolocation for local/private IPs
-                }
-
-                // Use a free IP geolocation service
-                using var httpClient = new HttpClient();
-                httpClient.Timeout = TimeSpan.FromSeconds(5);
-                
-                // Using ipapi.co (free tier: 1000 requests/day)
-                var response = await httpClient.GetAsync($"https://ipapi.co/{clientIP}/json/");
-                
-                if (response.IsSuccessStatusCode)
-                {
-                    var jsonResponse = await response.Content.ReadAsStringAsync();
-                    var locationData = JsonSerializer.Deserialize<JsonElement>(jsonResponse);
-                    
-                    if (locationData.TryGetProperty("city", out var city) &&
-                        locationData.TryGetProperty("country_name", out var country))
-                    {
-                        var cityName = city.GetString();
-                        var countryName = country.GetString();
-                        
-                        if (!string.IsNullOrEmpty(cityName) && !string.IsNullOrEmpty(countryName))
-                        {
-                            var location = $"{cityName}, {countryName}";
-                            
-                            // Store the detected location for future use
-                            HttpContext.Session.SetString("UserLocation", location);
-                            
-                            return location;
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"IP geolocation failed: {ex.Message}");
-            }
-            
-            return null;
-        }
-
-        private string GetClientIPAddress()
-        {
-            try
-            {
-                // Check for forwarded IP first (useful when behind proxy/load balancer)
-                var forwardedFor = HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault();
-                if (!string.IsNullOrEmpty(forwardedFor))
-                {
-                    // Take the first IP if there are multiple
-                    return forwardedFor.Split(',')[0].Trim();
-                }
-
-                // Check for real IP header
-                var realIP = HttpContext.Request.Headers["X-Real-IP"].FirstOrDefault();
-                if (!string.IsNullOrEmpty(realIP))
-                {
-                    return realIP;
-                }
-
-                // Fall back to connection remote IP
-                return HttpContext.Connection.RemoteIpAddress?.ToString() ?? "";
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error getting client IP: {ex.Message}");
-                return "";
-            }
-        }
-
-        // New endpoint to manually set user location
-        [HttpPost]
-        public IActionResult SetUserLocation([FromBody] JsonElement locationData)
-        {
-            try
-            {
-                if (locationData.TryGetProperty("location", out var locationProperty))
-                {
-                    var location = locationProperty.GetString();
-                    if (!string.IsNullOrEmpty(location))
-                    {
-                        HttpContext.Session.SetString("UserLocation", location);
-                        Console.WriteLine($"User location set to: {location}");
-                        
-                        return Json(new { 
-                            success = true, 
-                            message = "Location updated successfully",
-                            location = location
-                        });
-                    }
-                }
-                
-                return Json(new { 
-                    success = false, 
-                    message = "Invalid location data" 
-                });
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error setting user location: {ex.Message}");
-                return Json(new { 
-                    success = false, 
-                    message = "Failed to update location" 
-                });
             }
         }
     }
