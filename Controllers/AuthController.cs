@@ -794,7 +794,7 @@ namespace AttendanceApp_ASPNET.Controllers
                         HttpContext.Session.SetString("StatusId", statusIdProp.ToString());
                     }
                     
-                    // Store auth token if provided
+                    // Store JWT auth token if provided (from Python API)
                     if (!string.IsNullOrEmpty(token))
                     {
                         HttpContext.Session.SetString("AuthToken", token);
