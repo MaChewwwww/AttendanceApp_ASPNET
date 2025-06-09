@@ -24,6 +24,10 @@ namespace AttendanceApp_ASPNET.Services
         string GetApiBaseUrl();
         Task<string> GetAuthenticatedDataAsync(string endpoint, string jwtToken);
         Task<string> CheckStudentOnboardingStatusAsync(string jwtToken);
+        Task<string> GetAvailableProgramsAsync(string jwtToken);
+        Task<string> GetAvailableSectionsByProgramAsync(int programId, string jwtToken);
+        Task<string> GetAvailableCoursesBySectionAsync(int sectionId, string jwtToken);
+        Task<string> CompleteStudentOnboardingAsync(object onboardingData, string jwtToken);
     }
 
     // INHERITANCE: ApiService implements IApiService interface
@@ -534,6 +538,177 @@ namespace AttendanceApp_ASPNET.Services
                     message = $"Onboarding status check failed: {ex.Message}",
                     has_section = false,
                     student_info = (object)null
+                };
+                return JsonSerializer.Serialize(errorResponse);
+            }
+        }
+
+        public async Task<string> GetAvailableProgramsAsync(string jwtToken)
+        {
+            try
+            {
+                var apiUrl = $"{_apiBaseUrl}/student/onboarding/programs";
+                
+                _httpClient.DefaultRequestHeaders.Clear();
+                _httpClient.DefaultRequestHeaders.Add("AttendanceApp-API-Key", _apiKey);
+                _httpClient.DefaultRequestHeaders.Add("User-Agent", "AttendanceApp-ASPNET/1.0");
+                
+                // Add JWT token to Authorization header
+                if (!string.IsNullOrEmpty(jwtToken))
+                {
+                    _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {jwtToken}");
+                }
+                
+                var response = await _httpClient.GetAsync(apiUrl);
+                var responseContent = await response.Content.ReadAsStringAsync();
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorResponse = new
+                    {
+                        programs = new object[0],
+                        message = $"API returned {response.StatusCode}: {responseContent}"
+                    };
+                    return JsonSerializer.Serialize(errorResponse);
+                }
+                
+                return responseContent;
+            }
+            catch (Exception ex)
+            {
+                var errorResponse = new
+                {
+                    programs = new object[0],
+                    message = $"Failed to fetch programs: {ex.Message}"
+                };
+                return JsonSerializer.Serialize(errorResponse);
+            }
+        }
+
+        public async Task<string> GetAvailableSectionsByProgramAsync(int programId, string jwtToken)
+        {
+            try
+            {
+                var apiUrl = $"{_apiBaseUrl}/student/onboarding/sections/{programId}";
+                
+                _httpClient.DefaultRequestHeaders.Clear();
+                _httpClient.DefaultRequestHeaders.Add("AttendanceApp-API-Key", _apiKey);
+                _httpClient.DefaultRequestHeaders.Add("User-Agent", "AttendanceApp-ASPNET/1.0");
+                
+                // Add JWT token to Authorization header
+                if (!string.IsNullOrEmpty(jwtToken))
+                {
+                    _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {jwtToken}");
+                }
+                
+                var response = await _httpClient.GetAsync(apiUrl);
+                var responseContent = await response.Content.ReadAsStringAsync();
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorResponse = new
+                    {
+                        sections = new object[0],
+                        message = $"API returned {response.StatusCode}: {responseContent}"
+                    };
+                    return JsonSerializer.Serialize(errorResponse);
+                }
+                
+                return responseContent;
+            }
+            catch (Exception ex)
+            {
+                var errorResponse = new
+                {
+                    sections = new object[0],
+                    message = $"Failed to fetch sections: {ex.Message}"
+                };
+                return JsonSerializer.Serialize(errorResponse);
+            }
+        }
+
+        public async Task<string> GetAvailableCoursesBySectionAsync(int sectionId, string jwtToken)
+        {
+            try
+            {
+                var apiUrl = $"{_apiBaseUrl}/student/onboarding/courses/{sectionId}";
+                
+                _httpClient.DefaultRequestHeaders.Clear();
+                _httpClient.DefaultRequestHeaders.Add("AttendanceApp-API-Key", _apiKey);
+                _httpClient.DefaultRequestHeaders.Add("User-Agent", "AttendanceApp-ASPNET/1.0");
+                
+                // Add JWT token to Authorization header
+                if (!string.IsNullOrEmpty(jwtToken))
+                {
+                    _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {jwtToken}");
+                }
+                
+                var response = await _httpClient.GetAsync(apiUrl);
+                var responseContent = await response.Content.ReadAsStringAsync();
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorResponse = new
+                    {
+                        courses = new object[0],
+                        message = $"API returned {response.StatusCode}: {responseContent}"
+                    };
+                    return JsonSerializer.Serialize(errorResponse);
+                }
+                
+                return responseContent;
+            }
+            catch (Exception ex)
+            {
+                var errorResponse = new
+                {
+                    courses = new object[0],
+                    message = $"Failed to fetch courses: {ex.Message}"
+                };
+                return JsonSerializer.Serialize(errorResponse);
+            }
+        }
+
+        public async Task<string> CompleteStudentOnboardingAsync(object onboardingData, string jwtToken)
+        {
+            try
+            {
+                var apiUrl = $"{_apiBaseUrl}/student/onboarding/complete";
+                
+                var json = JsonSerializer.Serialize(onboardingData);
+                var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                
+                _httpClient.DefaultRequestHeaders.Clear();
+                _httpClient.DefaultRequestHeaders.Add("AttendanceApp-API-Key", _apiKey);
+                _httpClient.DefaultRequestHeaders.Add("User-Agent", "AttendanceApp-ASPNET/1.0");
+                
+                // Add JWT token to Authorization header
+                if (!string.IsNullOrEmpty(jwtToken))
+                {
+                    _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {jwtToken}");
+                }
+                
+                var response = await _httpClient.PostAsync(apiUrl, content);
+                var responseContent = await response.Content.ReadAsStringAsync();
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorResponse = new
+                    {
+                        success = false,
+                        message = $"API returned {response.StatusCode}: {responseContent}"
+                    };
+                    return JsonSerializer.Serialize(errorResponse);
+                }
+                
+                return responseContent;
+            }
+            catch (Exception ex)
+            {
+                var errorResponse = new
+                {
+                    success = false,
+                    message = $"Failed to complete onboarding: {ex.Message}"
                 };
                 return JsonSerializer.Serialize(errorResponse);
             }

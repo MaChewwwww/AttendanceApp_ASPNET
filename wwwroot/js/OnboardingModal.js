@@ -1,81 +1,11 @@
 // Student Onboarding Modal JavaScript
 
-// Mock data for demonstration - replace with actual API calls later
-const mockPrograms = {
-    'bscs': {
-        name: 'Bachelor of Science in Computer Science',
-        sections: [
-            { id: 'bscs-4a', name: 'BSCS 4-A', year: 4 },
-            { id: 'bscs-4b', name: 'BSCS 4-B', year: 4 },
-            { id: 'bscs-3a', name: 'BSCS 3-A', year: 3 },
-            { id: 'bscs-3b', name: 'BSCS 3-B', year: 3 },
-            { id: 'bscs-2a', name: 'BSCS 2-A', year: 2 },
-            { id: 'bscs-2b', name: 'BSCS 2-B', year: 2 },
-            { id: 'bscs-1a', name: 'BSCS 1-A', year: 1 },
-            { id: 'bscs-1b', name: 'BSCS 1-B', year: 1 }
-        ]
-    },
-    'bsit': {
-        name: 'Bachelor of Science in Information Technology',
-        sections: [
-            { id: 'bsit-4a', name: 'BSIT 4-A', year: 4 },
-            { id: 'bsit-4b', name: 'BSIT 4-B', year: 4 },
-            { id: 'bsit-3a', name: 'BSIT 3-A', year: 3 },
-            { id: 'bsit-3b', name: 'BSIT 3-B', year: 3 },
-            { id: 'bsit-2a', name: 'BSIT 2-A', year: 2 },
-            { id: 'bsit-2b', name: 'BSIT 2-B', year: 2 },
-            { id: 'bsit-1a', name: 'BSIT 1-A', year: 1 },
-            { id: 'bsit-1b', name: 'BSIT 1-B', year: 1 }
-        ]
-    },
-    'bsce': {
-        name: 'Bachelor of Science in Computer Engineering',
-        sections: [
-            { id: 'bsce-4a', name: 'BSCpE 4-A', year: 4 },
-            { id: 'bsce-3a', name: 'BSCpE 3-A', year: 3 },
-            { id: 'bsce-2a', name: 'BSCpE 2-A', year: 2 },
-            { id: 'bsce-1a', name: 'BSCpE 1-A', year: 1 }
-        ]
-    },
-    'bsis': {
-        name: 'Bachelor of Science in Information Systems',
-        sections: [
-            { id: 'bsis-4a', name: 'BSIS 4-A', year: 4 },
-            { id: 'bsis-3a', name: 'BSIS 3-A', year: 3 },
-            { id: 'bsis-2a', name: 'BSIS 2-A', year: 2 },
-            { id: 'bsis-1a', name: 'BSIS 1-A', year: 1 }
-        ]
-    }
-};
-
-const mockCourses = {
-    'bscs-4a': [
-        { id: 'cs401', code: 'CS 401', name: 'Software Engineering 2', units: 3, instructor: 'Dr. Smith' },
-        { id: 'cs402', code: 'CS 402', name: 'Database Systems 2', units: 3, instructor: 'Prof. Johnson' },
-        { id: 'cs403', code: 'CS 403', name: 'Computer Networks', units: 3, instructor: 'Dr. Williams' },
-        { id: 'cs404', code: 'CS 404', name: 'Artificial Intelligence', units: 3, instructor: 'Prof. Brown' },
-        { id: 'cs405', code: 'CS 405', name: 'Capstone Project 2', units: 3, instructor: 'Dr. Davis' }
-    ],
-    'bscs-4b': [
-        { id: 'cs401', code: 'CS 401', name: 'Software Engineering 2', units: 3, instructor: 'Dr. Smith' },
-        { id: 'cs402', code: 'CS 402', name: 'Database Systems 2', units: 3, instructor: 'Prof. Anderson' },
-        { id: 'cs403', code: 'CS 403', name: 'Computer Networks', units: 3, instructor: 'Dr. Wilson' },
-        { id: 'cs404', code: 'CS 404', name: 'Artificial Intelligence', units: 3, instructor: 'Prof. Brown' },
-        { id: 'cs405', code: 'CS 405', name: 'Capstone Project 2', units: 3, instructor: 'Dr. Miller' }
-    ],
-    'bsit-4a': [
-        { id: 'it401', code: 'IT 401', name: 'Systems Integration', units: 3, instructor: 'Prof. Garcia' },
-        { id: 'it402', code: 'IT 402', name: 'IT Project Management', units: 3, instructor: 'Dr. Martinez' },
-        { id: 'it403', code: 'IT 403', name: 'Cybersecurity', units: 3, instructor: 'Prof. Lopez' },
-        { id: 'it404', code: 'IT 404', name: 'Cloud Computing', units: 3, instructor: 'Dr. Rodriguez' },
-        { id: 'it405', code: 'IT 405', name: 'Capstone Project', units: 3, instructor: 'Prof. Hernandez' }
-    ]
-};
-
-// Global variables
-let selectedProgram = '';
-let selectedSection = '';
+// Global variables to store data
+let availablePrograms = [];
+let availableSections = [];
 let availableCourses = [];
+let selectedProgramId = null;
+let selectedSectionId = null;
 
 // Show onboarding modal
 function showOnboardingModal() {
@@ -230,6 +160,498 @@ function closeOnboardingModal() {
     }
 }
 
+// Initialize onboarding form
+function initializeOnboardingForm() {
+    console.log('Initializing onboarding form...');
+    
+    // Reset form state
+    resetOnboardingForm();
+    
+    // Load programs on form initialization
+    loadAvailablePrograms();
+    
+    // Add event listeners with proper binding
+    const programSelect = document.getElementById('programSelect');
+    const sectionSelect = document.getElementById('sectionSelect');
+    
+    if (programSelect) {
+        // Remove any existing listeners first
+        programSelect.removeEventListener('change', handleProgramChange);
+        // Add new listener
+        programSelect.addEventListener('change', handleProgramChange);
+        console.log('Program select event listener added');
+    } else {
+        console.error('Program select element not found');
+    }
+    
+    if (sectionSelect) {
+        // Remove any existing listeners first
+        sectionSelect.removeEventListener('change', handleSectionChange);
+        // Add new listener
+        sectionSelect.addEventListener('change', handleSectionChange);
+        console.log('Section select event listener added');
+    } else {
+        console.error('Section select element not found');
+    }
+}
+
+// Load available programs from API
+async function loadAvailablePrograms() {
+    const programSelect = document.getElementById('programSelect');
+    const programError = document.getElementById('programError');
+    
+    try {
+        // Clear existing options except the first one
+        while (programSelect.children.length > 1) {
+            programSelect.removeChild(programSelect.lastChild);
+        }
+        
+        // Show loading state
+        programSelect.disabled = true;
+        programSelect.innerHTML = '<option value="">Loading programs...</option>';
+        
+        const response = await fetch('/Student/GetAvailablePrograms', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': getAntiForgeryToken()
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.success && data.programs && Array.isArray(data.programs) && data.programs.length > 0) {
+            availablePrograms = data.programs;
+            populateProgramSelect(data.programs);
+        } else {
+            throw new Error(data.message || 'No programs available or invalid data format');
+        }
+        
+    } catch (error) {
+        console.error('Error loading programs:', error);
+        programSelect.innerHTML = '<option value="">Error loading programs</option>';
+        showError(programError, 'Unable to load programs. Please refresh and try again.');
+    } finally {
+        programSelect.disabled = false;
+    }
+}
+
+// Populate program select dropdown
+function populateProgramSelect(programs) {
+    const programSelect = document.getElementById('programSelect');
+    
+    // Clear and add default option
+    programSelect.innerHTML = '<option value="">Choose your program...</option>';
+    
+    // Validate programs data
+    if (!Array.isArray(programs)) {
+        console.error('Programs is not an array:', programs);
+        programSelect.innerHTML = '<option value="">Invalid programs data</option>';
+        return;
+    }
+    
+    if (programs.length === 0) {
+        programSelect.innerHTML = '<option value="">No programs available</option>';
+        return;
+    }
+    
+    // Add program options
+    programs.forEach((program) => {
+        // Check if program has required fields
+        if (!program.id && program.id !== 0) {
+            return;
+        }
+        
+        if (!program.name) {
+            return;
+        }
+        
+        const option = document.createElement('option');
+        option.value = program.id.toString();
+        option.textContent = `${program.name}${program.acronym ? ` (${program.acronym})` : ''}${program.code ? ` - ${program.code}` : ''}`;
+        
+        programSelect.appendChild(option);
+    });
+}
+
+// Handle program selection change
+async function handleProgramChange(event) {
+    const rawValue = event.target.value;
+    const programId = parseInt(rawValue);
+    
+    const programError = document.getElementById('programError');
+    const sectionSelect = document.getElementById('sectionSelect');
+    const coursesContainer = document.getElementById('coursesContainer');
+    
+    // Hide error messages
+    hideError(programError);
+    
+    // Reset dependent dropdowns
+    resetSectionSelect();
+    hideCourses();
+    updateCompleteButton();
+    
+    // Validate the program ID
+    if (!rawValue || rawValue === "" || isNaN(programId) || programId <= 0) {
+        selectedProgramId = null;
+        return;
+    }
+    
+    selectedProgramId = programId;
+    
+    // Load sections for selected program
+    try {
+        await loadAvailableSections(programId);
+    } catch (error) {
+        console.error('Error in handleProgramChange:', error);
+        showError(programError, 'Failed to load sections. Please try again.');
+    }
+}
+
+// Load available sections with enhanced debugging
+async function loadAvailableSections(programId) {
+    const sectionSelect = document.getElementById('sectionSelect');
+    const sectionLoading = document.getElementById('sectionLoading');
+    const sectionError = document.getElementById('sectionError');
+    
+    try {
+        // Double-check programId validation
+        const numericProgramId = parseInt(programId);
+        if (isNaN(numericProgramId) || numericProgramId <= 0) {
+            showError(sectionError, 'Invalid program selection. Please try again.');
+            return;
+        }
+        
+        // Show loading state
+        showLoading(sectionLoading, 'Loading sections...');
+        sectionSelect.disabled = true;
+        sectionSelect.innerHTML = '<option value="">Loading sections...</option>';
+        hideError(sectionError);
+        
+        // Construct API URL
+        const apiUrl = `/Student/GetAvailableSections/${numericProgramId}`;
+        
+        const requestOptions = {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': getAntiForgeryToken()
+            }
+        };
+        
+        const response = await fetch(apiUrl, requestOptions);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        // Fix the condition check
+        if (data.success && data.sections && Array.isArray(data.sections)) {
+            if (data.sections.length > 0) {
+                availableSections = data.sections;
+                populateSectionSelect(data.sections);
+                
+                // Make sure to show success state
+                hideError(sectionError);
+                
+                // Enable the section dropdown and show the courses container
+                setTimeout(() => {
+                    showSectionSelection();
+                }, 100);
+                
+            } else {
+                sectionSelect.innerHTML = '<option value="">No sections available for this program</option>';
+                showError(sectionError, 'No sections available for this program.');
+            }
+        } else {
+            // Show the actual error message from the API if available
+            const errorMessage = data.message || 'No sections available for this program';
+            throw new Error(errorMessage);
+        }
+        
+    } catch (error) {
+        console.error('Error loading sections:', error);
+        sectionSelect.innerHTML = '<option value="">Error loading sections</option>';
+        showError(sectionError, error.message || 'Unable to load sections. Please try selecting a different program.');
+    } finally {
+        hideLoading(sectionLoading);
+        sectionSelect.disabled = false;
+    }
+}
+
+// Populate section select dropdown
+function populateSectionSelect(sections) {
+    const sectionSelect = document.getElementById('sectionSelect');
+    
+    // Clear and add default option
+    sectionSelect.innerHTML = '<option value="">Choose your section...</option>';
+    
+    // Validate sections data
+    if (!Array.isArray(sections)) {
+        console.error('Sections is not an array:', sections);
+        sectionSelect.innerHTML = '<option value="">Invalid sections data</option>';
+        return;
+    }
+    
+    if (sections.length === 0) {
+        sectionSelect.innerHTML = '<option value="">No sections available</option>';
+        return;
+    }
+    
+    // Add section options
+    sections.forEach((section) => {
+        // Check if section has required fields
+        if (!section.id || !section.name) {
+            return;
+        }
+        
+        const option = document.createElement('option');
+        option.value = section.id;
+        option.textContent = `${section.name}${section.program_name ? ` - ${section.program_name}` : ''}${section.program_acronym ? ` (${section.program_acronym})` : ''}`;
+        
+        sectionSelect.appendChild(option);
+    });
+    
+    // Enable section select and update styling
+    sectionSelect.disabled = false;
+    sectionSelect.classList.remove('bg-gray-100', 'text-gray-500');
+    sectionSelect.classList.add('bg-white', 'text-gray-900');
+}
+
+// Handle section selection change
+async function handleSectionChange(event) {
+    const sectionId = parseInt(event.target.value);
+    const sectionError = document.getElementById('sectionError');
+    
+    // Hide error messages
+    hideError(sectionError);
+    hideCourses();
+    updateCompleteButton();
+    
+    if (!sectionId || isNaN(sectionId) || sectionId <= 0) {
+        selectedSectionId = null;
+        return;
+    }
+    
+    selectedSectionId = sectionId;
+    
+    // Load courses for selected section
+    await loadAvailableCourses(sectionId);
+}
+
+// Load available courses for selected section
+async function loadAvailableCourses(sectionId) {
+    const coursesContainer = document.getElementById('coursesContainer');
+    const coursesLoading = document.getElementById('coursesLoading');
+    
+    try {
+        // Show loading state
+        showLoading(coursesLoading, 'Loading courses...');
+        
+        const response = await fetch(`/Student/GetAvailableCourses/${sectionId}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': getAntiForgeryToken()
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.success && data.courses && Array.isArray(data.courses)) {
+            availableCourses = data.courses;
+            populateCoursesList(data.courses);
+            showCourses();
+            updateCompleteButton();
+        } else {
+            throw new Error(data.message || 'No courses available for this section');
+        }
+        
+    } catch (error) {
+        console.error('Error loading courses:', error);
+    } finally {
+        hideLoading(coursesLoading);
+    }
+}
+
+// Complete onboarding process
+async function completeOnboarding() {
+    const completeButton = document.getElementById('completeOnboardingBtn');
+    const buttonText = document.getElementById('onboardingButtonText');
+    const spinner = document.getElementById('onboardingSpinner');
+    const errorDiv = document.getElementById('onboardingError');
+    const successDiv = document.getElementById('onboardingSuccess');
+    
+    // Validate form
+    if (!validateOnboardingForm()) {
+        return;
+    }
+    
+    try {
+        // Show loading state
+        completeButton.disabled = true;
+        buttonText.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Completing Setup...';
+        spinner.classList.remove('hidden');
+        hideError(errorDiv);
+        hideSuccess(successDiv);
+        
+        const onboardingData = {
+            program_id: selectedProgramId, // These field names are correct
+            section_id: selectedSectionId
+        };
+        
+        console.log('Submitting onboarding data:', onboardingData);
+        
+        const response = await fetch('/Student/CompleteOnboarding', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': getAntiForgeryToken()
+            },
+            body: JSON.stringify(onboardingData)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Show success message
+            showSuccess(successDiv, 'Account setup completed successfully!');
+            
+            // Wait a moment then reload the page to reflect changes
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+            
+        } else {
+            throw new Error(data.message || 'Failed to complete onboarding');
+        }
+        
+    } catch (error) {
+        console.error('Error completing onboarding:', error);
+        showError(errorDiv, error.message || 'Failed to complete setup. Please try again.');
+        
+        // Reset button
+        completeButton.disabled = false;
+        buttonText.innerHTML = '<i class="fas fa-check mr-2"></i>Complete Setup';
+        spinner.classList.add('hidden');
+    }
+}
+
+// Validate onboarding form
+function validateOnboardingForm() {
+    const programError = document.getElementById('programError');
+    const sectionError = document.getElementById('sectionError');
+    
+    console.log('=== FORM VALIDATION DEBUG ===');
+    console.log('selectedProgramId:', selectedProgramId);
+    console.log('selectedSectionId:', selectedSectionId);
+    console.log('availableCourses.length:', availableCourses.length);
+    
+    let isValid = true;
+    
+    // Validate program selection
+    if (!selectedProgramId || selectedProgramId <= 0) {
+        console.log('Program validation failed');
+        showError(programError, 'Please select your program.');
+        isValid = false;
+    } else {
+        hideError(programError);
+        console.log('Program validation passed');
+    }
+    
+    // Validate section selection
+    if (!selectedSectionId || selectedSectionId <= 0) {
+        console.log('Section validation failed');
+        showError(sectionError, 'Please select your section.');
+        isValid = false;
+    } else {
+        hideError(sectionError);
+        console.log('Section validation passed');
+    }
+    
+    console.log('Form validation result:', isValid);
+    console.log('=============================');
+    
+    return isValid;
+}
+
+// Update complete button state
+function updateCompleteButton() {
+    const completeButton = document.getElementById('completeOnboardingBtn');
+    const isFormValid = selectedProgramId && selectedSectionId && availableCourses.length > 0;
+    
+    completeButton.disabled = !isFormValid;
+}
+
+// Close onboarding modal
+function closeOnboardingModal() {
+    const modal = document.getElementById('onboardingModal');
+    const modalContent = document.getElementById('onboardingModalContent');
+    
+    if (modal && modalContent) {
+        console.log('Closing onboarding modal...');
+        
+        // Add exit animation
+        modalContent.classList.remove('scale-100', 'opacity-100');
+        modalContent.classList.add('scale-95', 'opacity-0');
+        
+        // Animate elements out in reverse order
+        const elementsToHide = [
+            'infoSection',
+            'modalButtons', 
+            'sectionSelectionDiv',
+            'programSection',
+            'onboardingForm',
+            'modalDescription',
+            'modalTitle',
+            'modalIcon'
+        ];
+        
+        elementsToHide.forEach((elementId, index) => {
+            const element = document.getElementById(elementId);
+            if (element) {
+                setTimeout(() => {
+                    element.classList.add('translate-y-4', 'opacity-0');
+                    if (elementId === 'modalIcon') {
+                        element.classList.add('scale-0');
+                    }
+                }, index * 50);
+            }
+        });
+        
+        // Remove blur effect from layout elements
+        removeLayoutBlur();
+        
+        // Hide modal after animation completes
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            
+            // Restore body scroll and interactions
+            document.body.style.overflow = '';
+            document.body.style.pointerEvents = '';
+            
+            // Reset all animations for next time
+            resetModalAnimations();
+            resetOnboardingForm();
+            
+            // Remove event listener
+            modal.removeEventListener('click', handleModalBackdropClick);
+        }, 500);
+        
+        console.log('Onboarding modal closed');
+    }
+}
+
 // Handle modal backdrop clicks
 function handleModalBackdropClick(event) {
     const modalContent = document.getElementById('onboardingModalContent');
@@ -246,9 +668,6 @@ function handleModalBackdropClick(event) {
                 modalContentElement.style.animation = '';
             }, 500);
         }
-        
-        // You can uncomment the line below if you want to allow backdrop closing
-        // closeOnboardingModal();
     }
 }
 
@@ -285,9 +704,6 @@ function resetModalAnimations() {
 // Add blur effect to layout elements
 function addLayoutBlur() {
     const dashboardContainer = document.getElementById('dashboardContainer');
-    const dashboardSidebar = document.getElementById('dashboardSidebar');
-    const dashboardNavbar = document.getElementById('dashboardNavbar');
-    const dashboardMain = document.getElementById('dashboardMain');
     
     // Add blur class to dashboard container to affect all dashboard elements
     if (dashboardContainer) {
@@ -315,311 +731,129 @@ function removeLayoutBlur() {
     console.log('Layout blur effects removed');
 }
 
-// Initialize onboarding form
-function initializeOnboardingForm() {
-    const programSelect = document.getElementById('programSelect');
-    const sectionSelect = document.getElementById('sectionSelect');
+// Utility functions
+function resetOnboardingForm() {
+    selectedProgramId = null;
+    selectedSectionId = null;
+    availablePrograms = [];
+    availableSections = [];
+    availableCourses = [];
     
-    // Add event listeners
-    if (programSelect) {
-        programSelect.addEventListener('change', handleProgramChange);
-    }
-    
-    if (sectionSelect) {
-        sectionSelect.addEventListener('change', handleSectionChange);
-    }
-    
-    // Reset form state
-    resetOnboardingForm();
-    
-    console.log('Onboarding form initialized');
+    resetSectionSelect();
+    hideCourses();
+    hideAllErrors();
+    hideAllSuccess();
+    updateCompleteButton();
 }
 
-// Handle program selection change
-function handleProgramChange() {
-    const programSelect = document.getElementById('programSelect');
-    const sectionSelect = document.getElementById('sectionSelect');
-    const coursesContainer = document.getElementById('coursesContainer');
-    const sectionLoading = document.getElementById('sectionLoading');
-    
-    selectedProgram = programSelect.value;
-    
-    if (selectedProgram) {
-        // Show loading state
-        sectionLoading.classList.remove('hidden');
-        sectionSelect.disabled = true;
-        sectionSelect.classList.add('bg-gray-100');
-        
-        // Hide courses container
-        coursesContainer.classList.add('hidden');
-        
-        // Simulate API delay
-        setTimeout(() => {
-            populateSections(selectedProgram);
-            sectionLoading.classList.add('hidden');
-            sectionSelect.disabled = false;
-            sectionSelect.classList.remove('bg-gray-100');
-        }, 800);
-        
-        console.log('Program selected:', selectedProgram);
-    } else {
-        // Reset sections and courses
-        resetSections();
-        coursesContainer.classList.add('hidden');
-    }
-    
-    validateForm();
-}
-
-// Handle section selection change
-function handleSectionChange() {
-    const sectionSelect = document.getElementById('sectionSelect');
-    const coursesContainer = document.getElementById('coursesContainer');
-    const coursesLoading = document.getElementById('coursesLoading');
-    
-    selectedSection = sectionSelect.value;
-    
-    if (selectedSection) {
-        // Show courses container and loading state
-        coursesContainer.classList.remove('hidden');
-        coursesLoading.classList.remove('hidden');
-        
-        // Simulate API delay
-        setTimeout(() => {
-            populateCourses(selectedSection);
-            coursesLoading.classList.add('hidden');
-        }, 600);
-        
-        console.log('Section selected:', selectedSection);
-    } else {
-        coursesContainer.classList.add('hidden');
-    }
-    
-    validateForm();
-}
-
-// Populate sections based on selected program
-function populateSections(programId) {
-    const sectionSelect = document.getElementById('sectionSelect');
-    
-    if (!mockPrograms[programId]) {
-        console.error('Program not found:', programId);
-        return;
-    }
-    
-    const sections = mockPrograms[programId].sections;
-    
-    // Clear existing options
-    sectionSelect.innerHTML = '<option value="">Choose your section...</option>';
-    
-    // Add sections
-    sections.forEach(section => {
-        const option = document.createElement('option');
-        option.value = section.id;
-        option.textContent = section.name;
-        sectionSelect.appendChild(option);
-    });
-    
-    console.log('Sections populated for program:', programId);
-}
-
-// Populate courses based on selected section
-function populateCourses(sectionId) {
-    const coursesList = document.getElementById('coursesList');
-    
-    if (!mockCourses[sectionId]) {
-        coursesList.innerHTML = '<p class="text-gray-500 text-sm">No courses available for this section.</p>';
-        availableCourses = [];
-        return;
-    }
-    
-    const courses = mockCourses[sectionId];
-    availableCourses = courses;
-    
-    // Clear existing content
-    coursesList.innerHTML = '';
-    
-    // Add courses
-    courses.forEach((course, index) => {
-        const courseDiv = document.createElement('div');
-        courseDiv.className = 'flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200 hover:border-blue-300 transition-colors';
-        courseDiv.style.animationDelay = `${index * 0.1}s`;
-        courseDiv.classList.add('animate-fade-in');
-        
-        courseDiv.innerHTML = `
-            <div class="flex items-center">
-                <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                    <i class="fas fa-book text-blue-600 text-sm"></i>
-                </div>
-                <div>
-                    <h4 class="font-medium text-gray-900 text-sm">${course.code} - ${course.name}</h4>
-                    <p class="text-xs text-gray-500">${course.units} units • ${course.instructor}</p>
-                </div>
-            </div>
-            <div class="text-right">
-                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                    <i class="fas fa-check mr-1"></i>
-                    Enrolled
-                </span>
-            </div>
-        `;
-        
-        coursesList.appendChild(courseDiv);
-    });
-    
-    console.log('Courses populated for section:', sectionId);
-}
-
-// Reset sections dropdown
-function resetSections() {
+function resetSectionSelect() {
     const sectionSelect = document.getElementById('sectionSelect');
     sectionSelect.innerHTML = '<option value="">First, select your program...</option>';
     sectionSelect.disabled = true;
-    sectionSelect.classList.add('bg-gray-100');
-    selectedSection = '';
 }
 
-// Reset onboarding form
-function resetOnboardingForm() {
-    // Reset selections
-    selectedProgram = '';
-    selectedSection = '';
-    availableCourses = [];
-    
-    // Reset form elements
-    const programSelect = document.getElementById('programSelect');
+function showCourses() {
     const coursesContainer = document.getElementById('coursesContainer');
+    coursesContainer.classList.remove('hidden');
     
-    if (programSelect) {
-        programSelect.value = '';
-    }
-    
-    resetSections();
+    // Animate show
+    setTimeout(() => {
+        coursesContainer.classList.remove('translate-x-4', 'opacity-0');
+        coursesContainer.classList.add('translate-x-0', 'opacity-100');
+    }, 100);
+}
+
+function hideCourses() {
+    const coursesContainer = document.getElementById('coursesContainer');
     coursesContainer.classList.add('hidden');
-    
-    // Hide error messages
-    hideAllErrors();
-    
-    // Reset button state
-    const completeBtn = document.getElementById('completeOnboardingBtn');
-    if (completeBtn) {
-        completeBtn.disabled = true;
-    }
-    
-    console.log('Onboarding form reset');
+    coursesContainer.classList.add('translate-x-4', 'opacity-0');
+    coursesContainer.classList.remove('translate-x-0', 'opacity-100');
 }
 
-// Validate form
-function validateForm() {
-    const completeBtn = document.getElementById('completeOnboardingBtn');
-    const isValid = selectedProgram && selectedSection;
-    
-    if (completeBtn) {
-        completeBtn.disabled = !isValid;
-    }
-    
-    return isValid;
-}
-
-// Hide all error messages
-function hideAllErrors() {
-    const errorElements = [
-        'programError',
-        'sectionError',
-        'onboardingError'
-    ];
-    
-    errorElements.forEach(id => {
-        const element = document.getElementById(id);
-        if (element) {
-            element.classList.add('hidden');
-        }
-    });
-}
-
-// Show error message
-function showError(elementId, message) {
-    const element = document.getElementById(elementId);
+function showLoading(element, message) {
     if (element) {
-        if (elementId === 'onboardingError') {
-            const errorText = document.getElementById('onboardingErrorText');
-            if (errorText) {
-                errorText.textContent = message;
-            }
-        }
+        element.innerHTML = `<i class="fas fa-spinner fa-spin mr-1"></i>${message}`;
         element.classList.remove('hidden');
     }
 }
 
-// Complete onboarding process
-function completeOnboarding() {
-    console.log('Starting onboarding completion...');
-    
-    // Validate form
-    if (!validateForm()) {
-        if (!selectedProgram) {
-            showError('programError', 'Please select your program.');
-        }
-        if (!selectedSection) {
-            showError('sectionError', 'Please select your section.');
-        }
-        return;
+function hideLoading(element) {
+    if (element) {
+        element.classList.add('hidden');
     }
-    
-    // Hide errors
-    hideAllErrors();
-    
-    // Show loading state
-    const button = document.getElementById('completeOnboardingBtn');
-    const buttonText = document.getElementById('onboardingButtonText');
-    const spinner = document.getElementById('onboardingSpinner');
-    
-    if (button && buttonText && spinner) {
-        button.disabled = true;
-        buttonText.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Completing Setup...';
-        spinner.classList.remove('hidden');
-    }
-    
-    // Simulate API call
-    setTimeout(() => {
-        // TODO: Replace with actual API call
-        const onboardingData = {
-            program: selectedProgram,
-            section: selectedSection,
-            courses: availableCourses.map(course => course.id)
-        };
-        
-        console.log('Onboarding data to submit:', onboardingData);
-        
-        // Simulate success
-        showOnboardingSuccess();
-        
-        // Close modal and refresh page after delay
-        setTimeout(() => {
-            closeOnboardingModal();
-            window.location.reload();
-        }, 2000);
-        
-    }, 2000);
 }
 
-// Show onboarding success
-function showOnboardingSuccess() {
+function showError(element, message) {
+    if (element) {
+        element.classList.remove('hidden');
+        element.style.opacity = '0';
+        element.style.transform = 'scale(0.95)';
+        
+        // Update the message
+        const messageElement = element.querySelector('p');
+        if (messageElement) {
+            messageElement.textContent = message;
+        }
+        
+        // Animate in
+        setTimeout(() => {
+            element.style.opacity = '1';
+            element.style.transform = 'scale(1)';
+            element.style.transition = 'all 0.3s ease-out';
+        }, 10);
+    }
+}
+
+function hideError(element) {
+    if (element && !element.classList.contains('hidden')) {
+        element.style.opacity = '0';
+        element.style.transform = 'scale(0.95)';
+        element.style.transition = 'all 0.3s ease-out';
+        
+        setTimeout(() => {
+            element.classList.add('hidden');
+        }, 300);
+    }
+}
+
+function showSuccess(element, message) {
+    if (element) {
+        const textElement = element.querySelector('p') || element;
+        if (textElement.tagName === 'P') {
+            textElement.textContent = message;
+        } else {
+            element.innerHTML = `<i class="fas fa-check-circle mr-1"></i>${message}`;
+        }
+        element.classList.remove('hidden');
+        element.classList.add('scale-100', 'opacity-100');
+        element.classList.remove('scale-95', 'opacity-0');
+    }
+}
+
+function hideSuccess(element) {
+    if (element) {
+        element.classList.add('hidden');
+        element.classList.add('scale-95', 'opacity-0');
+        element.classList.remove('scale-100', 'opacity-100');
+    }
+}
+
+function hideAllErrors() {
+    const errors = ['programError', 'sectionError', 'onboardingError'];
+    errors.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) hideError(element);
+    });
+}
+
+function hideAllSuccess() {
     const successElement = document.getElementById('onboardingSuccess');
-    const button = document.getElementById('completeOnboardingBtn');
-    const buttonText = document.getElementById('onboardingButtonText');
-    const spinner = document.getElementById('onboardingSpinner');
-    
-    if (successElement) {
-        successElement.classList.remove('hidden');
-    }
-    
-    if (button && buttonText && spinner) {
-        spinner.classList.add('hidden');
-        buttonText.innerHTML = '<i class="fas fa-check mr-2"></i>Setup Complete!';
-        button.classList.remove('bg-blue-600', 'hover:bg-blue-700');
-        button.classList.add('bg-green-600', 'hover:bg-green-700');
-    }
+    if (successElement) hideSuccess(successElement);
+}
+
+function getAntiForgeryToken() {
+    const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
+    return tokenInput ? tokenInput.value : '';
 }
 
 // Add CSS for shake animation
@@ -716,22 +950,6 @@ document.addEventListener('keydown', function(event) {
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
     console.log('OnboardingModal.js DOM loaded');
-    
-    // Test if modal elements exist
-    const modal = document.getElementById('onboardingModal');
-    const modalContent = document.getElementById('onboardingModalContent');
-    
-    if (modal) {
-        console.log('Onboarding modal element found');
-    } else {
-        console.error('Onboarding modal element NOT found');
-    }
-    
-    if (modalContent) {
-        console.log('Onboarding modal content element found');
-    } else {
-        console.error('Onboarding modal content element NOT found');
-    }
     
     // Make sure functions are globally available immediately
     window.showOnboardingModal = showOnboardingModal;
