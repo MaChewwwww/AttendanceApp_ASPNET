@@ -3,56 +3,59 @@
     Layout = "_Layout";
 }
 
-<!-- Welcome Section -->
+<!-- Welcome Section with Heat Index -->
 <div class="mb-8">
-    <div class="bg-gradient-to-r from-blue-600 to-blue-800 rounded-lg p-6 text-white">
-        <div class="flex items-center justify-between">
-            <div>
-                <h1 class="text-2xl font-bold mb-2">Welcome back, @ViewBag.FirstName!</h1>
-                <p class="text-blue-100">
-                    @if (ViewBag.IsOnboarded == true)
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <!-- Welcome Card - Full Width -->
+        <div class="col-span-1 lg:col-span-4 bg-gradient-to-r from-blue-600 to-blue-800 rounded-lg p-6 text-white dashboard-card-entrance">
+            <div class="flex flex-col md:flex-row items-start md:items-center justify-between">
+                <div class="mb-4 md:mb-0">
+                    <h1 class="text-2xl font-bold mb-2">Welcome back, @ViewBag.FirstName!</h1>
+                    <p class="text-blue-100">
+                        @if (ViewBag.IsOnboarded == true)
+                        {
+                            @:Ready to track your attendance today?
+                        }
+                        else
+                        {
+                            @:Your account setup is in progress.
+                        }
+                    </p>
+                </div>
+                <div class="text-right">
+                    <div class="text-blue-100 text-sm">Student Number</div>
+                    <div class="text-xl font-semibold">@ViewBag.StudentNumber</div>
+                    @if (ViewBag.Verified == "1")
                     {
-                        @:Ready to track your attendance today?
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 mt-2">
+                            <i class="fas fa-check-circle mr-1"></i>
+                            Verified
+                        </span>
                     }
                     else
                     {
-                        @:Your account setup is in progress.
-                    }
-                </p>
-            </div>
-            <div class="text-right">
-                <div class="text-blue-100 text-sm">Student Number</div>
-                <div class="text-xl font-semibold">@ViewBag.StudentNumber</div>
-                @if (ViewBag.Verified == "1")
-                {
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 mt-2">
-                        <i class="fas fa-check-circle mr-1"></i>
-                        Verified
-                    </span>
-                }
-                else
-                {
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 mt-2">
-                        <i class="fas fa-clock mr-1"></i>
-                        Pending Verification
-                    </span>
-                }
-                
-                @if (ViewBag.HasSection == true)
-                {
-                    <div class="mt-1">
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            <i class="fas fa-users mr-1"></i>
-                            Section Assigned
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 mt-2">
+                            <i class="fas fa-clock mr-1"></i>
+                            Pending Verification
                         </span>
-                    </div>
-                }
+                    }
+
+                    @if (ViewBag.HasSection == true)
+                    {
+                        <div class="mt-1">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                <i class="fas fa-users mr-1"></i>
+                                Section Assigned
+                            </span>
+                        </div>
+                    }
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Quick Actions -->
+<!-- Main Action Cards -->
 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
     <!-- Current Class & Attendance Status -->
     <div class="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow duration-200 dashboard-card-entrance">
@@ -74,7 +77,7 @@
         </div>
         @if (ViewBag.HasSection == true)
         {
-            <div class="space-y-2">
+            <div class="space-y-2 mb-4">
                 <div class="flex justify-between items-center">
                     <span class="text-sm text-gray-600">Room:</span>
                     <span class="text-sm font-medium text-gray-900">203</span>
@@ -91,59 +94,154 @@
                     </span>
                 </div>
             </div>
+            <!-- Mark Attendance Button - Centered at Bottom -->
+            <div class="text-center">
+                <button class="bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 transition-colors duration-200 font-semibold flex items-center justify-center mx-auto">
+                    <i class="fas fa-camera mr-2"></i>Mark Attendance
+                </button>
+            </div>
         }
         else
         {
-            <div class="text-center py-4">
+            <div class="text-center py-4 mb-4">
                 <p class="text-gray-500 text-sm">Section assignment required to view class information.</p>
             </div>
+            <!-- Mark Attendance Button - Centered at Bottom (Disabled) -->
+            <div class="text-center">
+                <button class="bg-gray-400 text-white py-3 px-6 rounded-lg cursor-not-allowed font-semibold flex items-center justify-center mx-auto" disabled>
+                    <i class="fas fa-exclamation-triangle mr-2"></i>Setup Required
+                </button>
+            </div>
         }
     </div>
 
-    <!-- Mark Attendance -->
+    <!-- Weather Widget -->
     <div class="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow duration-200 dashboard-card-entrance">
-        <div class="flex items-center">
-            <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <i class="fas fa-camera text-green-600 text-xl"></i>
-            </div>
-            <div class="ml-4">
-                <h3 class="text-lg font-semibold text-gray-900">Mark Attendance</h3>
-                <p class="text-gray-500 text-sm">Use face recognition</p>
-            </div>
-        </div>
-        @if (ViewBag.HasSection == true)
+        @if (ViewBag.WeatherDataAvailable == true)
         {
-            <button class="w-full mt-4 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors duration-200">
-                Start Face Scan
-            </button>
+            <div class="flex items-center mb-4">
+                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    @if (!string.IsNullOrEmpty(ViewBag.WeatherIcon?.ToString()))
+                    {
+                        <img src="https:@ViewBag.WeatherIcon" alt="Weather" class="w-8 h-8" />
+                    }
+                    else
+                    {
+                        <i class="fas fa-cloud-sun text-blue-600 text-xl"></i>
+                    }
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-semibold text-gray-900">Weather</h3>
+                    <p class="text-gray-500 text-sm">@ViewBag.WeatherLocation</p>
+                </div>
+            </div>
+            <div class="space-y-2">
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">Temperature:</span>
+                    <span class="text-sm font-medium text-gray-900">@ViewBag.Temperature°C</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">Feels like:</span>
+                    <span class="text-sm font-medium text-gray-900">@ViewBag.HeatIndex°C</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">Condition:</span>
+                    <span class="text-sm font-medium text-gray-900">@ViewBag.WeatherCondition</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">Humidity:</span>
+                    <span class="text-sm font-medium text-gray-900">@ViewBag.Humidity%</span>
+                </div>
+                @if (ViewBag.RainChance != null && ViewBag.RainChance > 0)
+                {
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">Rain chance:</span>
+                        <span class="text-sm font-medium text-blue-600">@ViewBag.RainChance%</span>
+                    </div>
+                }
+            </div>
         }
         else
         {
-            <button class="w-full mt-4 bg-gray-400 text-white py-2 px-4 rounded-lg cursor-not-allowed" disabled>
-                Section Required
-            </button>
+            <div class="flex items-center mb-4">
+                <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-exclamation-triangle text-gray-400 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-semibold text-gray-900">Weather</h3>
+                    <p class="text-gray-500 text-sm">@(ViewBag.WeatherLocation ?? "Location unavailable")</p>
+                </div>
+            </div>
+            <div class="text-center py-2">
+                <p class="text-gray-500 text-sm">@(ViewBag.WeatherError ?? "Weather data unavailable")</p>
+            </div>
         }
     </div>
 
-    <!-- View Records -->
-    <div class="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow duration-200 dashboard-card-entrance">
-        <div class="flex items-center">
-            <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <i class="fas fa-chart-line text-blue-600 text-xl"></i>
+    <!-- Heat Index Summary Card -->
+    @if (ViewBag.WeatherDataAvailable == true)
+    {
+        <div class="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow duration-200 dashboard-card-entrance">
+            <div class="flex items-center mb-4">
+                <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-thermometer-half text-orange-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-semibold text-gray-900">Heat Index</h3>
+                    <p class="text-gray-500 text-sm">@ViewBag.WeatherLocation</p>
+                </div>
             </div>
-            <div class="ml-4">
-                <h3 class="text-lg font-semibold text-gray-900">View Records</h3>
-                <p class="text-gray-500 text-sm">Check your history</p>
+            <div class="space-y-2">
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">Feels like:</span>
+                    <span class="text-2xl font-bold text-orange-600">@ViewBag.HeatIndex°C</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">Temperature:</span>
+                    <span class="text-sm font-medium text-gray-900">@ViewBag.Temperature°C</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">Heat level:</span>
+                    <span class="text-sm font-medium text-orange-600">
+                        @{
+                            var heatIndexMain = ViewBag.HeatIndex != null ? (double)ViewBag.HeatIndex : 0;
+                            var heatLevelMain = heatIndexMain >= 35 ? "Extreme" : heatIndexMain >= 30 ? "High" : heatIndexMain >= 25 ? "Moderate" : "Low";
+                        }
+                        @heatLevelMain
+                    </span>
+                </div>
+                @if (ViewBag.UVIndex != null)
+                {
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">UV Index:</span>
+                        <span class="text-sm font-medium text-gray-900">@ViewBag.UVIndex</span>
+                    </div>
+                }
             </div>
         </div>
-        <button class="w-full mt-4 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-200">
-            View History
-        </button>
-    </div>
+    }
+    else
+    {
+        <div class="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow duration-200 dashboard-card-entrance">
+            <div class="flex items-center mb-4">
+                <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-exclamation-triangle text-gray-400 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-semibold text-gray-900">Heat Index</h3>
+                    <p class="text-gray-500 text-sm">@(ViewBag.WeatherLocation ?? "Location unavailable")</p>
+                </div>
+            </div>
+            <div class="text-center py-2">
+                <p class="text-gray-500 text-sm">@(ViewBag.WeatherError ?? "Weather data unavailable")</p>
+            </div>
+        </div>
+    }
 </div>
 
 <!-- Statistics Cards -->
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <!-- Total Classes -->
     <div class="bg-white rounded-lg shadow-sm p-6 dashboard-card-entrance">
         <div class="flex items-center justify-between">
             <div>
@@ -157,6 +255,7 @@
         <p class="mt-2 text-sm text-gray-500">This semester</p>
     </div>
 
+    <!-- Present -->
     <div class="bg-white rounded-lg shadow-sm p-6 dashboard-card-entrance">
         <div class="flex items-center justify-between">
             <div>
@@ -170,6 +269,7 @@
         <p class="mt-2 text-sm text-gray-500">75% attendance</p>
     </div>
 
+    <!-- Absent -->
     <div class="bg-white rounded-lg shadow-sm p-6 dashboard-card-entrance">
         <div class="flex items-center justify-between">
             <div>
@@ -183,6 +283,7 @@
         <p class="mt-2 text-sm text-gray-500">25% missed</p>
     </div>
 
+    <!-- This Week -->
     <div class="bg-white rounded-lg shadow-sm p-6 dashboard-card-entrance">
         <div class="flex items-center justify-between">
             <div>
