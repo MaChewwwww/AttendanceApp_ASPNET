@@ -194,8 +194,8 @@
     @await Html.PartialAsync("_OnboardingModal")
     
     <div id="dashboardContainer" class="flex h-screen dashboard-entrance">
-        <!-- Sidebar -->
-        <div id="dashboardSidebar" class="w-64 bg-white shadow-lg flex-shrink-0 sidebar-slide-in dashboard-sidebar">
+        <!-- Sidebar - Hidden on mobile by default -->
+        <div id="dashboardSidebar" class="w-64 bg-white shadow-lg flex-shrink-0 sidebar-slide-in dashboard-sidebar hidden lg:block">
             <div class="p-6">
                 <!-- Logo and Title -->
                 <div class="flex items-center space-x-3">
@@ -278,7 +278,7 @@
 
     <!-- Mobile Sidebar Overlay -->
     <div class="fixed inset-0 z-50 lg:hidden hidden" id="mobile-sidebar-overlay">
-        <div class="fixed inset-0 bg-black opacity-50"></div>
+        <div class="fixed inset-0 bg-black opacity-50" onclick="closeMobileSidebar()"></div>
         <div class="fixed left-0 top-0 bottom-0 w-64 bg-white shadow-lg transform -translate-x-full transition-transform duration-300" id="mobile-sidebar">
             <!-- Mobile sidebar content (same as desktop sidebar) -->
             <div class="p-6">
@@ -368,29 +368,64 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     <script>
-        // Mobile menu functionality
-        document.getElementById('mobile-menu-button').addEventListener('click', function() {
+        // Enhanced mobile menu functionality
+        function openMobileSidebar() {
             const overlay = document.getElementById('mobile-sidebar-overlay');
             const sidebar = document.getElementById('mobile-sidebar');
+            
             overlay.classList.remove('hidden');
+            document.body.style.overflow = 'hidden'; // Prevent background scrolling
+            
             setTimeout(() => {
                 sidebar.classList.remove('-translate-x-full');
             }, 10);
-        });
+        }
 
-        document.getElementById('close-mobile-menu').addEventListener('click', function() {
+        function closeMobileSidebar() {
             const overlay = document.getElementById('mobile-sidebar-overlay');
             const sidebar = document.getElementById('mobile-sidebar');
+            
             sidebar.classList.add('-translate-x-full');
+            document.body.style.overflow = ''; // Restore scrolling
+            
             setTimeout(() => {
                 overlay.classList.add('hidden');
             }, 300);
+        }
+
+        // Mobile menu functionality
+        document.getElementById('mobile-menu-button').addEventListener('click', function() {
+            openMobileSidebar();
+        });
+
+        document.getElementById('close-mobile-menu').addEventListener('click', function() {
+            closeMobileSidebar();
         });
 
         // Close mobile menu when clicking overlay
         document.getElementById('mobile-sidebar-overlay').addEventListener('click', function(e) {
-            if (e.target === this) {
-                document.getElementById('close-mobile-menu').click();
+            if (e.target === this || e.target.classList.contains('opacity-50')) {
+                closeMobileSidebar();
+            }
+        });
+
+        // Close mobile sidebar on window resize if open
+        window.addEventListener('resize', function() {
+            if (window.innerWidth >= 1024) { // lg breakpoint
+                const overlay = document.getElementById('mobile-sidebar-overlay');
+                if (!overlay.classList.contains('hidden')) {
+                    closeMobileSidebar();
+                }
+            }
+        });
+
+        // Handle escape key to close mobile sidebar
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                const overlay = document.getElementById('mobile-sidebar-overlay');
+                if (!overlay.classList.contains('hidden')) {
+                    closeMobileSidebar();
+                }
             }
         });
 
@@ -440,109 +475,6 @@
             }
             
             console.log('Dashboard animations initialized');
-        });
-        
-        // Enhanced mobile menu with animations
-        document.getElementById('mobile-menu-button').addEventListener('click', function() {
-            const overlay = document.getElementById('mobile-sidebar-overlay');
-            const sidebar = document.getElementById('mobile-sidebar');
-            
-            overlay.classList.remove('hidden');
-            overlay.style.animation = 'fadeIn 0.3s ease-out forwards';
-            
-            setTimeout(() => {
-                sidebar.style.transform = 'translateX(0)';
-                sidebar.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
-            }, 10);
-        });
-
-        document.getElementById('close-mobile-menu').addEventListener('click', function() {
-            const overlay = document.getElementById('mobile-sidebar-overlay');
-            const sidebar = document.getElementById('mobile-sidebar');
-            
-            sidebar.style.transform = 'translateX(-100%)';
-            sidebar.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
-            
-            setTimeout(() => {
-                overlay.style.animation = 'fadeOut 0.3s ease-in forwards';
-                setTimeout(() => {
-                    overlay.classList.add('hidden');
-                    overlay.style.animation = '';
-                }, 300);
-            }, 300);
-        });
-        
-        // Logout functionality with animation
-        function confirmLogout() {
-            const logoutModal = document.getElementById('logoutModal');
-            const logoutModalContent = document.getElementById('logoutModalContent');
-            
-            logoutModal.classList.remove('hidden');
-            logoutModalContent.classList.add('logout-modal-entrance');
-        }
-        
-        function closeLogoutModal() {
-            const logoutModal = document.getElementById('logoutModal');
-            const logoutModalContent = document.getElementById('logoutModalContent');
-            
-            logoutModalContent.style.animation = 'logoutModalEntrance 0.3s ease-in reverse';
-            
-            setTimeout(() => {
-                logoutModal.classList.add('hidden');
-                logoutModalContent.style.animation = '';
-                logoutModalContent.classList.remove('logout-modal-entrance');
-            }, 300);
-        }
-        
-        function performLogout() {
-            const logoutButtonText = document.getElementById('logoutButtonText');
-            const logoutSpinner = document.getElementById('logoutSpinner');
-            const dashboardContainer = document.getElementById('dashboardContainer');
-            const logoutConfirmButton = document.getElementById('logoutConfirmButton');
-            
-            // Disable the logout button to prevent multiple clicks
-            logoutConfirmButton.disabled = true;
-            logoutConfirmButton.classList.add('opacity-75', 'cursor-not-allowed');
-            
-            // Show loading state
-            logoutButtonText.textContent = 'Logging out...';
-            logoutSpinner.classList.remove('hidden');
-            
-            // Start logout animation
-            setTimeout(() => {
-                if (dashboardContainer) {
-                    dashboardContainer.classList.add('logout-transition');
-                }
-                
-                // Perform actual logout after animation starts
-                setTimeout(() => {
-                    // Create and submit logout form
-                    const form = document.createElement('form');
-                    form.method = 'POST';
-                    form.action = '/Student/Logout';
-                    
-                    // Add CSRF token if available
-                    const token = document.querySelector('input[name="__RequestVerificationToken"]');
-                    if (token) {
-                        const tokenInput = document.createElement('input');
-                        tokenInput.type = 'hidden';
-                        tokenInput.name = '__RequestVerificationToken';
-                        tokenInput.value = token.value;
-                        form.appendChild(tokenInput);
-                    }
-                    
-                    document.body.appendChild(form);
-                    form.submit();
-                }, 500); // Wait for animation to progress
-                
-            }, 200); // Small delay to show loading state
-        }
-        
-        // Close modal when clicking outside
-        document.getElementById('logoutModal').addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeLogoutModal();
-            }
         });
         
         // Layout logout functions

@@ -378,24 +378,16 @@
         
         // Add loading state to clicked card
         const clickedCard = event.currentTarget;
-        const originalContent = clickedCard.innerHTML;
         
         // Show loading state
         clickedCard.style.opacity = '0.7';
         clickedCard.style.transform = 'scale(0.98)';
         
-        // Simulate navigation (replace with actual navigation)
+        // Navigate to course details page
         setTimeout(() => {
-            // For now, just show an alert - replace with actual routing
-            alert(`Navigating to ${courseName} details page...\n\nThis will redirect to: /Student/Courses/${courseId}`);
-            
-            // Reset card state
-            clickedCard.style.opacity = '1';
-            clickedCard.style.transform = 'scale(1)';
-            
-            // In a real implementation, you would navigate to the course details page:
-            // window.location.href = `/Student/Courses/${courseId}`;
-        }, 500);
+            // Use actual navigation instead of alert
+            window.location.href = `/Student/Courses/${courseId}`;
+        }, 300);
     }
 
     // Add keyboard navigation support
