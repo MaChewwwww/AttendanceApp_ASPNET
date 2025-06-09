@@ -1,15 +1,25 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using AttendanceApp_ASPNET.Services;
+using System.Text.Json;
 
 namespace AttendanceApp_ASPNET.Controllers.Base
 {
     // Base controller for all student-related controllers.
-    // Handles authentication, role validation, and security measures.
+    // Handles authentication, role validation, onboarding enforcement, and security measures.
     public abstract class StudentBaseController : Controller
     {
+        protected readonly IApiService _apiService;
+
+        // Constructor to inject API service
+        public StudentBaseController(IApiService apiService)
+        {
+            _apiService = apiService;
+        }
+
         // Executes before any action in derived controllers.
-        // Validates authentication, role, and session status.
-        public override void OnActionExecuting(ActionExecutingContext context)
+        // Validates authentication, role, session status, and onboarding completion.
+        public override async void OnActionExecuting(ActionExecutingContext context)
         {
             // 1. Check if user is authenticated
             var isAuthenticated = HttpContext.Session.GetString("IsAuthenticated");
@@ -68,7 +78,88 @@ namespace AttendanceApp_ASPNET.Controllers.Base
                 }
             }
 
-            // 4. Validate account status
+            // 4. Check onboarding status - CRITICAL SECURITY CHECK
+            var currentController = context.RouteData.Values["controller"]?.ToString();
+            var currentAction = context.RouteData.Values["action"]?.ToString();
+            
+            // Only check onboarding for main dashboard/app routes, not API endpoints
+            if (IsMainApplicationRoute(currentController, currentAction))
+            {
+                var authToken = HttpContext.Session.GetString("AuthToken");
+                if (!string.IsNullOrEmpty(authToken))
+                {
+                    try
+                    {
+                        var onboardingResult = await _apiService.CheckStudentOnboardingStatusAsync(authToken);
+                        var onboardingResponse = JsonSerializer.Deserialize<JsonElement>(onboardingResult);
+                        
+                        bool isOnboarded = false;
+                        bool hasSection = false;
+                        
+                        // Parse onboarding response
+                        if (onboardingResponse.TryGetProperty("is_onboarded", out var isOnboardedProp))
+                        {
+                            isOnboarded = isOnboardedProp.GetBoolean();
+                        }
+                        
+                        if (onboardingResponse.TryGetProperty("has_section", out var hasSectionProp))
+                        {
+                            hasSection = hasSectionProp.GetBoolean();
+                        }
+                        
+                        // Store onboarding status in session for performance
+                        HttpContext.Session.SetString("IsOnboarded", isOnboarded.ToString());
+                        HttpContext.Session.SetString("HasSection", hasSection.ToString());
+                        
+                        // If not onboarded and trying to access protected routes, force to dashboard with modal
+                        if (!isOnboarded && !IsDashboardRoute(currentController, currentAction))
+                        {
+                            LogSecurityEvent("Onboarding bypass attempt", $"Non-onboarded user attempted to access {currentController}/{currentAction}");
+                            
+                            TempData["ForceOnboarding"] = "true";
+                            TempData["InfoMessage"] = "Please complete your account setup to access all features.";
+                            context.Result = RedirectToAction("Dashboard", "Student");
+                            return;
+                        }
+                        
+                        // Update ViewBag with onboarding status
+                        ViewBag.IsOnboarded = isOnboarded;
+                        ViewBag.HasSection = hasSection;
+                        ViewBag.ShowOnboardingAlert = !isOnboarded;
+                        
+                        // Update student info with latest data from API if available
+                        if (onboardingResponse.TryGetProperty("student_info", out var studentInfoProp) && 
+                            studentInfoProp.ValueKind != JsonValueKind.Null)
+                        {
+                            UpdateSessionWithLatestStudentInfo(studentInfoProp);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        // Log error but don't block access - set conservative defaults
+                        LogSecurityEvent("Onboarding check error", $"Failed to check onboarding status: {ex.Message}");
+                        
+                        // Set fallback values - err on side of requiring onboarding
+                        ViewBag.IsOnboarded = false;
+                        ViewBag.HasSection = false;
+                        ViewBag.ShowOnboardingAlert = true;
+                        ViewBag.OnboardingAlertType = "warning";
+                        ViewBag.OnboardingAlertMessage = "Unable to verify account status. Please complete setup if needed.";
+                    }
+                }
+                else
+                {
+                    // No JWT token - shouldn't happen if auth check passed
+                    LogSecurityEvent("Missing JWT token", "Authenticated user missing JWT token");
+                    ViewBag.IsOnboarded = false;
+                    ViewBag.HasSection = false;
+                    ViewBag.ShowOnboardingAlert = true;
+                    ViewBag.OnboardingAlertType = "error";
+                    ViewBag.OnboardingAlertMessage = "Authentication error. Please log out and log back in.";
+                }
+            }
+
+            // 5. Validate account status
             var verified = HttpContext.Session.GetString("Verified");
             var statusId = HttpContext.Session.GetString("StatusId");
             
@@ -79,10 +170,7 @@ namespace AttendanceApp_ASPNET.Controllers.Base
                 ViewBag.VerificationMessage = "Your account is pending verification. Some features may be limited.";
             }
 
-            // 5. Check if trying to access auth pages while authenticated
-            var currentController = context.RouteData.Values["controller"]?.ToString();
-            var currentAction = context.RouteData.Values["action"]?.ToString();
-            
+            // 6. Check if trying to access auth pages while authenticated
             if (IsAuthenticationPage(currentController, currentAction))
             {
                 // Authenticated student trying to access login/register - redirect to dashboard
@@ -93,13 +181,72 @@ namespace AttendanceApp_ASPNET.Controllers.Base
                 return;
             }
 
-            // 6. Set common ViewBag data for all student pages
+            // 7. Set common ViewBag data for all student pages
             SetCommonViewData();
 
-            // 7. Add security headers
+            // 8. Add security headers
             AddSecurityHeaders();
 
             base.OnActionExecuting(context);
+        }
+
+        // Checks if the current route is a main application route that requires onboarding
+        private bool IsMainApplicationRoute(string controller, string action)
+        {
+            if (string.IsNullOrEmpty(controller) || string.IsNullOrEmpty(action)) return false;
+            
+            // Skip onboarding check for API endpoints
+            var apiActions = new[] { 
+                "GetAvailablePrograms", "GetAvailableSections", "GetAvailableCourses", 
+                "CompleteOnboarding", "CheckSessionStatus", "Logout", "SecureLogout" 
+            };
+            
+            if (apiActions.Contains(action, StringComparer.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+            
+            // All other Student controller routes require onboarding check
+            return controller.Equals("Student", StringComparison.OrdinalIgnoreCase);
+        }
+
+        // Checks if current route is the dashboard (where onboarding modal is shown)
+        private bool IsDashboardRoute(string controller, string action)
+        {
+            return controller?.Equals("Student", StringComparison.OrdinalIgnoreCase) == true &&
+                   action?.Equals("Dashboard", StringComparison.OrdinalIgnoreCase) == true;
+        }
+
+        // Updates session with latest student information from API
+        private void UpdateSessionWithLatestStudentInfo(JsonElement studentInfo)
+        {
+            try
+            {
+                if (studentInfo.TryGetProperty("section_id", out var sectionIdProp) && 
+                    sectionIdProp.ValueKind != JsonValueKind.Null)
+                {
+                    HttpContext.Session.SetString("SectionId", sectionIdProp.ToString());
+                }
+                
+                if (studentInfo.TryGetProperty("verified", out var verifiedProp))
+                {
+                    HttpContext.Session.SetString("Verified", verifiedProp.ToString());
+                }
+                
+                if (studentInfo.TryGetProperty("status_id", out var statusIdProp))
+                {
+                    HttpContext.Session.SetString("StatusId", statusIdProp.ToString());
+                }
+                
+                if (studentInfo.TryGetProperty("program_id", out var programIdProp))
+                {
+                    HttpContext.Session.SetString("ProgramId", programIdProp.ToString());
+                }
+            }
+            catch (Exception ex)
+            {
+                LogSecurityEvent("Session update error", $"Failed to update session with student info: {ex.Message}");
+            }
         }
 
         // Extends the current session by 30 minutes.

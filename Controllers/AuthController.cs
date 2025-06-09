@@ -1263,5 +1263,32 @@ namespace AttendanceApp_ASPNET.Controllers
                 });
             }
         }
+
+        [HttpPost]
+        public IActionResult Logout()
+        {
+            try
+            {
+                // Clear all session data
+                HttpContext.Session.Clear();
+                
+                // Return success response for AJAX calls
+                return Json(new { 
+                    success = true, 
+                    message = "Logged out successfully",
+                    redirect_url = "/Auth/Login?logout=true"
+                });
+            }
+            catch (Exception ex)
+            {
+                // Log error but still indicate logout
+                Console.WriteLine($"Logout error: {ex.Message}");
+                return Json(new { 
+                    success = true, // Still return success to complete logout
+                    message = "Logged out",
+                    redirect_url = "/Auth/Login?logout=true"
+                });
+            }
+        }
     }
 }

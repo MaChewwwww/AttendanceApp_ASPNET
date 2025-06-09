@@ -8,108 +8,24 @@ namespace AttendanceApp_ASPNET.Controllers
     // Student dashboard controller with enhanced security and authentication.
     public class StudentController : StudentBaseController
     {
-        private readonly IApiService _apiService;
-        
-        public StudentController(IApiService apiService)
+        public StudentController(IApiService apiService) : base(apiService)
         {
-            _apiService = apiService;
         }
 
-        public async Task<IActionResult> Dashboard()
+        public IActionResult Dashboard()
         {
-            // All authentication and role checks are handled by StudentBaseController
+            // All authentication, role checks, and onboarding enforcement are handled by StudentBaseController
             // ViewBag data is automatically set by the base controller
             
             var studentInfo = GetCurrentStudentInfo();
             
-            // Check onboarding status using JWT token
-            var authToken = HttpContext.Session.GetString("AuthToken");
-            
-            if (!string.IsNullOrEmpty(authToken))
+            // Check if we need to force show onboarding modal
+            var forceOnboarding = TempData["ForceOnboarding"]?.ToString() == "true";
+            if (forceOnboarding)
             {
-                try
-                {
-                    var onboardingResult = await _apiService.CheckStudentOnboardingStatusAsync(authToken);
-                    var onboardingResponse = JsonSerializer.Deserialize<JsonElement>(onboardingResult);
-                    
-                    bool isOnboarded = false;
-                    bool hasSection = false;
-                    string onboardingMessage = "";
-                    
-                    // Parse onboarding response
-                    if (onboardingResponse.TryGetProperty("is_onboarded", out var isOnboardedProp))
-                    {
-                        isOnboarded = isOnboardedProp.GetBoolean();
-                    }
-                    
-                    if (onboardingResponse.TryGetProperty("has_section", out var hasSectionProp))
-                    {
-                        hasSection = hasSectionProp.GetBoolean();
-                    }
-                    
-                    if (onboardingResponse.TryGetProperty("message", out var messageProp))
-                    {
-                        onboardingMessage = messageProp.GetString() ?? "";
-                    }
-                    
-                    // Update student info with latest data from API if available
-                    if (onboardingResponse.TryGetProperty("student_info", out var studentInfoProp) && 
-                        studentInfoProp.ValueKind != JsonValueKind.Null)
-                    {
-                        // Update session with latest student info
-                        if (studentInfoProp.TryGetProperty("section_id", out var sectionIdProp) && 
-                            sectionIdProp.ValueKind != JsonValueKind.Null)
-                        {
-                            HttpContext.Session.SetString("SectionId", sectionIdProp.ToString());
-                        }
-                        
-                        if (studentInfoProp.TryGetProperty("verified", out var verifiedProp))
-                        {
-                            HttpContext.Session.SetString("Verified", verifiedProp.ToString());
-                        }
-                    }
-                    
-                    // Set onboarding-related ViewBag data
-                    ViewBag.IsOnboarded = isOnboarded;
-                    ViewBag.HasSection = hasSection;
-                    ViewBag.OnboardingMessage = onboardingMessage;
-                    
-                    // If not onboarded, show modal instead of alert
-                    if (!isOnboarded)
-                    {
-                        ViewBag.ShowOnboardingAlert = true; // This will trigger the modal
-                        ViewBag.OnboardingAlertType = hasSection ? "warning" : "info";
-                        ViewBag.OnboardingAlertMessage = hasSection ? 
-                            "Your section assignment is being processed. Some features may be limited." :
-                            "Please complete your account setup to access all features.";
-                    }
-                    else
-                    {
-                        ViewBag.ShowOnboardingAlert = false;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    // Log error but don't block dashboard access
-                    Console.WriteLine($"Onboarding status check error for {studentInfo.Email}: {ex.Message}");
-                    
-                    // Set fallback values
-                    ViewBag.IsOnboarded = true; // Assume onboarded if check fails
-                    ViewBag.HasSection = false;
-                    ViewBag.ShowOnboardingAlert = true;
-                    ViewBag.OnboardingAlertType = "warning";
-                    ViewBag.OnboardingAlertMessage = "Unable to verify account status. Some features may be limited.";
-                }
-            }
-            else
-            {
-                // No JWT token available - shouldn't happen if base controller works correctly
-                Console.WriteLine($"No JWT token available for onboarding check: {studentInfo.Email}");
-                ViewBag.IsOnboarded = false;
-                ViewBag.HasSection = false;
-                ViewBag.ShowOnboardingAlert = true; // Force show modal for testing
-                ViewBag.OnboardingAlertType = "error";
-                ViewBag.OnboardingAlertMessage = "Authentication error. Please log out and log back in.";
+                ViewBag.ShowOnboardingAlert = true;
+                ViewBag.OnboardingAlertType = "warning";
+                ViewBag.OnboardingAlertMessage = "Please complete your account setup to access all features.";
             }
             
             // Add any dashboard-specific data

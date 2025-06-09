@@ -65,21 +65,19 @@ function showOnboardingModal() {
             }
         }, 200);
         
-        // Animate form elements
+        // Animate form elements (removed infoSection from array)
         setTimeout(() => {
             const onboardingForm = document.getElementById('onboardingForm');
-            const programSection = document.getElementById('programSection');
-            const sectionSelection = document.getElementById('sectionSelectionDiv');
+            const programSectionRow = document.getElementById('programSectionRow');
             const modalButtons = document.getElementById('modalButtons');
-            const infoSection = document.getElementById('infoSection');
             
             if (onboardingForm) {
                 onboardingForm.classList.remove('translate-y-6', 'opacity-0');
                 onboardingForm.classList.add('translate-y-0', 'opacity-100');
             }
             
-            // Staggered animation for form sections
-            const sections = [programSection, sectionSelection, modalButtons, infoSection];
+            // Staggered animation for form sections (removed infoSection)
+            const sections = [programSectionRow, modalButtons];
             sections.forEach((section, index) => {
                 if (section) {
                     setTimeout(() => {
@@ -113,12 +111,10 @@ function closeOnboardingModal() {
         modalContent.classList.remove('scale-100', 'opacity-100');
         modalContent.classList.add('scale-95', 'opacity-0');
         
-        // Animate elements out in reverse order
+        // Animate elements out in reverse order (removed infoSection)
         const elementsToHide = [
-            'infoSection',
             'modalButtons', 
-            'sectionSelectionDiv',
-            'programSection',
+            'programSectionRow',
             'onboardingForm',
             'modalDescription',
             'modalTitle',
@@ -272,7 +268,11 @@ function populateProgramSelect(programs) {
         
         const option = document.createElement('option');
         option.value = program.id.toString();
+        
+        // Show full name in dropdown, but store acronym for later display
         option.textContent = `${program.name}${program.acronym ? ` (${program.acronym})` : ''}${program.code ? ` - ${program.code}` : ''}`;
+        option.setAttribute('data-acronym', program.acronym || program.name);
+        option.setAttribute('data-name', program.name);
         
         programSelect.appendChild(option);
     });
@@ -303,6 +303,79 @@ async function handleProgramChange(event) {
     
     selectedProgramId = programId;
     
+    // Update program select to show only acronym after selection - but keep it functional
+    const selectedOption = event.target.selectedOptions[0];
+    if (selectedOption) {
+        const acronym = selectedOption.getAttribute('data-acronym');
+        const name = selectedOption.getAttribute('data-name');
+        
+        // Store original options for potential reset - only if not already stored
+        if (!event.target.hasAttribute('data-original-options')) {
+            event.target.setAttribute('data-original-options', event.target.innerHTML);
+        }
+        
+        // Remove any existing event listeners to prevent glitches
+        const clonedSelect = event.target.cloneNode(false);
+        const options = Array.from(event.target.options);
+        
+        // Clear and rebuild with compact selected option
+        event.target.innerHTML = '';
+        
+        // Add compact selected option
+        const compactOption = document.createElement('option');
+        compactOption.value = programId.toString();
+        compactOption.textContent = acronym || name;
+        compactOption.selected = true;
+        compactOption.setAttribute('data-acronym', acronym);
+        compactOption.setAttribute('data-name', name);
+        event.target.appendChild(compactOption);
+        
+        // Add all other options (hidden until focus)
+        options.forEach(option => {
+            if (option.value !== programId.toString() && option.value !== '') {
+                event.target.appendChild(option.cloneNode(true));
+            }
+        });
+        
+        // Add focus handler to show all options
+        const showAllOptions = function() {
+            const originalOptions = this.getAttribute('data-original-options');
+            if (originalOptions) {
+                this.innerHTML = originalOptions;
+                this.value = programId.toString(); // Maintain selection
+            }
+        };
+        
+        // Add blur handler to compact again
+        const compactOptions = function() {
+            if (this.value === programId.toString()) {
+                const selectedOpt = this.selectedOptions[0];
+                if (selectedOpt) {
+                    const compactText = selectedOpt.getAttribute('data-acronym') || selectedOpt.getAttribute('data-name');
+                    // Only compact if we're not in focus
+                    if (document.activeElement !== this) {
+                        this.innerHTML = '';
+                        const compactOpt = document.createElement('option');
+                        compactOpt.value = programId.toString();
+                        compactOpt.textContent = compactText;
+                        compactOpt.selected = true;
+                        compactOpt.setAttribute('data-acronym', selectedOpt.getAttribute('data-acronym'));
+                        compactOpt.setAttribute('data-name', selectedOpt.getAttribute('data-name'));
+                        this.appendChild(compactOpt);
+                    }
+                }
+            }
+        };
+        
+        // Remove existing listeners to prevent duplicates
+        event.target.removeEventListener('focus', showAllOptions);
+        event.target.removeEventListener('blur', compactOptions);
+        
+        // Add new listeners
+        event.target.addEventListener('focus', showAllOptions);
+        event.target.addEventListener('blur', compactOptions);
+    }
+    
     // Load sections for selected program
     try {
         await loadAvailableSections(programId);
@@ -312,7 +385,7 @@ async function handleProgramChange(event) {
     }
 }
 
-// Load available sections with enhanced debugging
+// Load available sections
 async function loadAvailableSections(programId) {
     const sectionSelect = document.getElementById('sectionSelect');
     const sectionLoading = document.getElementById('sectionLoading');
@@ -351,26 +424,16 @@ async function loadAvailableSections(programId) {
         
         const data = await response.json();
         
-        // Fix the condition check
         if (data.success && data.sections && Array.isArray(data.sections)) {
             if (data.sections.length > 0) {
                 availableSections = data.sections;
                 populateSectionSelect(data.sections);
-                
-                // Make sure to show success state
                 hideError(sectionError);
-                
-                // Enable the section dropdown and show the courses container
-                setTimeout(() => {
-                    showSectionSelection();
-                }, 100);
-                
             } else {
                 sectionSelect.innerHTML = '<option value="">No sections available for this program</option>';
                 showError(sectionError, 'No sections available for this program.');
             }
         } else {
-            // Show the actual error message from the API if available
             const errorMessage = data.message || 'No sections available for this program';
             throw new Error(errorMessage);
         }
@@ -406,14 +469,16 @@ function populateSectionSelect(sections) {
     
     // Add section options
     sections.forEach((section) => {
-        // Check if section has required fields
         if (!section.id || !section.name) {
             return;
         }
         
         const option = document.createElement('option');
         option.value = section.id;
+        
+        // Show full name in dropdown, but store short name for later display
         option.textContent = `${section.name}${section.program_name ? ` - ${section.program_name}` : ''}${section.program_acronym ? ` (${section.program_acronym})` : ''}`;
+        option.setAttribute('data-short-name', section.name);
         
         sectionSelect.appendChild(option);
     });
@@ -440,6 +505,75 @@ async function handleSectionChange(event) {
     }
     
     selectedSectionId = sectionId;
+    
+    // Update section select to show only short name after selection - but keep it functional
+    const selectedOption = event.target.selectedOptions[0];
+    if (selectedOption) {
+        const shortName = selectedOption.getAttribute('data-short-name');
+        
+        // Store original options for potential reset - only if not already stored
+        if (!event.target.hasAttribute('data-original-options')) {
+            event.target.setAttribute('data-original-options', event.target.innerHTML);
+        }
+        
+        // Remove any existing event listeners to prevent glitches
+        const options = Array.from(event.target.options);
+        
+        // Clear and rebuild with compact selected option
+        event.target.innerHTML = '';
+        
+        // Add compact selected option
+        const compactOption = document.createElement('option');
+        compactOption.value = sectionId.toString();
+        compactOption.textContent = shortName;
+        compactOption.selected = true;
+        compactOption.setAttribute('data-short-name', shortName);
+        event.target.appendChild(compactOption);
+        
+        // Add all other options (hidden until focus)
+        options.forEach(option => {
+            if (option.value !== sectionId.toString() && option.value !== '') {
+                event.target.appendChild(option.cloneNode(true));
+            }
+        });
+        
+        // Add focus handler to show all options
+        const showAllOptions = function() {
+            const originalOptions = this.getAttribute('data-original-options');
+            if (originalOptions) {
+                this.innerHTML = originalOptions;
+                this.value = sectionId.toString(); // Maintain selection
+            }
+        };
+        
+        // Add blur handler to compact again
+        const compactOptions = function() {
+            if (this.value === sectionId.toString()) {
+                const selectedOpt = this.selectedOptions[0];
+                if (selectedOpt) {
+                    const compactText = selectedOpt.getAttribute('data-short-name');
+                    // Only compact if we're not in focus
+                    if (document.activeElement !== this) {
+                        this.innerHTML = '';
+                        const compactOpt = document.createElement('option');
+                        compactOpt.value = sectionId.toString();
+                        compactOpt.textContent = compactText;
+                        compactOpt.selected = true;
+                        compactOpt.setAttribute('data-short-name', compactText);
+                        this.appendChild(compactOpt);
+                    }
+                }
+            }
+        };
+        
+        // Remove existing listeners to prevent duplicates
+        event.target.removeEventListener('focus', showAllOptions);
+        event.target.removeEventListener('blur', compactOptions);
+        
+        // Add new listeners
+        event.target.addEventListener('focus', showAllOptions);
+        event.target.addEventListener('blur', compactOptions);
+    }
     
     // Load courses for selected section
     await loadAvailableCourses(sectionId);
@@ -489,35 +623,10 @@ async function loadAvailableCourses(sectionId) {
     }
 }
 
-// Populate courses list in the UI
-function populateCoursesList(courses) {
-    const coursesList = document.getElementById('coursesList');
-    
-    // Clear existing courses
-    coursesList.innerHTML = '';
-    
-    if (!Array.isArray(courses) || courses.length === 0) {
-        coursesList.innerHTML = `
-            <div class="text-center py-8 text-gray-500">
-                <i class="fas fa-book-open text-4xl mb-3 opacity-50"></i>
-                <p class="text-lg font-medium">No assigned courses found</p>
-                <p class="text-sm">Please contact your administrator if this seems incorrect.</p>
-            </div>
-        `;
-        return;
-    }
-    
-    // Add course cards
-    courses.forEach((course, index) => {
-        const courseCard = createCourseCard(course, index);
-        coursesList.appendChild(courseCard);
-    });
-}
-
 // Create individual course card element
 function createCourseCard(course, index) {
     const courseCard = document.createElement('div');
-    courseCard.className = 'bg-white border border-green-200 rounded-lg p-4 hover:shadow-md transition-all duration-200 transform translate-x-4 opacity-0';
+    courseCard.className = 'bg-white border border-green-200 rounded p-2 hover:shadow-sm transition-all duration-200 transform translate-x-4 opacity-0';
     
     // Extract course information with fallbacks
     const courseName = course.course_name || course.name || 'Unknown Course';
@@ -528,42 +637,38 @@ function createCourseCard(course, index) {
     const academicYear = course.academic_year || 'N/A';
     
     courseCard.innerHTML = `
-        <div class="flex items-start justify-between mb-3">
-            <div class="flex-1">
-                <h5 class="font-semibold text-gray-800 text-lg">${courseName}</h5>
-                <p class="text-green-600 font-medium">${courseCode}</p>
+        <div class="flex items-start justify-between mb-1.5">
+            <div class="flex-1 min-w-0">
+                <h5 class="font-semibold text-gray-800 text-xs truncate">${courseName}</h5>
+                <p class="text-green-600 font-medium text-xs">${courseCode}</p>
             </div>
-            <div class="flex-shrink-0 ml-4">
-                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                    <i class="fas fa-graduation-cap mr-1"></i>
+            <div class="flex-shrink-0 ml-1">
+                <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    <i class="fas fa-circle text-green-500 mr-0.5" style="font-size: 4px;"></i>
                     Active
                 </span>
             </div>
         </div>
         
-        <div class="space-y-2 text-sm text-gray-600">
+        <div class="space-y-1 text-xs text-gray-600">
             <div class="flex items-center">
-                <i class="fas fa-chalkboard-teacher w-4 text-green-500 mr-2"></i>
-                <span class="font-medium">Faculty:</span>
-                <span class="ml-1">${facultyName}</span>
+                <i class="fas fa-chalkboard-teacher text-green-500 mr-2 w-3 flex-shrink-0"></i>
+                <span class="truncate">${facultyName}</span>
             </div>
             
             <div class="flex items-center">
-                <i class="fas fa-door-open w-4 text-green-500 mr-2"></i>
-                <span class="font-medium">Room:</span>
-                <span class="ml-1">${room}</span>
+                <i class="fas fa-door-open text-green-500 mr-2 w-3 flex-shrink-0"></i>
+                <span class="truncate">${room}</span>
             </div>
             
             <div class="flex items-center justify-between">
                 <div class="flex items-center">
-                    <i class="fas fa-calendar-alt w-4 text-green-500 mr-2"></i>
-                    <span class="font-medium">Semester:</span>
-                    <span class="ml-1">${semester}</span>
+                    <i class="fas fa-calendar-alt text-green-500 mr-2 w-3 flex-shrink-0"></i>
+                    <span>${semester}</span>
                 </div>
                 <div class="flex items-center">
-                    <i class="fas fa-clock w-4 text-green-500 mr-2"></i>
-                    <span class="font-medium">AY:</span>
-                    <span class="ml-1">${academicYear}</span>
+                    <i class="fas fa-clock text-green-500 mr-2 w-3 flex-shrink-0"></i>
+                    <span>${academicYear}</span>
                 </div>
             </div>
         </div>
@@ -573,9 +678,38 @@ function createCourseCard(course, index) {
     setTimeout(() => {
         courseCard.classList.remove('translate-x-4', 'opacity-0');
         courseCard.classList.add('translate-x-0', 'opacity-100');
-    }, 100 + (index * 50)); // Staggered animation
+    }, 50 + (index * 25));
     
     return courseCard;
+}
+
+// Populate courses list in the UI
+function populateCoursesList(courses) {
+    const coursesList = document.getElementById('coursesList');
+    
+    // Clear existing courses
+    coursesList.innerHTML = '';
+    
+    if (!Array.isArray(courses) || courses.length === 0) {
+        coursesList.className = 'col-span-2 flex items-center justify-center max-h-60 overflow-y-auto border border-green-200 rounded bg-white/50 p-2';
+        coursesList.innerHTML = `
+            <div class="text-center py-4 text-gray-500">
+                <i class="fas fa-book-open text-lg mb-2 opacity-50"></i>
+                <p class="text-xs font-medium">No assigned courses found</p>
+                <p class="text-xs">Please contact your administrator if this seems incorrect.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Reset to grid layout
+    coursesList.className = 'grid grid-cols-2 gap-2 max-h-60 overflow-y-auto border border-green-200 rounded bg-white/50 p-2';
+    
+    // Add course cards
+    courses.forEach((course, index) => {
+        const courseCard = createCourseCard(course, index);
+        coursesList.appendChild(courseCard);
+    });
 }
 
 // Complete onboarding process
@@ -600,7 +734,7 @@ async function completeOnboarding() {
         hideSuccess(successDiv);
         
         const onboardingData = {
-            program_id: selectedProgramId, // These field names are correct
+            program_id: selectedProgramId,
             section_id: selectedSectionId
         };
         
@@ -682,147 +816,9 @@ function validateOnboardingForm() {
 // Update complete button state
 function updateCompleteButton() {
     const completeButton = document.getElementById('completeOnboardingBtn');
-    const isFormValid = selectedProgramId && selectedSectionId && availableCourses.length > 0;
+    const isFormValid = selectedProgramId && selectedSectionId;
     
     completeButton.disabled = !isFormValid;
-}
-
-// Close onboarding modal
-function closeOnboardingModal() {
-    const modal = document.getElementById('onboardingModal');
-    const modalContent = document.getElementById('onboardingModalContent');
-    
-    if (modal && modalContent) {
-        console.log('Closing onboarding modal...');
-        
-        // Add exit animation
-        modalContent.classList.remove('scale-100', 'opacity-100');
-        modalContent.classList.add('scale-95', 'opacity-0');
-        
-        // Animate elements out in reverse order
-        const elementsToHide = [
-            'infoSection',
-            'modalButtons', 
-            'sectionSelectionDiv',
-            'programSection',
-            'onboardingForm',
-            'modalDescription',
-            'modalTitle',
-            'modalIcon'
-        ];
-        
-        elementsToHide.forEach((elementId, index) => {
-            const element = document.getElementById(elementId);
-            if (element) {
-                setTimeout(() => {
-                    element.classList.add('translate-y-4', 'opacity-0');
-                    if (elementId === 'modalIcon') {
-                        element.classList.add('scale-0');
-                    }
-                }, index * 50);
-            }
-        });
-        
-        // Remove blur effect from layout elements
-        removeLayoutBlur();
-        
-        // Hide modal after animation completes
-        setTimeout(() => {
-            modal.classList.add('hidden');
-            
-            // Restore body scroll and interactions
-            document.body.style.overflow = '';
-            document.body.style.pointerEvents = '';
-            
-            // Reset all animations for next time
-            resetModalAnimations();
-            resetOnboardingForm();
-            
-            // Remove event listener
-            modal.removeEventListener('click', handleModalBackdropClick);
-        }, 500);
-        
-        console.log('Onboarding modal closed');
-    }
-}
-
-// Handle modal backdrop clicks
-function handleModalBackdropClick(event) {
-    const modalContent = document.getElementById('onboardingModalContent');
-    
-    // Only close if clicking directly on the modal backdrop, not on the content
-    if (event.target === event.currentTarget && !modalContent.contains(event.target)) {
-        // Prevent closing by backdrop click for onboarding modal
-        // Instead, add a gentle shake animation to indicate modal is required
-        const modalContentElement = document.getElementById('onboardingModalContent');
-        if (modalContentElement) {
-            modalContentElement.style.animation = 'none';
-            modalContentElement.style.animation = 'modalShake 0.5s ease-in-out';
-            setTimeout(() => {
-                modalContentElement.style.animation = '';
-            }, 500);
-        }
-    }
-}
-
-// Reset modal animations to initial state
-function resetModalAnimations() {
-    const elementsToReset = [
-        { id: 'onboardingModalContent', classes: ['scale-95', 'opacity-0'] },
-        { id: 'modalIcon', classes: ['scale-0'] },
-        { id: 'modalTitle', classes: ['translate-y-4', 'opacity-0'] },
-        { id: 'modalDescription', classes: ['translate-y-4', 'opacity-0'] },
-        { id: 'onboardingForm', classes: ['translate-y-6', 'opacity-0'] },
-        { id: 'programSection', classes: ['translate-x-4', 'opacity-0'] },
-        { id: 'sectionSelectionDiv', classes: ['translate-x-4', 'opacity-0'] },
-        { id: 'modalButtons', classes: ['translate-y-4', 'opacity-0'] },
-        { id: 'infoSection', classes: ['translate-y-4', 'opacity-0'] }
-    ];
-    
-    elementsToReset.forEach(({ id, classes }) => {
-        const element = document.getElementById(id);
-        if (element) {
-            // Remove all transform and opacity classes
-            element.classList.remove(
-                'scale-100', 'scale-95', 'scale-0',
-                'opacity-100', 'opacity-0',
-                'translate-y-0', 'translate-y-4', 'translate-y-6',
-                'translate-x-0', 'translate-x-4'
-            );
-            // Add initial state classes
-            element.classList.add(...classes);
-        }
-    });
-}
-
-// Add blur effect to layout elements
-function addLayoutBlur() {
-    const dashboardContainer = document.getElementById('dashboardContainer');
-    
-    // Add blur class to dashboard container to affect all dashboard elements
-    if (dashboardContainer) {
-        dashboardContainer.classList.add('onboarding-modal-open');
-    }
-    
-    // Add body class to prevent scroll
-    document.body.classList.add('overflow-hidden');
-    
-    console.log('Layout blur effects added');
-}
-
-// Remove blur effect from layout elements
-function removeLayoutBlur() {
-    const dashboardContainer = document.getElementById('dashboardContainer');
-    
-    // Remove blur class from dashboard container
-    if (dashboardContainer) {
-        dashboardContainer.classList.remove('onboarding-modal-open');
-    }
-    
-    // Restore body scroll
-    document.body.classList.remove('overflow-hidden');
-    
-    console.log('Layout blur effects removed');
 }
 
 // Utility functions
@@ -833,6 +829,17 @@ function resetOnboardingForm() {
     availableSections = [];
     availableCourses = [];
     
+    // Reset program select completely
+    const programSelect = document.getElementById('programSelect');
+    if (programSelect) {
+        programSelect.removeAttribute('data-original-options');
+        // Remove any attached event listeners by cloning the element
+        const newProgramSelect = programSelect.cloneNode(true);
+        programSelect.parentNode.replaceChild(newProgramSelect, programSelect);
+        // Re-attach the change listener
+        newProgramSelect.addEventListener('change', handleProgramChange);
+    }
+    
     resetSectionSelect();
     hideCourses();
     hideAllErrors();
@@ -842,12 +849,26 @@ function resetOnboardingForm() {
 
 function resetSectionSelect() {
     const sectionSelect = document.getElementById('sectionSelect');
+    if (!sectionSelect) return;
+    
+    // Reset section select completely
+    sectionSelect.removeAttribute('data-original-options');
     sectionSelect.innerHTML = '<option value="">First, select your program...</option>';
     sectionSelect.disabled = true;
+    sectionSelect.classList.remove('bg-white', 'text-gray-900');
+    sectionSelect.classList.add('bg-gray-100', 'text-gray-500');
+    
+    // Remove any attached event listeners by cloning the element
+    const newSectionSelect = sectionSelect.cloneNode(true);
+    sectionSelect.parentNode.replaceChild(newSectionSelect, sectionSelect);
+    // Re-attach the change listener
+    newSectionSelect.addEventListener('change', handleSectionChange);
 }
 
 function showCourses() {
     const coursesContainer = document.getElementById('coursesContainer');
+    if (!coursesContainer) return;
+    
     coursesContainer.classList.remove('hidden');
     
     // Animate show
@@ -859,6 +880,8 @@ function showCourses() {
 
 function hideCourses() {
     const coursesContainer = document.getElementById('coursesContainer');
+    if (!coursesContainer) return;
+    
     coursesContainer.classList.add('hidden');
     coursesContainer.classList.add('translate-x-4', 'opacity-0');
     coursesContainer.classList.remove('translate-x-0', 'opacity-100');
@@ -950,7 +973,192 @@ function getAntiForgeryToken() {
     return tokenInput ? tokenInput.value : '';
 }
 
-// Add CSS for shake animation
+function handleModalBackdropClick(event) {
+    const modalContent = document.getElementById('onboardingModalContent');
+    
+    // Only close if clicking directly on the modal backdrop, not on the content
+    if (event.target === event.currentTarget && !modalContent.contains(event.target)) {
+        // Prevent closing by backdrop click for onboarding modal
+        // Instead, add a gentle shake animation to indicate modal is required
+        const modalContentElement = document.getElementById('onboardingModalContent');
+        if (modalContentElement) {
+            modalContentElement.style.animation = 'none';
+            modalContentElement.style.animation = 'modalShake 0.5s ease-in-out';
+            setTimeout(() => {
+                modalContentElement.style.animation = '';
+            }, 500);
+        }
+    }
+}
+
+function resetModalAnimations() {
+    const elementsToReset = [
+        { id: 'onboardingModalContent', classes: ['scale-95', 'opacity-0'] },
+        { id: 'modalIcon', classes: ['scale-0'] },
+        { id: 'modalTitle', classes: ['translate-y-4', 'opacity-0'] },
+        { id: 'modalDescription', classes: ['translate-y-4', 'opacity-0'] },
+        { id: 'onboardingForm', classes: ['translate-y-6', 'opacity-0'] },
+        { id: 'programSectionRow', classes: ['translate-x-4', 'opacity-0'] },
+        { id: 'modalButtons', classes: ['translate-y-4', 'opacity-0'] }
+    ];
+    
+    elementsToReset.forEach(({ id, classes }) => {
+        const element = document.getElementById(id);
+        if (element) {
+            // Remove all transform and opacity classes
+            element.classList.remove(
+                'scale-100', 'scale-95', 'scale-0',
+                'opacity-100', 'opacity-0',
+                'translate-y-0', 'translate-y-4', 'translate-y-6',
+                'translate-x-0', 'translate-x-4'
+            );
+            // Add initial state classes
+            element.classList.add(...classes);
+        }
+    });
+}
+
+function addLayoutBlur() {
+    const dashboardContainer = document.getElementById('dashboardContainer');
+    
+    // Add blur class to dashboard container to affect all dashboard elements
+    if (dashboardContainer) {
+        dashboardContainer.classList.add('onboarding-modal-open');
+    }
+    
+    // Add body class to prevent scroll
+    document.body.classList.add('overflow-hidden');
+    
+    console.log('Layout blur effects added');
+}
+
+function removeLayoutBlur() {
+    const dashboardContainer = document.getElementById('dashboardContainer');
+    
+    // Remove blur class from dashboard container
+    if (dashboardContainer) {
+        dashboardContainer.classList.remove('onboarding-modal-open');
+    }
+    
+    // Restore body scroll
+    document.body.classList.remove('overflow-hidden');
+    
+    console.log('Layout blur effects removed');
+}
+
+// Show logout confirmation modal
+function showLogoutConfirmation() {
+    const modal = document.getElementById('logoutConfirmationModal');
+    const modalContent = document.getElementById('logoutModalContent');
+    
+    if (!modal || !modalContent) {
+        // Fallback to browser confirm if modal elements not found
+        if (confirm('Are you sure you want to cancel setup? This will log you out and you\'ll need to complete setup later.')) {
+            cancelOnboarding();
+        }
+        return;
+    }
+    
+    // Ensure modal is properly set up for interaction
+    modal.style.pointerEvents = 'auto';
+    modal.style.zIndex = '10001';
+    modalContent.style.pointerEvents = 'auto';
+    
+    // Show modal
+    modal.classList.remove('hidden');
+    
+    // Start entrance animation
+    setTimeout(() => {
+        modalContent.classList.remove('scale-95', 'opacity-0');
+        modalContent.classList.add('scale-100', 'opacity-100');
+    }, 50);
+    
+    // Add click event listener to modal backdrop
+    modal.addEventListener('click', function(event) {
+        // Close modal if clicking on backdrop (not content)
+        if (event.target === modal) {
+            hideLogoutConfirmation();
+        }
+    });
+}
+
+// Hide logout confirmation modal
+function hideLogoutConfirmation() {
+    const modal = document.getElementById('logoutConfirmationModal');
+    const modalContent = document.getElementById('logoutModalContent');
+    
+    if (!modal || !modalContent) return;
+    
+    // Add exit animation
+    modalContent.classList.remove('scale-100', 'opacity-100');
+    modalContent.classList.add('scale-95', 'opacity-0');
+    
+    // Hide modal after animation
+    setTimeout(() => {
+        modal.classList.add('hidden');
+        modal.style.zIndex = '';
+        modal.style.pointerEvents = '';
+        modalContent.style.pointerEvents = '';
+    }, 300);
+}
+
+// Confirm logout action
+function confirmLogout() {
+    // Disable buttons to prevent double-clicks
+    const confirmButton = event.target;
+    const cancelButton = confirmButton.parentElement.querySelector('button:first-child');
+    
+    confirmButton.disabled = true;
+    cancelButton.disabled = true;
+    
+    // Update button text to show processing
+    confirmButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Logging out...';
+    
+    // Hide the confirmation modal first
+    hideLogoutConfirmation();
+    
+    // Then proceed with logout
+    setTimeout(() => {
+        cancelOnboarding();
+    }, 300);
+}
+
+// Cancel onboarding and logout (updated to use AuthController)
+function cancelOnboarding() {
+    try {
+        // Close the onboarding modal first
+        closeOnboardingModal();
+        
+        // Small delay then logout
+        setTimeout(() => {
+            // Use AuthController logout endpoint
+            fetch('/Auth/Logout', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': getAntiForgeryToken()
+                }
+            }).then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = data.redirect_url || '/Auth/Login?logout=true';
+                } else {
+                    // Fallback redirect
+                    window.location.href = '/Auth/Login?logout=true';
+                }
+            }).catch(() => {
+                // Fallback - just redirect
+                window.location.href = '/Auth/Login?logout=true';
+            });
+        }, 500);
+    } catch (error) {
+        console.error('Error during cancel logout:', error);
+        // Fallback - just redirect
+        window.location.href = '/Auth/Login?logout=true';
+    }
+}
+
+// Add CSS for better modal behavior
 const style = document.createElement('style');
 style.textContent = `
     @keyframes fadeIn {
@@ -996,11 +1204,44 @@ style.textContent = `
     }
     
     /* Allow text selection and interactions only within modal */
-    #onboardingModal * {
+    #onboardingModal *, #logoutConfirmationModal * {
         user-select: auto;
         -webkit-user-select: auto;
         -moz-user-select: auto;
         -ms-user-select: auto;
+        pointer-events: auto;
+    }
+    
+    /* Smooth dropdown transitions */
+    #programSelect, #sectionSelect {
+        transition: all 0.2s ease-in-out;
+    }
+    
+    /* Ensure logout confirmation modal is always on top and clickable */
+    #logoutConfirmationModal {
+        z-index: 10001 !important;
+        pointer-events: auto !important;
+    }
+    
+    #logoutConfirmationModal * {
+        pointer-events: auto !important;
+    }
+    
+    /* Ensure buttons in logout modal are clickable */
+    #logoutConfirmationModal button {
+        pointer-events: auto !important;
+        cursor: pointer !important;
+    }
+    
+    #logoutConfirmationModal button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    #logoutConfirmationModal button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed !important;
+        transform: none;
     }
 `;
 document.head.appendChild(style);
@@ -1049,6 +1290,10 @@ document.addEventListener('DOMContentLoaded', function() {
     window.showOnboardingModal = showOnboardingModal;
     window.closeOnboardingModal = closeOnboardingModal;
     window.completeOnboarding = completeOnboarding;
+    window.cancelOnboarding = cancelOnboarding;
+    window.showLogoutConfirmation = showLogoutConfirmation;
+    window.hideLogoutConfirmation = hideLogoutConfirmation;
+    window.confirmLogout = confirmLogout;
     
     console.log('Onboarding functions made globally available');
 });
@@ -1057,5 +1302,9 @@ document.addEventListener('DOMContentLoaded', function() {
 window.showOnboardingModal = showOnboardingModal;
 window.closeOnboardingModal = closeOnboardingModal;
 window.completeOnboarding = completeOnboarding;
+window.cancelOnboarding = cancelOnboarding;
+window.showLogoutConfirmation = showLogoutConfirmation;
+window.hideLogoutConfirmation = hideLogoutConfirmation;
+window.confirmLogout = confirmLogout;
 
 console.log('OnboardingModal.js loaded successfully');
