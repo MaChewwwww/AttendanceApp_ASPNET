@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard - Attendify</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Dashboard entrance animation */
+        .dashboard-entrance {
+            animation: dashboardEntrance 0.8s ease-out forwards;
+        }
+        
+        @keyframes dashboardEntrance {
+            0% { 
+                opacity: 0;
+                transform: scale(0.95);
+                filter: blur(2px);
+            }
+            50% { 
+                opacity: 0.7;
+                transform: scale(0.98);
+                filter: blur(1px);
+            }
+            100% { 
+                opacity: 1;
+                transform: scale(1);
+                filter: blur(0);
+            }
+        }
+        
+        /* Sidebar slide-in animation */
+        .sidebar-slide-in {
+            animation: sidebarSlideIn 0.6s ease-out forwards;
+        }
+        
+        @keyframes sidebarSlideIn {
+            0% { 
+                opacity: 0;
+                transform: translateX(-100%);
+            }
+            100% { 
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        /* Main content fade-in animation */
+        .main-content-fade-in {
+            animation: mainContentFadeIn 0.8s ease-out 0.3s forwards;
+            opacity: 0;
+        }
+        
+        @keyframes mainContentFadeIn {
+            0% { 
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            100% { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Navbar slide-down animation */
+        .navbar-slide-down {
+            animation: navbarSlideDown 0.6s ease-out 0.2s forwards;
+            opacity: 0;
+        }
+        
+        @keyframes navbarSlideDown {
+            0% { 
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            100% { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Staggered animation for dashboard cards */
+        .dashboard-card-entrance {
+            animation: dashboardCardEntrance 0.6s ease-out forwards;
+            opacity: 0;
+        }
+        
+        @keyframes dashboardCardEntrance {
+            0% { 
+                opacity: 0;
+                transform: translateY(30px) scale(0.9);
+            }
+            100% { 
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        
+        /* Apply staggered delays */
+        .dashboard-card-entrance:nth-child(1) { animation-delay: 0.5s; }
+        .dashboard-card-entrance:nth-child(2) { animation-delay: 0.6s; }
+        .dashboard-card-entrance:nth-child(3) { animation-delay: 0.7s; }
+        .dashboard-card-entrance:nth-child(4) { animation-delay: 0.8s; }
+        
+        /* Logout animation */
+        .logout-transition {
+            animation: logoutTransition 1.0s ease-in forwards;
+        }
+        
+        @keyframes logoutTransition {
+            0% { 
+                opacity: 1;
+                transform: scale(1);
+                filter: blur(0);
+            }
+            30% { 
+                opacity: 0.8;
+                transform: scale(0.98);
+                filter: blur(1px);
+            }
+            70% { 
+                opacity: 0.4;
+                transform: scale(0.95);
+                filter: blur(2px);
+            }
+            100% { 
+                opacity: 0;
+                transform: scale(0.9);
+                filter: blur(3px);
+                visibility: hidden;
+            }
+        }
+        
+        /* Logout confirmation modal animation */
+        .logout-modal-entrance {
+            animation: logoutModalEntrance 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+        
+        @keyframes logoutModalEntrance {
+            0% { 
+                opacity: 0;
+                transform: scale(0.9) translateY(-20px);
+            }
+            100% { 
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+        
+        /* Onboarding modal blur effects - target specific containers */
+        .onboarding-modal-open #dashboardSidebar {
+            filter: blur(4px);
+            opacity: 0.6;
+            transition: all 0.3s ease-out;
+        }
+        
+        .onboarding-modal-open #dashboardNavbar {
+            filter: blur(4px);
+            opacity: 0.6;
+            transition: all 0.3s ease-out;
+        }
+        
+        .onboarding-modal-open #dashboardMain {
+            filter: blur(4px);
+            opacity: 0.6;
+            transition: all 0.3s ease-out;
+        }
+        
+        /* Ensure modal is always on top and never blurred */
+        #onboardingModal {
+            z-index: 9999 !important;
+            filter: none !important;
+            backdrop-filter: blur(8px) !important;
+        }
+        
+        /* Layout z-index management */
+        .dashboard-sidebar {
+            z-index: 10;
+        }
+        
+        .dashboard-navbar {
+            z-index: 20;
+        }
+        
+        .dashboard-main {
+            z-index: 5;
+        }
+
+        /* Responsive sidebar styles */
+        .sidebar-collapsed {
+            width: 4rem !important; /* 64px */
+            transition: width 0.3s ease-in-out;
+        }
+        
+        .sidebar-collapsed .sidebar-text {
+            opacity: 0;
+            transform: translateX(-10px);
+            transition: all 0.3s ease-in-out;
+            pointer-events: none;
+        }
+        
+        .sidebar-collapsed .sidebar-logo-text {
+            opacity: 0;
+            transform: scale(0.8);
+            transition: all 0.3s ease-in-out;
+            pointer-events: none;
+        }
+        
+        .sidebar-expanded .sidebar-text {
+            opacity: 1;
+            transform: translateX(0);
+            transition: all 0.3s ease-in-out 0.1s;
+        }
+        
+        .sidebar-expanded .sidebar-logo-text {
+            opacity: 1;
+            transform: scale(1);
+            transition: all 0.3s ease-in-out 0.1s;
+        }
+        
+        /* Tooltip styles for collapsed sidebar */
+        .sidebar-tooltip {
+            position: absolute;
+            left: 4.5rem;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            white-space: nowrap;
+            z-index: 1000;
+            opacity: 0;
+            transform: translateX(-10px);
+            transition: all 0.2s ease-in-out;
+            pointer-events: none;
+        }
+        
+        .sidebar-tooltip::before {
+            content: '';
+            position: absolute;
+            left: -4px;
+            top: 50%;
+            transform: translateY(-50%);
+            border: 4px solid transparent;
+            border-right-color: rgba(0, 0, 0, 0.8);
+        }
+        
+        .sidebar-tooltip.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
+        /* Hover expand on collapsed sidebar */
+        .sidebar-collapsed:hover {
+            width: 16rem !important; /* 256px - original width */
+            transition: width 0.3s ease-in-out;
+        }
+        
+        .sidebar-collapsed:hover .sidebar-text {
+            opacity: 1;
+            transform: translateX(0);
+            transition: all 0.3s ease-in-out 0.1s;
+            pointer-events: auto;
+        }
+        
+        .sidebar-collapsed:hover .sidebar-logo-text {
+            opacity: 1;
+            transform: scale(1);
+            transition: all 0.3s ease-in-out 0.1s;
+            pointer-events: auto;
+        }
+        
+        /* Adjust mobile behavior */
+        @media (max-width: 1024px) {
+            .sidebar-collapsed:hover {
+                width: 4rem !important; /* Don't expand on hover on mobile */
+            }
+            
+            .sidebar-collapsed:hover .sidebar-text,
+            .sidebar-collapsed:hover .sidebar-logo-text {
+                opacity: 0;
+                transform: translateX(-10px);
+                pointer-events: none;
+            }
+        }
+
+        /* Auto-collapse on smaller screens */
+        @media (max-width: 1280px) {
+            .sidebar-auto-collapse {
+                width: 4rem;
+            }
+            
+            .sidebar-auto-collapse .sidebar-text,
+            .sidebar-auto-collapse .sidebar-logo-text {
+                opacity: 0;
+                transform: translateX(-10px);
+                pointer-events: none;
+            }
+        }
+
+        /* Additional animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes fadeOut {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(-10px); }
+        }
+        
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+        
+        .animate-fade-out {
+            animation: fadeOut 0.3s ease-in forwards;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    
+    <div id="dashboardContainer" class="flex h-screen dashboard-entrance">
+        <!-- Sidebar -->
+        <div id="dashboardSidebar" class="w-64 bg-white shadow-lg flex-shrink-0 sidebar-slide-in dashboard-sidebar sidebar-expanded relative">
+            <!-- Collapse Toggle Button -->
+            <button id="sidebarToggle" class="absolute -right-3 top-6 bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-blue-700 transition-colors duration-200 z-20 shadow-lg">
+                <i class="fas fa-chevron-left text-xs" id="toggleIcon"></i>
+            </button>
+            
+            <div class="p-6">
+                <!-- Logo and Title -->
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-calendar-check text-white text-lg"></i>
+                    </div>
+                    <div class="sidebar-logo-text">
+                        <h1 class="text-xl font-bold text-gray-800 sidebar-text">Attendify</h1>
+                        <p class="text-sm text-gray-500 sidebar-text">Attendance App</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Navigation Menu -->
+            <nav class="mt-6">
+                <div class="px-6 pb-4">
+                    <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider sidebar-text">Menu</h3>
+                </div>
+                
+                <div class="relative">
+                    <a href="#" class="flex items-center px-6 py-3 text-gray-700 bg-blue-50 border-r-4 border-blue-600 relative">
+                        <i class="fas fa-home w-5 h-5 mr-3 flex-shrink-0"></i>
+                        <span class="font-medium sidebar-text">Dashboard</span>
+                        <div class="sidebar-tooltip">Dashboard</div>
+                    </a>
+                </div>
+                
+                <div class="relative">
+                    <a href="#" class="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors duration-200 relative">
+                        <i class="fas fa-book-open w-5 h-5 mr-3 flex-shrink-0"></i>
+                        <span class="sidebar-text">Courses</span>
+                        <div class="sidebar-tooltip">Courses</div>
+                    </a>
+                </div>
+                
+                <div class="relative">
+                    <a href="#" class="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors duration-200 relative">
+                        <i class="fas fa-clipboard-list w-5 h-5 mr-3 flex-shrink-0"></i>
+                        <span class="sidebar-text">Attendance Log</span>
+                        <div class="sidebar-tooltip">Attendance Log</div>
+                    </a>
+                </div>
+                
+                <div class="border-t border-gray-200 mt-6 pt-6">
+                    <div class="relative">
+                        <button type="button" onclick="showLayoutLogoutConfirmation()" class="flex items-center w-full px-6 py-3 text-gray-600 hover:bg-red-50 hover:text-red-700 transition-colors duration-200 relative">
+                            <i class="fas fa-sign-out-alt w-5 h-5 mr-3 flex-shrink-0"></i>
+                            <span class="sidebar-text">Logout</span>
+                            <div class="sidebar-tooltip">Logout</div>
+                        </button>
+                    </div>
+                </div>
+            </nav>
+        </div>
+        
+        <!-- Main Content Area -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Top Navbar -->
+            <header id="dashboardNavbar" class="bg-white shadow-sm border-b border-gray-200 navbar-slide-down dashboard-navbar">
+                <div class="flex items-center justify-between px-6 py-4">
+                    <div class="flex items-center">
+                        <button class="text-gray-500 hover:text-gray-700 lg:hidden" id="mobile-menu-button">
+                            <i class="fas fa-bars w-6 h-6"></i>
+                        </button>
+                        <h2 class="text-lg font-semibold text-gray-800 ml-2 lg:ml-0">Dashboard</h2>
+                    </div>
+                    
+                    <div class="flex items-center space-x-4">
+                        <!-- Current Date and Time -->
+                        <div class="text-right">
+                            <div class="text-sm font-medium text-gray-900" id="current-date"></div>
+                            <div class="text-xs text-gray-500" id="current-time"></div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            
+            <!-- Main Content -->
+            <main id="dashboardMain" class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 main-content-fade-in dashboard-main">
+                <div class="container mx-auto px-6 py-8">
+                    <!-- Welcome Section with Heat Index -->
+                    <div class="mb-8">
+                        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                            <!-- Welcome Card - Full Width -->
+                            <div class="col-span-1 lg:col-span-4 bg-gradient-to-r from-blue-600 to-blue-800 rounded-lg p-6 text-white dashboard-card-entrance">
+                                <div class="flex flex-col md:flex-row items-start md:items-center justify-between">
+                                    <div class="mb-4 md:mb-0">
+                                        <h1 class="text-2xl font-bold mb-2">Welcome back, John!</h1>
+                                        <p class="text-blue-100">
+                                            Ready to track your attendance today?
+                                        </p>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-blue-100 text-sm">Student Number</div>
+                                        <div class="text-xl font-semibold">2021-00123</div>
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 mt-2">
+                                            <i class="fas fa-check-circle mr-1"></i>
+                                            Verified
+                                        </span>
+                                        <div class="mt-1">
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                <i class="fas fa-users mr-1"></i>
+                                                Section Assigned
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Main Action Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <!-- Current Class & Attendance Status -->
+                        <div class="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow duration-200 dashboard-card-entrance">
+                            <div class="flex items-center mb-4">
+                                <div class="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-clock text-indigo-600 text-xl"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <h3 class="text-lg font-semibold text-gray-900">Current Class</h3>
+                                    <p class="text-gray-500 text-sm">Database Systems</p>
+                                </div>
+                            </div>
+                            <div class="space-y-2 mb-4">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-600">Room:</span>
+                                    <span class="text-sm font-medium text-gray-900">203</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-600">Time:</span>
+                                    <span class="text-sm font-medium text-gray-900">2:00 PM - 3:30 PM</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-600">Status:</span>
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                        <i class="fas fa-hourglass-half mr-1"></i>
+                                        Not Marked
+                                    </span>
+                                </div>
+                            </div>
+                            <!-- Mark Attendance Button - Centered at Bottom -->
+                            <div class="text-center">
+                                <button class="bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 transition-colors duration-200 font-semibold flex items-center justify-center mx-auto">
+                                    <i class="fas fa-camera mr-2"></i>Mark Attendance
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Weather Widget -->
+                        <div class="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow duration-200 dashboard-card-entrance">
+                            <div class="flex items-center mb-4">
+                                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-cloud-sun text-blue-600 text-xl"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <h3 class="text-lg font-semibold text-gray-900">Weather</h3>
+                                    <p class="text-gray-500 text-sm">Quezon City</p>
+                                </div>
+                            </div>
+                            <div class="space-y-2">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-600">Temperature:</span>
+                                    <span class="text-sm font-medium text-gray-900">32°C</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-600">Feels like:</span>
+                                    <span class="text-sm font-medium text-gray-900">38°C</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-600">Condition:</span>
+                                    <span class="text-sm font-medium text-gray-900">Partly Cloudy</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-600">Humidity:</span>
+                                    <span class="text-sm font-medium text-gray-900">75%</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-600">Rain chance:</span>
+                                    <span class="text-sm font-medium text-blue-600">20%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Heat Index Summary Card -->
+                        <div class="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow duration-200 dashboard-card-entrance">
+                            <div class="flex items-center mb-4">
+                                <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-thermometer-half text-orange-600 text-xl"></i>
+                                </div>
+                                <div class="ml-4">
+                                    <h3 class="text-lg font-semibold text-gray-900">Heat Index</h3>
+                                    <p class="text-gray-500 text-sm">Quezon City</p>
+                                </div>
+                            </div>
+                            <div class="space-y-2">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-600">Feels like:</span>
+                                    <span class="text-2xl font-bold text-orange-600">38°C</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-600">Temperature:</span>
+                                    <span class="text-sm font-medium text-gray-900">32°C</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-600">Heat level:</span>
+                                    <span class="text-sm font-medium text-orange-600">High</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-600">UV Index:</span>
+                                    <span class="text-sm font-medium text-gray-900">8.5</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Statistics Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        <!-- Total Classes -->
+                        <div class="bg-white rounded-lg shadow-sm p-6 dashboard-card-entrance">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-gray-600">Total Classes</p>
+                                    <p class="text-2xl font-bold text-gray-900">24</p>
+                                </div>
+                                <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-book text-blue-600"></i>
+                                </div>
+                            </div>
+                            <p class="mt-2 text-sm text-gray-500">This semester</p>
+                        </div>
+
+                        <!-- Present -->
+                        <div class="bg-white rounded-lg shadow-sm p-6 dashboard-card-entrance">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-gray-600">Present</p>
+                                    <p class="text-2xl font-bold text-green-600">18</p>
+                                </div>
+                                <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-check text-green-600"></i>
+                                </div>
+                            </div>
+                            <p class="mt-2 text-sm text-gray-500">75% attendance</p>
+                        </div>
+
+                        <!-- Absent -->
+                        <div class="bg-white rounded-lg shadow-sm p-6 dashboard-card-entrance">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-gray-600">Absent</p>
+                                    <p class="text-2xl font-bold text-red-600">6</p>
+                                </div>
+                                <div class="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-times text-red-600"></i>
+                                </div>
+                            </div>
+                            <p class="mt-2 text-sm text-gray-500">25% missed</p>
+                        </div>
+
+                        <!-- This Week -->
+                        <div class="bg-white rounded-lg shadow-sm p-6 dashboard-card-entrance">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-gray-600">This Week</p>
+                                    <p class="text-2xl font-bold text-blue-600">5/5</p>
+                                </div>
+                                <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-calendar-week text-blue-600"></i>
+                                </div>
+                            </div>
+                            <p class="mt-2 text-sm text-gray-500">Perfect week!</p>
+                        </div>
+                    </div>
+
+                    <!-- Recent Activity & Upcoming Classes -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <!-- Recent Activity -->
+                        <div class="bg-white rounded-lg shadow-sm dashboard-card-entrance">
+                            <div class="p-6 border-b border-gray-200">
+                                <h3 class="text-lg font-semibold text-gray-900">Recent Activity</h3>
+                            </div>
+                            <div class="p-6">
+                                <div class="space-y-4">
+                                    <div class="flex items-center">
+                                        <div class="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                                        <div class="flex-1">
+                                            <p class="text-sm font-medium text-gray-900">Present - Computer Science 101</p>
+                                            <p class="text-xs text-gray-500">Today, 10:00 AM</p>
+                                        </div>
+                                        <i class="fas fa-check-circle text-green-500"></i>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <div class="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
+                                        <div class="flex-1">
+                                            <p class="text-sm font-medium text-gray-900">Present - Mathematics 201</p>
+                                            <p class="text-xs text-gray-500">Yesterday, 2:00 PM</p>
+                                        </div>
+                                        <i class="fas fa-check-circle text-green-500"></i>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <div class="w-2 h-2 bg-red-500 rounded-full mr-3"></div>
+                                        <div class="flex-1">
+                                            <p class="text-sm font-medium text-gray-900">Absent - Physics 101</p>
+                                            <p class="text-xs text-gray-500">Yesterday, 8:00 AM</p>
+                                        </div>
+                                        <i class="fas fa-times-circle text-red-500"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Upcoming Classes -->
+                        <div class="bg-white rounded-lg shadow-sm dashboard-card-entrance">
+                            <div class="p-6 border-b border-gray-200">
+                                <h3 class="text-lg font-semibold text-gray-900">Upcoming Classes</h3>
+                            </div>
+                            <div class="p-6">
+                                <div class="space-y-4">
+                                    <div class="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
+                                        <div>
+                                            <p class="font-medium text-gray-900">Database Systems</p>
+                                            <p class="text-sm text-gray-500">Room 203</p>
+                                        </div>
+                                        <div class="text-right">
+                                            <p class="font-medium text-blue-600">2:00 PM</p>
+                                            <p class="text-xs text-gray-500">Today</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                        <div>
+                                            <p class="font-medium text-gray-900">Web Development</p>
+                                            <p class="text-sm text-gray-500">Room 105</p>
+                                        </div>
+                                        <div class="text-right">
+                                            <p class="font-medium text-gray-600">10:00 AM</p>
+                                            <p class="text-xs text-gray-500">Tomorrow</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                        <div>
+                                            <p class="font-medium text-gray-900">Software Engineering</p>
+                                            <p class="text-sm text-gray-500">Room 301</p>
+                                        </div>
+                                        <div class="text-right">
+                                            <p class="font-medium text-gray-600">3:00 PM</p>
+                                            <p class="text-xs text-gray-500">Tomorrow</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Mobile Sidebar Overlay -->
+    <div class="fixed inset-0 z-50 lg:hidden hidden" id="mobile-sidebar-overlay">
+        <div class="fixed inset-0 bg-black opacity-50"></div>
+        <div class="fixed left-0 top-0 bottom-0 w-64 bg-white shadow-lg transform -translate-x-full transition-transform duration-300" id="mobile-sidebar">
+            <!-- Mobile sidebar content (same as desktop sidebar) -->
+            <div class="p-6">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-calendar-check text-white text-lg"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-xl font-bold text-gray-800">Attendify</h1>
+                            <p class="text-sm text-gray-500">Attendance App</p>
+                        </div>
+                    </div>
+                    <button class="text-gray-500 hover:text-gray-700" id="close-mobile-menu">
+                        <i class="fas fa-times w-6 h-6"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <nav class="mt-6">
+                <div class="px-6 pb-4">
+                    <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Menu</h3>
+                </div>
+                
+                <a href="#" class="flex items-center px-6 py-3 text-gray-700 bg-blue-50 border-r-4 border-blue-600">
+                    <i class="fas fa-home w-5 h-5 mr-3"></i>
+                    <span class="font-medium">Dashboard</span>
+                </a>
+                
+                <a href="#" class="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors duration-200">
+                    <i class="fas fa-book-open w-5 h-5 mr-3"></i>
+                    <span>Courses</span>
+                </a>
+                
+                <a href="#" class="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors duration-200">
+                    <i class="fas fa-clipboard-list w-5 h-5 mr-3"></i>
+                    <span>Attendance Log</span>
+                </a>
+                
+                <div class="border-t border-gray-200 mt-6 pt-6">
+                    <button type="button" onclick="alert('Logout clicked')" class="flex items-center w-full px-6 py-3 text-gray-600 hover:bg-red-50 hover:text-red-700 transition-colors duration-200">
+                        <i class="fas fa-sign-out-alt w-5 h-5 mr-3"></i>
+                        <span>Logout</span>
+                    </button>
+                </div>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Layout Logout Confirmation Modal -->
+    <div id="layoutLogoutConfirmationModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 overflow-y-auto h-full w-full z-[10002] hidden flex items-center justify-center backdrop-blur-sm">
+        <div id="layoutLogoutModalContent" class="relative mx-auto p-6 border w-full max-w-md shadow-2xl rounded-xl bg-white transform transition-all duration-300 scale-95 opacity-0 m-4">
+            
+            <!-- Modal Header -->
+            <div class="text-center mb-5">
+                <div class="mx-auto w-16 h-16 bg-gradient-to-br from-red-500 to-red-700 rounded-full flex items-center justify-center mb-4">
+                    <i class="fas fa-sign-out-alt text-white text-2xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-800 mb-2">Confirm Logout</h3>
+                <p class="text-gray-600 text-sm">
+                    Are you sure you want to log out of your account? You'll need to log in again to access your dashboard.
+                </p>
+            </div>
+
+            <!-- Modal Buttons -->
+            <div class="flex justify-center space-x-3">
+                <button type="button" onclick="hideLayoutLogoutConfirmation()" 
+                        class="bg-gray-600 text-white py-2 px-4 rounded text-sm hover:bg-gray-700 transition-colors font-semibold flex items-center">
+                    <i class="fas fa-arrow-left mr-2"></i>Stay Logged In
+                </button>
+                <button type="button" onclick="confirmLayoutLogout()" id="layoutLogoutConfirmButton"
+                        class="bg-red-600 text-white py-2 px-4 rounded text-sm hover:bg-red-700 transition-colors font-semibold flex items-center">
+                    <svg id="layoutLogoutSpinner" class="hidden w-4 h-4 text-white mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 714 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span id="layoutLogoutButtonText">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Yes, Logout
+                    </span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sidebar toggle functionality
+        let sidebarCollapsed = false;
+
+        // Mobile menu functionality
+        document.getElementById('mobile-menu-button').addEventListener('click', function() {
+            const overlay = document.getElementById('mobile-sidebar-overlay');
+            const sidebar = document.getElementById('mobile-sidebar');
+            overlay.classList.remove('hidden');
+            setTimeout(() => {
+                sidebar.classList.remove('-translate-x-full');
+            }, 10);
+        });
+
+        document.getElementById('close-mobile-menu').addEventListener('click', function() {
+            const overlay = document.getElementById('mobile-sidebar-overlay');
+            const sidebar = document.getElementById('mobile-sidebar');
+            sidebar.classList.add('-translate-x-full');
+            setTimeout(() => {
+                overlay.classList.add('hidden');
+            }, 300);
+        });
+
+        // Close mobile menu when clicking overlay
+        document.getElementById('mobile-sidebar-overlay').addEventListener('click', function(e) {
+            if (e.target === this) {
+                document.getElementById('close-mobile-menu').click();
+            }
+        });
+
+        // Update date and time
+        function updateDateTime() {
+            const now = new Date();
+            const options = { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                weekday: 'long'
+            };
+            const timeOptions = {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true
+            };
+            
+            document.getElementById('current-date').textContent = now.toLocaleDateString('en-US', options);
+            document.getElementById('current-time').textContent = now.toLocaleTimeString('en-US', timeOptions);
+        }
+
+        // Update time every second
+        setInterval(updateDateTime, 1000);
+        updateDateTime(); // Initial call
+
+        // Initialize dashboard animations on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add entrance animations to dashboard cards
+            const dashboardCards = document.querySelectorAll('.bg-white.rounded-lg, .grid > div');
+            dashboardCards.forEach((card, index) => {
+                if (!card.classList.contains('dashboard-card-entrance')) {
+                    card.classList.add('dashboard-card-entrance');
+                    card.style.animationDelay = `${0.5 + (index * 0.1)}s`;
+                }
+            });
+            
+            // Smooth scroll behavior for better UX
+            document.documentElement.style.scrollBehavior = 'smooth';
+            
+            // Welcome animation for user name
+            const welcomeText = document.querySelector('h1');
+            if (welcomeText && welcomeText.textContent.includes('Welcome back')) {
+                welcomeText.style.animation = 'dashboardCardEntrance 0.8s ease-out 0.9s forwards';
+                welcomeText.style.opacity = '0';
+            }
+            
+            // Initialize sidebar responsiveness
+            initializeSidebarResponsiveness();
+            
+            // Add sidebar toggle functionality
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            if (sidebarToggle) {
+                sidebarToggle.addEventListener('click', toggleSidebar);
+            }
+            
+            // Add window resize listener for responsive behavior
+            window.addEventListener('resize', handleWindowResize);
+            
+            // Add tooltip functionality for collapsed sidebar
+            initializeSidebarTooltips();
+            
+            // Initial responsive check
+            handleWindowResize();
+            
+            console.log('Dashboard animations initialized');
+        });
+
+        function initializeSidebarResponsiveness() {
+            console.log('Initializing sidebar responsiveness');
+        }
+        
+        function toggleSidebar() {
+            const sidebar = document.getElementById('dashboardSidebar');
+            const toggleIcon = document.getElementById('toggleIcon');
+            
+            if (!sidebar || !toggleIcon) return;
+            
+            sidebarCollapsed = !sidebarCollapsed;
+            
+            if (sidebarCollapsed) {
+                sidebar.classList.remove('sidebar-expanded');
+                sidebar.classList.add('sidebar-collapsed');
+                toggleIcon.classList.remove('fa-chevron-left');
+                toggleIcon.classList.add('fa-chevron-right');
+            } else {
+                sidebar.classList.remove('sidebar-collapsed');
+                sidebar.classList.add('sidebar-expanded');
+                toggleIcon.classList.remove('fa-chevron-right');
+                toggleIcon.classList.add('fa-chevron-left');
+            }
+            
+            console.log('Sidebar toggled:', sidebarCollapsed ? 'collapsed' : 'expanded');
+        }
+        
+        function handleWindowResize() {
+            const sidebar = document.getElementById('dashboardSidebar');
+            const toggleButton = document.getElementById('sidebarToggle');
+            
+            if (!sidebar || !toggleButton) return;
+            
+            const windowWidth = window.innerWidth;
+            
+            // Auto-collapse on screens smaller than 1280px (xl breakpoint)
+            if (windowWidth < 1280) {
+                if (!sidebarCollapsed) {
+                    sidebar.classList.remove('sidebar-expanded');
+                    sidebar.classList.add('sidebar-collapsed');
+                    const toggleIcon = document.getElementById('toggleIcon');
+                    if (toggleIcon) {
+                        toggleIcon.classList.remove('fa-chevron-left');
+                        toggleIcon.classList.add('fa-chevron-right');
+                    }
+                    sidebarCollapsed = true;
+                }
+                // Show toggle button on smaller screens
+                toggleButton.style.display = 'flex';
+            } else {
+                // Show toggle button on larger screens too for manual control
+                toggleButton.style.display = 'flex';
+            }
+            
+            // Hide toggle button on very small screens (mobile)
+            if (windowWidth < 1024) {
+                toggleButton.style.display = 'none';
+            }
+        }
+        
+        function initializeSidebarTooltips() {
+            const sidebar = document.getElementById('dashboardSidebar');
+            if (!sidebar) return;
+            
+            const menuItems = sidebar.querySelectorAll('nav a, nav button');
+            
+            menuItems.forEach(item => {
+                const tooltip = item.querySelector('.sidebar-tooltip');
+                if (!tooltip) return;
+                
+                // Show tooltip on hover when sidebar is collapsed
+                item.addEventListener('mouseenter', function() {
+                    if (sidebarCollapsed && window.innerWidth >= 1024) {
+                        tooltip.classList.add('show');
+                    }
+                });
+                
+                item.addEventListener('mouseleave', function() {
+                    tooltip.classList.remove('show');
+                });
+            });
+        }
+
+        // Layout logout functions (mock functionality for demo)
+        function showLayoutLogoutConfirmation() {
+            const modal = document.getElementById('layoutLogoutConfirmationModal');
+            const modalContent = document.getElementById('layoutLogoutModalContent');
+            
+            if (!modal || !modalContent) {
+                alert('Logout confirmation');
+                return;
+            }
+            
+            // Show modal
+            modal.classList.remove('hidden');
+            
+            // Start entrance animation
+            setTimeout(() => {
+                modalContent.classList.remove('scale-95', 'opacity-0');
+                modalContent.classList.add('scale-100', 'opacity-100');
+            }, 50);
+        }
+        
+        function hideLayoutLogoutConfirmation() {
+            const modal = document.getElementById('layoutLogoutConfirmationModal');
+            const modalContent = document.getElementById('layoutLogoutModalContent');
+            
+            if (!modal || !modalContent) return;
+            
+            // Add exit animation
+            modalContent.classList.remove('scale-100', 'opacity-100');
+            modalContent.classList.add('scale-95', 'opacity-0');
+            
+            // Hide modal after animation
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+        
+        function confirmLayoutLogout() {
+            alert('Logout confirmed (this is just a demo)');
+            hideLayoutLogoutConfirmation();
+        }
+
+        // Add backdrop click handler for layout logout modal
+        document.addEventListener('DOMContentLoaded', function() {
+            const layoutLogoutModal = document.getElementById('layoutLogoutConfirmationModal');
+            if (layoutLogoutModal) {
+                layoutLogoutModal.addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        hideLayoutLogoutConfirmation();
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
