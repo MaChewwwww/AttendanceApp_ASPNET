@@ -31,6 +31,7 @@ namespace AttendanceApp_ASPNET.Services
         // Course data methods
         Task<string> GetStudentCoursesAsync(string jwtToken);
         Task<string> GetCourseDetailsAsync(int courseId, string jwtToken);
+        Task<string> GetCourseStudentsAsync(int assignedCourseId, string jwtToken);
         
         // Configuration access
         string GetApiKey();
@@ -182,6 +183,20 @@ namespace AttendanceApp_ASPNET.Services
                 success = false,
                 message = "",
                 course = (object)null
+            });
+        }
+
+        public async Task<string> GetCourseStudentsAsync(int assignedCourseId, string jwtToken)
+        {
+            return await GetApiRequestWithStructuredErrorAsync($"/student/courses/{assignedCourseId}/students", jwtToken, "Failed to fetch course students", new
+            {
+                success = false,
+                message = "",
+                course_info = (object)null,
+                students = new object[0],
+                total_students = 0,
+                enrollment_summary = new { },
+                attendance_summary = new { }
             });
         }
 

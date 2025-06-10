@@ -133,7 +133,7 @@
                                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                     @foreach (var course in courses)
                                     {
-                                        <div class="course-card bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-lg hover:border-blue-300 transition-all duration-300 cursor-pointer transform hover:scale-105" onclick="openCourse(@course.CourseId, '@Html.Raw(Html.Encode(course.CourseName))')">
+                                        <div class="course-card bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-lg hover:border-blue-300 transition-all duration-300 cursor-pointer transform hover:scale-105" onclick="openCourseStudents(@course.AssignedCourseId, '@Html.Raw(Html.Encode(course.CourseName))')">
                                             <div class="flex items-start justify-between mb-3">
                                                 <div>
                                                     <h3 class="font-semibold text-gray-900 hover:text-blue-600 transition-colors">@course.CourseName</h3>
@@ -274,7 +274,7 @@
                         {
                             <div class="course-card bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4 border border-gray-200 hover:shadow-lg hover:border-blue-300 transition-all duration-300 cursor-pointer transform hover:scale-105" 
                                  data-academic-year="@course.AcademicYear" 
-                                 onclick="openCourse(@course.CourseId, '@Html.Raw(Html.Encode(course.CourseName))')">
+                                 onclick="openCourseStudents(@course.AssignedCourseId, '@Html.Raw(Html.Encode(course.CourseName))')">
                                 <div class="flex items-start justify-between mb-3">
                                     <div>
                                         <h3 class="font-semibold text-gray-900 hover:text-blue-600 transition-colors">@course.CourseName</h3>
@@ -375,6 +375,9 @@
     }
 </div>
 
+<!-- Course Students Modal - Move this outside to avoid blur effects -->
+@await Html.PartialAsync("_CourseStudentsModal")
+
 @functions {
     private string GetStatusBadgeClass(string status)
     {
@@ -430,7 +433,7 @@
 
 <style>
     .semester-tab {
-        transition: all 0.2s ease-in-out;
+        transition: all 0.15s ease-in-out;
     }
     
     .active-tab {
@@ -439,12 +442,13 @@
     }
     
     .semester-content {
-        animation: fadeIn 0.3s ease-in-out;
+        animation: fadeIn 0.2s ease-in-out;
     }
     
     .course-card {
         position: relative;
         overflow: hidden;
+        transition: all 0.2s ease-in-out;
     }
     
     .course-card::before {
@@ -455,7 +459,7 @@
         width: 100%;
         height: 100%;
         background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-        transition: left 0.5s;
+        transition: left 0.3s ease-in-out;
     }
     
     .course-card:hover::before {
@@ -470,9 +474,124 @@
         from { opacity: 0; transform: translateY(10px); }
         to { opacity: 1; transform: translateY(0); }
     }
+
+    /* Enhanced modal animations with spring effect */
+    .modal-spring-enter {
+        animation: modalSpringEnter 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
+    .modal-spring-exit {
+        animation: modalSpringExit 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+    }
+
+    @@keyframes modalSpringEnter {
+        0% { 
+            opacity: 0; 
+            transform: scale(0.8) translateY(-20px);
+        }
+        50% { 
+            opacity: 0.8; 
+            transform: scale(1.05) translateY(-5px);
+        }
+        100% { 
+            opacity: 1; 
+            transform: scale(1) translateY(0);
+        }
+    }
+
+    @@keyframes modalSpringExit {
+        0% { 
+            opacity: 1; 
+            transform: scale(1) translateY(0);
+        }
+        100% { 
+            opacity: 0; 
+            transform: scale(0.9) translateY(-10px);
+        }
+    }
+
+    /* Smooth table row animations */
+    #studentsTableBody tr {
+        transition: background-color 0.15s ease-in-out;
+    }
+
+    /* Summary cards pulse animation */
+    .summary-card-pulse {
+        animation: summaryPulse 0.6s ease-out;
+    }
+
+    @@keyframes summaryPulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.02); }
+        100% { transform: scale(1); }
+    }
+
+    /* Quick filter pills */
+    .quick-filter-pill {
+        transition: all 0.2s ease-in-out;
+        cursor: pointer;
+    }
+    
+    .quick-filter-pill:hover {
+        transform: translateY(-1px);
+        shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .quick-filter-pill.active {
+        transform: translateY(-1px);
+        shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+    }
+    
+    /* Custom dropdown styling */
+    select:focus {
+        outline: none;
+    }
+    
+    /* Enhanced search input styling */
+    input[type="text"]:focus {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    /* Export button hover effect */
+    button:hover {
+        transform: translateY(-1px);
+    }
+
+    /* Dynamic clear button styles */
+    .clear-btn {
+        transition: all 0.3s ease;
+        background: none;
+        border: none;
+    }
+    
+    .clear-btn-active {
+        background: rgba(239, 68, 68, 0.1);
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+        animation: clearBtnGlow 2s ease-in-out infinite alternate;
+    }
+    
+    .clear-btn:hover.clear-btn-active {
+        background: rgba(239, 68, 68, 0.15);
+        box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.25);
+    }
+    
+    @@keyframes clearBtnGlow {
+        0% { 
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+        }
+        100% { 
+            box-shadow: 0 0 0 5px rgba(239, 68, 68, 0.1);
+        }
+    }
 </style>
 
 <script>
+    // Global variables for modal functionality
+    let currentAssignedCourseId = null;
+    let courseStudentsData = null;
+    let filteredStudents = [];
+
     // Semester tab functionality
     function showSemester(semester) {
         // Hide all semester content
@@ -497,6 +616,449 @@
         activeTab.classList.add('border-blue-500', 'text-blue-600');
         
         console.log(`Switched to ${semester} semester`);
+    }
+
+    // Course Students Modal Functions
+    function openCourseStudents(assignedCourseId, courseName) {
+        currentAssignedCourseId = assignedCourseId;
+        
+        // Add modal class to body for backdrop effects
+        document.body.classList.add('course-modal-open');
+        document.body.style.overflow = 'hidden';
+        
+        // Show modal and start animation immediately
+        const modal = document.getElementById('courseStudentsModal');
+        const modalContent = document.getElementById('courseStudentsModalContent');
+        
+        modal.classList.remove('hidden');
+        
+        // Use requestAnimationFrame for smooth immediate animation
+        requestAnimationFrame(() => {
+            modalContent.classList.remove('scale-95', 'opacity-0');
+            modalContent.classList.add('scale-100', 'opacity-100');
+        });
+        
+        // Reset modal state
+        document.getElementById('modalLoadingState').classList.remove('hidden');
+        document.getElementById('modalErrorState').classList.add('hidden');
+        document.getElementById('modalContentState').classList.add('hidden');
+        
+        // Set course title
+        document.getElementById('modalCourseTitle').textContent = courseName;
+        
+        // Load course students
+        loadCourseStudents(assignedCourseId);
+    }
+
+    function closeCourseStudentsModal() {
+        // Remove modal class from body
+        document.body.classList.remove('course-modal-open');
+        document.body.style.overflow = 'auto';
+        
+        // Start exit animation
+        const modalContent = document.getElementById('courseStudentsModalContent');
+        modalContent.classList.remove('scale-100', 'opacity-100');
+        modalContent.classList.add('scale-95', 'opacity-0');
+        
+        // Hide modal after shorter animation
+        setTimeout(() => {
+            document.getElementById('courseStudentsModal').classList.add('hidden');
+        }, 150);
+        
+        // Reset variables
+        currentAssignedCourseId = null;
+        courseStudentsData = null;
+        filteredStudents = [];
+    }
+
+    function reloadCourseStudents() {
+        if (currentAssignedCourseId) {
+            document.getElementById('modalErrorState').classList.add('hidden');
+            document.getElementById('modalLoadingState').classList.remove('hidden');
+            loadCourseStudents(currentAssignedCourseId);
+        }
+    }
+
+    async function loadCourseStudents(assignedCourseId) {
+        try {
+            const response = await fetch(`/Student/Courses/${assignedCourseId}/Students`);
+            const data = await response.json();
+            
+            if (data.success) {
+                courseStudentsData = data;
+                displayCourseStudents(data);
+            } else {
+                showErrorState(data.message || 'Failed to load course students');
+            }
+        } catch (error) {
+            console.error('Error loading course students:', error);
+            showErrorState('Network error occurred while loading students');
+        }
+    }
+
+    function showErrorState(message) {
+        document.getElementById('modalLoadingState').classList.add('hidden');
+        document.getElementById('modalContentState').classList.add('hidden');
+        document.getElementById('modalErrorState').classList.remove('hidden');
+        document.getElementById('modalErrorMessage').textContent = message;
+    }
+
+    function displayCourseStudents(data) {
+        // Hide loading state
+        document.getElementById('modalLoadingState').classList.add('hidden');
+        document.getElementById('modalErrorState').classList.add('hidden');
+        document.getElementById('modalContentState').classList.remove('hidden');
+        
+        // Update course info
+        if (data.course_info) {
+            const courseInfo = `${data.course_info.courseCode} • ${data.course_info.facultyName} • ${data.course_info.academicYear} ${data.course_info.semester}`;
+            document.getElementById('modalCourseInfo').textContent = courseInfo;
+        }
+        
+        // Update summary cards
+        document.getElementById('totalStudentsCount').textContent = data.total_students || 0;
+        document.getElementById('enrolledCount').textContent = data.enrollment_summary?.approved || 0;
+        document.getElementById('pendingCount').textContent = data.enrollment_summary?.pending || 0;
+        
+        if (data.attendance_summary) {
+            document.getElementById('avgAttendance').textContent = 
+                Math.round(data.attendance_summary.averageAttendancePercentage || 0) + '%';
+        }
+        
+        // Store all students for filtering
+        filteredStudents = data.students || [];
+        
+        // Apply initial filters and display
+        applyFilters();
+    }
+
+    function applyFilters() {
+        const searchTerm = document.getElementById('studentSearchInput').value.toLowerCase();
+        const sortBy = document.getElementById('sortSelect').value;
+        
+        let filtered = courseStudentsData.students || [];
+        
+        // Apply search filter
+        if (searchTerm) {
+            filtered = filtered.filter(student => 
+                student.name.toLowerCase().includes(searchTerm) ||
+                student.studentNumber.toLowerCase().includes(searchTerm) ||
+                student.email.toLowerCase().includes(searchTerm)
+            );
+        }
+        
+        // Apply sorting
+        filtered = sortStudents(filtered, sortBy);
+        
+        filteredStudents = filtered;
+        displayStudentsList();
+        updateClearButtonState();
+    }
+    
+    function sortStudents(students, sortBy) {
+        return students.sort((a, b) => {
+            switch (sortBy) {
+                case 'name-asc':
+                    return a.name.localeCompare(b.name);
+                case 'name-desc':
+                    return b.name.localeCompare(a.name);
+                case 'attendance-desc':
+                    return b.attendancePercentage - a.attendancePercentage;
+                case 'attendance-asc':
+                    return a.attendancePercentage - b.attendancePercentage;
+                case 'present-desc':
+                    return b.presentCount - a.presentCount;
+                case 'status-asc':
+                    const statusOrder = { 'approved': 1, 'pending': 2, 'rejected': 3 };
+                    return (statusOrder[a.enrollmentStatus] || 4) - (statusOrder[b.enrollmentStatus] || 4);
+                case 'latest-desc':
+                    if (!a.latestAttendanceDate && !b.latestAttendanceDate) return 0;
+                    if (!a.latestAttendanceDate) return 1;
+                    if (!b.latestAttendanceDate) return -1;
+                    return new Date(b.latestAttendanceDate) - new Date(a.latestAttendanceDate);
+                default:
+                    return 0;
+            }
+        });
+    }
+
+    function quickFilter(filterType) {
+        // Update UI for active quick filter
+        document.querySelectorAll('.quick-filter-pill').forEach(pill => {
+            pill.classList.remove('active', 'bg-blue-100', 'text-blue-700', 'border-blue-200');
+            pill.classList.add('bg-gray-100', 'text-gray-600', 'border-gray-200');
+        });
+        
+        const activePill = document.getElementById(`quickFilter-${filterType}`);
+        if (activePill) {
+            activePill.classList.remove('bg-gray-100', 'text-gray-600', 'border-gray-200');
+            activePill.classList.add('active', 'bg-blue-100', 'text-blue-700', 'border-blue-200');
+        }
+        
+        // Apply the filter
+        let filtered = courseStudentsData.students || [];
+        
+        switch (filterType) {
+            case 'all':
+                // No additional filtering
+                break;
+            case 'approved':
+                filtered = filtered.filter(student => student.enrollmentStatus === 'approved');
+                break;
+            case 'pending':
+                filtered = filtered.filter(student => student.enrollmentStatus === 'pending');
+                break;
+            case 'high-attendance':
+                filtered = filtered.filter(student => student.attendancePercentage >= 80);
+                break;
+            case 'low-attendance':
+                filtered = filtered.filter(student => student.attendancePercentage < 60);
+                break;
+        }
+        
+        // Also apply search term if exists
+        const searchTerm = document.getElementById('studentSearchInput').value.toLowerCase();
+        if (searchTerm) {
+            filtered = filtered.filter(student => 
+                student.name.toLowerCase().includes(searchTerm) ||
+                student.studentNumber.toLowerCase().includes(searchTerm) ||
+                student.email.toLowerCase().includes(searchTerm)
+            );
+        }
+        
+        // Apply current sort
+        const sortBy = document.getElementById('sortSelect').value;
+        filtered = sortStudents(filtered, sortBy);
+        
+        filteredStudents = filtered;
+        displayStudentsList();
+        updateClearButtonState();
+    }
+    
+    function clearAllFilters() {
+        document.getElementById('studentSearchInput').value = '';
+        document.getElementById('sortSelect').value = 'name-asc';
+        
+        // Reset quick filter pills
+        quickFilter('all');
+        
+        applyFilters();
+    }
+    
+    function updateClearButtonState() {
+        const clearBtn = document.getElementById('clearFiltersBtn');
+        const searchTerm = document.getElementById('studentSearchInput').value;
+        const sortBy = document.getElementById('sortSelect').value;
+        const activeQuickFilter = document.querySelector('.quick-filter-pill.active')?.id;
+        
+        // Check if any filters are active
+        const hasActiveFilters = searchTerm || 
+                                sortBy !== 'name-asc' || 
+                                activeQuickFilter !== 'quickFilter-all';
+        
+        if (hasActiveFilters) {
+            clearBtn.classList.remove('opacity-50', 'text-gray-400');
+            clearBtn.classList.add('opacity-100', 'text-red-500', 'clear-btn-active');
+        } else {
+            clearBtn.classList.remove('opacity-100', 'text-red-500', 'clear-btn-active');
+            clearBtn.classList.add('opacity-50', 'text-gray-400');
+        }
+    }
+
+    // Add entrance animations
+    document.addEventListener('DOMContentLoaded', function() {
+        const cards = document.querySelectorAll('.dashboard-card-entrance');
+        cards.forEach((card, index) => {
+            card.style.animationDelay = `${index * 0.1}s`;
+        });
+        
+        // Initialize with first available semester
+        const firstTab = document.querySelector('.semester-tab');
+        if (firstTab) {
+            const semester = firstTab.id.replace('tab-', '');
+            showSemester(semester);
+        }
+        
+        // Auto-filter when dropdown changes
+        const yearFilter = document.getElementById('academicYearFilter');
+        if (yearFilter) {
+            yearFilter.addEventListener('change', filterPreviousCourses);
+        }
+        
+        // Setup modal search, filter, and sort event listeners
+        const studentSearchInput = document.getElementById('studentSearchInput');
+        const sortSelect = document.getElementById('sortSelect');
+        
+        if (studentSearchInput) {
+            studentSearchInput.addEventListener('input', applyFilters);
+        }
+        
+        if (sortSelect) {
+            sortSelect.addEventListener('change', applyFilters);
+        }
+        
+        // Close modal on escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                // Close course students modal if open
+                if (!document.getElementById('courseStudentsModal').classList.contains('hidden')) {
+                    closeCourseStudentsModal();
+                    return;
+                }
+                
+                // Close mobile sidebar if open
+                const overlay = document.getElementById('mobile-sidebar-overlay');
+                if (overlay && !overlay.classList.contains('hidden')) {
+                    closeMobileSidebar();
+                }
+            }
+        });
+        
+        // Close modal when clicking outside - prevent event bubbling
+        document.getElementById('courseStudentsModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                e.stopPropagation();
+                closeCourseStudentsModal();
+            }
+        });
+        
+        // Prevent clicks on modal content from closing modal
+        const modalContent = document.querySelector('#courseStudentsModal .bg-white');
+        if (modalContent) {
+            modalContent.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+        }
+        
+        // Make course cards focusable for accessibility
+        const courseCards = document.querySelectorAll('.course-card');
+        courseCards.forEach(card => {
+            card.setAttribute('tabindex', '0');
+            card.setAttribute('role', 'button');
+            card.setAttribute('aria-label', 'View course students');
+        });
+        
+        console.log('Courses page loaded successfully!');
+    });
+
+    // Add keyboard navigation support
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+            const focusedElement = document.activeElement;
+            if (focusedElement.classList.contains('course-card')) {
+                e.preventDefault();
+                focusedElement.click();
+            }
+        }
+    });
+    
+    function getLatestAttendanceInfo(student) {
+        if (!student.latestAttendanceDate) {
+            return '<div class="text-sm text-gray-400">No attendance yet</div>';
+        }
+        
+        const date = new Date(student.latestAttendanceDate);
+        const formattedDate = date.toLocaleDateString('en-US', { 
+            month: 'short', 
+            day: 'numeric',
+            year: date.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
+        });
+        
+        const statusColors = {
+            'present': 'text-green-600',
+            'absent': 'text-red-600',
+            'late': 'text-yellow-600'
+        };
+        
+        const statusColor = statusColors[student.latestAttendanceStatus?.toLowerCase()] || 'text-gray-600';
+        
+        return `
+            <div class="text-sm ${statusColor} font-medium capitalize">${student.latestAttendanceStatus || 'N/A'}</div>
+            <div class="text-xs text-gray-500">${formattedDate}</div>
+        `;
+    }
+    
+    function displayStudentsList() {
+        const studentsTable = document.getElementById('studentsTable');
+        const studentsTableBody = document.getElementById('studentsTableBody');
+        const emptyState = document.getElementById('emptyStudentsState');
+        
+        if (!studentsTable || !studentsTableBody || !emptyState) {
+            console.error('Required DOM elements not found for student list display');
+            return;
+        }
+        
+        if (filteredStudents.length === 0) {
+            studentsTable.classList.add('hidden');
+            emptyState.classList.remove('hidden');
+            return;
+        }
+        
+        emptyState.classList.add('hidden');
+        studentsTable.classList.remove('hidden');
+        
+        const studentsHTML = filteredStudents.map(student => {
+            const statusBadge = getStudentStatusBadge(student.enrollmentStatus);
+            const attendanceColor = getAttendanceColor(student.attendancePercentage);
+            const latestAttendanceInfo = getLatestAttendanceInfo(student);
+            
+            return `
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-4 py-3">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mr-3">
+                                <span class="text-white font-semibold text-xs">${student.name.split(' ').map(n => n[0]).join('').substring(0, 2)}</span>
+                            </div>
+                            <div>
+                                <div class="font-medium text-gray-900">${student.name}</div>
+                                <div class="text-sm text-gray-500">${student.studentNumber}</div>
+                                <div class="text-xs text-gray-400">${student.email}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-4 py-3">
+                        <div class="text-sm font-medium text-green-600">${student.presentCount}</div>
+                        <div class="text-xs text-gray-500">${student.totalAttendanceSessions > 0 ? ((student.presentCount / student.totalAttendanceSessions) * 100).toFixed(1) + '%' : '0%'}</div>
+                    </td>
+                    <td class="px-4 py-3">
+                        <div class="text-sm font-medium text-yellow-600">${student.lateCount}</div>
+                        <div class="text-xs text-gray-500">${student.totalAttendanceSessions > 0 ? ((student.lateCount / student.totalAttendanceSessions) * 100).toFixed(1) + '%' : '0%'}</div>
+                    </td>
+                    <td class="px-4 py-3">
+                        <div class="text-sm font-medium text-red-600">${student.absentCount}</div>
+                        <div class="text-xs text-gray-500">${student.totalAttendanceSessions > 0 ? ((student.absentCount / student.totalAttendanceSessions) * 100).toFixed(1) + '%' : '0%'}</div>
+                    </td>
+                    <td class="px-4 py-3">
+                        ${latestAttendanceInfo}
+                    </td>
+                    <td class="px-4 py-3">
+                        ${statusBadge}
+                        ${student.rejectionReason ? `
+                            <div class="mt-1 text-xs text-red-600">
+                                <i class="fas fa-info-circle mr-1"></i>${student.rejectionReason}
+                            </div>
+                        ` : ''}
+                    </td>
+                </tr>
+            `;
+        }).join('');
+        
+        studentsTableBody.innerHTML = studentsHTML;
+    }
+
+    function getStudentStatusBadge(status) {
+        const badges = {
+            'approved': '<span class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">Enrolled</span>',
+            'pending': '<span class="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded-full">Pending</span>',
+            'rejected': '<span class="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded-full">Rejected</span>',
+        };
+        return badges[status] || '<span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded-full">Unknown</span>';
+    }
+
+    function getAttendanceColor(percentage) {
+        if (percentage >= 80) return 'text-green-600';
+        if (percentage >= 60) return 'text-yellow-600';
+        return 'text-red-600';
     }
 
     // Previous courses filter functionality
@@ -527,45 +1089,46 @@
         filterPreviousCourses();
     }
 
-    // Add entrance animations
-    document.addEventListener('DOMContentLoaded', function() {
-        const cards = document.querySelectorAll('.dashboard-card-entrance');
-        cards.forEach((card, index) => {
-            card.style.animationDelay = `${index * 0.1}s`;
-        });
-        
-        // Initialize with first available semester
-        const firstTab = document.querySelector('.semester-tab');
-        if (firstTab) {
-            const semester = firstTab.id.replace('tab-', '');
-            showSemester(semester);
+    // Add the missing export function
+    function exportStudentsData() {
+        if (!filteredStudents || filteredStudents.length === 0) {
+            alert('No student data to export.');
+            return;
         }
         
-        // Auto-filter when dropdown changes
-        const yearFilter = document.getElementById('academicYearFilter');
-        if (yearFilter) {
-            yearFilter.addEventListener('change', filterPreviousCourses);
+        try {
+            // Create CSV content
+            const headers = ['Name', 'Student Number', 'Email', 'Status', 'Present', 'Late', 'Absent', 'Attendance %', 'Latest Attendance'];
+            const csvContent = [
+                headers.join(','),
+                ...filteredStudents.map(student => [
+                    `"${student.name}"`,
+                    `"${student.studentNumber}"`,
+                    `"${student.email}"`,
+                    `"${student.enrollmentStatus}"`,
+                    student.presentCount,
+                    student.lateCount,
+                    student.absentCount,
+                    student.attendancePercentage.toFixed(1) + '%',
+                    `"${student.latestAttendanceStatus || 'N/A'}"`
+                ].join(','))
+            ].join('\n');
+            
+            // Download CSV
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `course_students_${Date.now()}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            console.log('Student data exported successfully');
+        } catch (error) {
+            console.error('Export failed:', error);
+            alert('Export failed. Please try again.');
         }
-        
-        // Make course cards focusable for accessibility
-        const courseCards = document.querySelectorAll('.course-card');
-        courseCards.forEach(card => {
-            card.setAttribute('tabindex', '0');
-            card.setAttribute('role', 'button');
-            card.setAttribute('aria-label', 'View course details');
-        });
-        
-        console.log('Courses page loaded successfully!');
-    });
-
-    // Add keyboard navigation support
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter' || e.key === ' ') {
-            const focusedElement = document.activeElement;
-            if (focusedElement.classList.contains('course-card')) {
-                e.preventDefault();
-                focusedElement.click();
-            }
-        }
-    });
+    }
 </script>

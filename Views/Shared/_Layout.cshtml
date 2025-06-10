@@ -154,25 +154,35 @@
             filter: blur(4px);
             opacity: 0.6;
             transition: all 0.3s ease-out;
+            pointer-events: none;
         }
         
         .onboarding-modal-open #dashboardNavbar {
             filter: blur(4px);
             opacity: 0.6;
             transition: all 0.3s ease-out;
+            pointer-events: none;
         }
         
         .onboarding-modal-open #dashboardMain {
             filter: blur(4px);
             opacity: 0.6;
             transition: all 0.3s ease-out;
+            pointer-events: none;
         }
         
-        /* Ensure modal is always on top and never blurred */
+        /* Ensure modals are always on top and never blurred */
         #onboardingModal {
             z-index: 9999 !important;
             filter: none !important;
             backdrop-filter: blur(8px) !important;
+        }
+        
+        #courseStudentsModal {
+            z-index: 9998 !important;
+            filter: none !important;
+            backdrop-filter: blur(8px) !important;
+            pointer-events: auto !important;
         }
         
         /* Layout z-index management */
@@ -187,11 +197,20 @@
         .dashboard-main {
             z-index: 5;
         }
+        
+        /* Mobile sidebar z-index when modal is open */
+        .modal-open #mobile-sidebar-overlay {
+            z-index: 1 !important;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body class="bg-gray-50">
     <!-- Onboarding Modal - OUTSIDE dashboard container to avoid blur effects -->
     @await Html.PartialAsync("_OnboardingModal")
+    
+    <!-- Course Students Modal - OUTSIDE dashboard container to avoid blur effects -->
+    @await Html.PartialAsync("_CourseStudentsModal")
     
     <div id="dashboardContainer" class="flex h-screen dashboard-entrance">
         <!-- Sidebar - Hidden on mobile by default -->

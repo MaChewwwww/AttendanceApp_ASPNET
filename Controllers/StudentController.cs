@@ -273,5 +273,37 @@ namespace AttendanceApp_ASPNET.Controllers
                 return View(new CourseDetailsResult { Success = false, Message = "System error occurred" });
             }
         }
+
+        [HttpGet]
+        [Route("Student/Courses/{assignedCourseId:int}/Students")]
+        public async Task<IActionResult> GetCourseStudents(int assignedCourseId)
+        {
+            try
+            {
+                var jwtToken = HttpContext.Session.GetString("AuthToken");
+                if (string.IsNullOrEmpty(jwtToken))
+                {
+                    return Json(new { success = false, message = "Authentication required. Please log in again." });
+                }
+
+                var courseStudents = await _courseService.GetCourseStudentsAsync(assignedCourseId, jwtToken);
+                
+                return Json(new
+                {
+                    success = courseStudents.Success,
+                    message = courseStudents.Message,
+                    course_info = courseStudents.CourseInfo,
+                    students = courseStudents.Students,
+                    total_students = courseStudents.TotalStudents,
+                    enrollment_summary = courseStudents.EnrollmentSummary,
+                    attendance_summary = courseStudents.AttendanceSummary
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading course students for assigned course {assignedCourseId}: {ex.Message}");
+                return Json(new { success = false, message = "Unable to load course students at this time. Please try again later." });
+            }
+        }
     }
 }

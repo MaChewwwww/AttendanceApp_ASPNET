@@ -212,6 +212,78 @@ namespace AttendanceApp_ASPNET.Services
             }
         }
 
+        public async Task<CourseStudentsResult> GetCourseStudentsAsync(int assignedCourseId, string jwtToken)
+        {
+            try
+            {
+                Console.WriteLine($"CourseService: Fetching students for assigned course {assignedCourseId}");
+                var result = await _apiService.GetCourseStudentsAsync(assignedCourseId, jwtToken);
+                var apiResponse = JsonSerializer.Deserialize<JsonElement>(result);
+
+                if (apiResponse.TryGetProperty("success", out var successProperty) && 
+                    successProperty.GetBoolean())
+                {
+                    var courseStudents = new CourseStudentsResult
+                    {
+                        Success = true,
+                        Message = apiResponse.TryGetProperty("message", out var msgProp) ? 
+                                  msgProp.GetString() ?? "Course students loaded successfully" : 
+                                  "Course students loaded successfully"
+                    };
+
+                    // Parse course info
+                    if (apiResponse.TryGetProperty("course_info", out var courseInfoProp))
+                    {
+                        courseStudents.CourseInfo = ParseSingleCourse(courseInfoProp);
+                    }
+
+                    // Parse students
+                    if (apiResponse.TryGetProperty("students", out var studentsProp))
+                    {
+                        courseStudents.Students = ParseCourseStudents(studentsProp);
+                    }
+
+                    // Parse totals and summaries
+                    if (apiResponse.TryGetProperty("total_students", out var totalStudentsProp))
+                    {
+                        courseStudents.TotalStudents = totalStudentsProp.GetInt32();
+                    }
+
+                    if (apiResponse.TryGetProperty("enrollment_summary", out var enrollmentSummaryProp))
+                    {
+                        courseStudents.EnrollmentSummary = ParseEnrollmentSummary(enrollmentSummaryProp);
+                    }
+
+                    if (apiResponse.TryGetProperty("attendance_summary", out var attendanceSummaryProp))
+                    {
+                        courseStudents.AttendanceSummary = ParseAttendanceSummary(attendanceSummaryProp);
+                    }
+
+                    Console.WriteLine($"CourseService: Successfully loaded {courseStudents.Students.Count} students");
+                    return courseStudents;
+                }
+                else
+                {
+                    return new CourseStudentsResult
+                    {
+                        Success = false,
+                        Message = apiResponse.TryGetProperty("message", out var msgProp) ? 
+                                  msgProp.GetString() ?? "Failed to load course students" : 
+                                  "Failed to load course students"
+                    };
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error fetching course students for assigned course {assignedCourseId}: {ex.Message}");
+                return new CourseStudentsResult
+                {
+                    Success = false,
+                    Message = "Unable to load course students at this time. Please try again later."
+                };
+            }
+        }
+
         private StudentInfo? ParseStudentInfo(JsonElement studentInfoElement)
         {
             try
@@ -307,6 +379,72 @@ namespace AttendanceApp_ASPNET.Services
             }
 
             return summary;
+        }
+
+        private List<CourseStudentInfo> ParseCourseStudents(JsonElement studentsElement)
+        {
+            var students = new List<CourseStudentInfo>();
+
+            if (studentsElement.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var studentElement in studentsElement.EnumerateArray())
+                {
+                    var student = ParseSingleCourseStudent(studentElement);
+                    if (student != null)
+                    {
+                        students.Add(student);
+                    }
+                }
+            }
+
+            return students;
+        }
+
+        private CourseStudentInfo? ParseSingleCourseStudent(JsonElement studentElement)
+        {
+            try
+            {
+                return new CourseStudentInfo
+                {
+                    StudentId = studentElement.TryGetProperty("student_id", out var studentIdProp) ? studentIdProp.GetInt32() : 0,
+                    UserId = studentElement.TryGetProperty("user_id", out var userIdProp) ? userIdProp.GetInt32() : 0,
+                    StudentNumber = studentElement.TryGetProperty("student_number", out var studentNumberProp) ? studentNumberProp.GetString() ?? "" : "",
+                    Name = studentElement.TryGetProperty("name", out var nameProp) ? nameProp.GetString() ?? "" : "",
+                    Email = studentElement.TryGetProperty("email", out var emailProp) ? emailProp.GetString() ?? "" : "",
+                    EnrollmentStatus = studentElement.TryGetProperty("enrollment_status", out var enrollmentStatusProp) ? enrollmentStatusProp.GetString() ?? "" : "",
+                    RejectionReason = studentElement.TryGetProperty("rejection_reason", out var rejectionReasonProp) && rejectionReasonProp.ValueKind != JsonValueKind.Null ? rejectionReasonProp.GetString() : null,
+                    EnrollmentCreatedAt = studentElement.TryGetProperty("enrollment_created_at", out var enrollmentCreatedAtProp) && enrollmentCreatedAtProp.ValueKind != JsonValueKind.Null ? enrollmentCreatedAtProp.GetString() : null,
+                    EnrollmentUpdatedAt = studentElement.TryGetProperty("enrollment_updated_at", out var enrollmentUpdatedAtProp) && enrollmentUpdatedAtProp.ValueKind != JsonValueKind.Null ? enrollmentUpdatedAtProp.GetString() : null,
+                    LatestAttendanceDate = studentElement.TryGetProperty("latest_attendance_date", out var latestAttendanceDateProp) && latestAttendanceDateProp.ValueKind != JsonValueKind.Null ? latestAttendanceDateProp.GetString() : null,
+                    LatestAttendanceStatus = studentElement.TryGetProperty("latest_attendance_status", out var latestAttendanceStatusProp) && latestAttendanceStatusProp.ValueKind != JsonValueKind.Null ? latestAttendanceStatusProp.GetString() : null,
+                    TotalAttendanceSessions = studentElement.TryGetProperty("total_attendance_sessions", out var totalAttendanceSessionsProp) ? totalAttendanceSessionsProp.GetInt32() : 0,
+                    PresentCount = studentElement.TryGetProperty("present_count", out var presentCountProp) ? presentCountProp.GetInt32() : 0,
+                    AbsentCount = studentElement.TryGetProperty("absent_count", out var absentCountProp) ? absentCountProp.GetInt32() : 0,
+                    LateCount = studentElement.TryGetProperty("late_count", out var lateCountProp) ? lateCountProp.GetInt32() : 0,
+                    AttendancePercentage = studentElement.TryGetProperty("attendance_percentage", out var attendancePercentageProp) ? attendancePercentageProp.GetDouble() : 0.0
+                };
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private AttendanceSummary? ParseAttendanceSummary(JsonElement attendanceSummaryElement)
+        {
+            try
+            {
+                return new AttendanceSummary
+                {
+                    TotalSessions = attendanceSummaryElement.TryGetProperty("total_sessions", out var totalSessionsProp) ? totalSessionsProp.GetInt32() : 0,
+                    StudentsWithAttendance = attendanceSummaryElement.TryGetProperty("students_with_attendance", out var studentsWithAttendanceProp) ? studentsWithAttendanceProp.GetInt32() : 0,
+                    AverageAttendancePercentage = attendanceSummaryElement.TryGetProperty("average_attendance_percentage", out var averageAttendancePercentageProp) ? averageAttendancePercentageProp.GetDouble() : 0.0
+                };
+            }
+            catch
+            {
+                return null;
+            }
         }
     }
 }
