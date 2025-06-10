@@ -24,17 +24,29 @@
         <div class="flex items-center justify-between">
             <div>
                 <h1 class="text-3xl font-bold text-gray-900 dashboard-card-entrance">My Courses</h1>
-                <p class="text-gray-600 mt-2 dashboard-card-entrance">Manage your enrolled courses and track attendance</p>
-            </div>
-            <div class="text-right dashboard-card-entrance">
-                <div class="text-sm text-gray-500">Academic Year 2024-2025</div>
-                <div class="text-sm text-blue-600 font-medium">
-                    @{
-                        var sectionName = ViewBag.StudentInfo?.SectionName ?? "No Section Assigned";
+                <p class="text-gray-600 mt-2 dashboard-card-entrance">
+                    @if (Model?.StudentInfo?.IsGraduated == true)
+                    {
+                        @:View your complete academic history and course records
                     }
-                    @sectionName
-                </div>
+                    else
+                    {
+                        @:Manage your enrolled courses and track attendance
+                    }
+                </p>
             </div>
+            @if (Model?.StudentInfo?.IsGraduated != true)
+            {
+                <div class="text-right dashboard-card-entrance">
+                    <div class="text-sm text-gray-500">Academic Year 2024-2025</div>
+                    <div class="text-sm text-blue-600 font-medium">
+                        @{
+                            var sectionName = ViewBag.StudentInfo?.SectionName ?? "No Section Assigned";
+                        }
+                        @sectionName
+                    </div>
+                </div>
+            }
         </div>
     </div>
 
