@@ -43,6 +43,7 @@ namespace AttendanceApp_ASPNET.Services
         public double? MaxTemperature { get; set; }
         public double? MinTemperature { get; set; }
         public double? AvgTemperature { get; set; }
+        public double? MaxFeelsLike { get; set; }
         public int? RainChance { get; set; }
     }
 }

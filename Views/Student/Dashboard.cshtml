@@ -182,20 +182,22 @@
     @if (ViewBag.WeatherDataAvailable == true)
     {
         <div class="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow duration-200 dashboard-card-entrance">
-            <div class="flex items-center mb-4">
-                <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                    <i class="fas fa-thermometer-half text-orange-600 text-xl"></i>
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-thermometer-half text-orange-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-lg font-semibold text-gray-900">Temperature Forecast</h3>
+                        <p class="text-gray-500 text-sm">@ViewBag.WeatherLocation</p>
+                    </div>
                 </div>
-                <div class="ml-4">
-                    <h3 class="text-lg font-semibold text-gray-900">Temperature Forecast</h3>
-                    <p class="text-gray-500 text-sm">@ViewBag.WeatherLocation</p>
+                <div class="text-right">
+                    <div class="text-orange-600 text-sm font-medium">Feels like now</div>
+                    <div class="text-2xl font-bold text-orange-600">@ViewBag.HeatIndex°C</div>
                 </div>
             </div>
             <div class="space-y-2">
-                <div class="flex justify-between items-center">
-                    <span class="text-sm text-gray-600">Feels like:</span>
-                    <span class="text-2xl font-bold text-orange-600">@ViewBag.HeatIndex°C</span>
-                </div>
                 <div class="flex justify-between items-center">
                     <span class="text-sm text-gray-600">Current:</span>
                     <span class="text-sm font-medium text-gray-900">@ViewBag.Temperature°C</span>
@@ -207,6 +209,10 @@
                 <div class="flex justify-between items-center">
                     <span class="text-sm text-gray-600">Low today:</span>
                     <span class="text-sm font-medium text-blue-600">@ViewBag.MinTemperature°C</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">Max feels like:</span>
+                    <span class="text-sm font-medium text-orange-600">@ViewBag.MaxFeelsLike°C</span>
                 </div>
                 <div class="flex justify-between items-center">
                     <span class="text-sm text-gray-600">Heat level:</span>

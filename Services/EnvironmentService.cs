@@ -236,6 +236,7 @@ namespace AttendanceApp_ASPNET.Services
                 controller.ViewBag.MaxTemperature = weatherData.MaxTemperature;
                 controller.ViewBag.MinTemperature = weatherData.MinTemperature;
                 controller.ViewBag.AvgTemperature = weatherData.AvgTemperature;
+                controller.ViewBag.MaxFeelsLike = weatherData.MaxFeelsLike;
                 controller.ViewBag.RainChance = weatherData.RainChance;
                 
                 if (weatherData.IsAvailable)
@@ -338,6 +339,24 @@ namespace AttendanceApp_ASPNET.Services
                     
                     if (day.TryGetProperty("daily_chance_of_rain", out var rainChance))
                         result.RainChance = rainChance.GetInt32();
+                }
+
+                // Extract hourly data to find max feels like temperature
+                if (todayForecast.TryGetProperty("hour", out var hourlyData) &&
+                    hourlyData.ValueKind == JsonValueKind.Array)
+                {
+                    double maxFeelsLike = 0;
+                    foreach (var hour in hourlyData.EnumerateArray())
+                    {
+                        if (hour.TryGetProperty("feelslike_c", out var hourFeelsLike))
+                        {
+                            var feelsLikeTemp = hourFeelsLike.GetDouble();
+                            if (feelsLikeTemp > maxFeelsLike)
+                                maxFeelsLike = feelsLikeTemp;
+                        }
+                    }
+                    if (maxFeelsLike > 0)
+                        result.MaxFeelsLike = Math.Round(maxFeelsLike, 1);
                 }
             }
 
