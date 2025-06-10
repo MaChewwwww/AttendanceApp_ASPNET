@@ -1,0 +1,153 @@
+@{
+    ViewData["Title"] = "Attendance History";
+}
+
+<div class="attendance-history-page">
+    <!-- Page Header -->
+    <div class="mb-8">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900 dashboard-card-entrance">Attendance History</h1>
+                <p class="text-gray-600 mt-2 dashboard-card-entrance">
+                    View your complete attendance records and track your progress
+                </p>
+            </div>
+            <div class="text-right dashboard-card-entrance">
+                <div class="text-sm text-gray-500">Academic Year 2024-2025</div>
+                <div class="text-sm text-blue-600 font-medium">
+                    @{
+                        var sectionName = ViewBag.StudentInfo?.SectionName ?? "No Section Assigned";
+                    }
+                    @sectionName
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Coming Soon Card -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 dashboard-card-entrance">
+        <div class="p-12 text-center">
+            <div class="w-24 h-24 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i class="fas fa-clipboard-list text-blue-500 text-3xl"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-900 mb-4">Attendance History</h3>
+            <p class="text-gray-600 mb-6 max-w-md mx-auto">
+                This feature is coming soon! You'll be able to view your complete attendance records, 
+                track your progress over time, and export your attendance reports.
+            </p>
+            <div class="space-y-3 text-sm text-gray-500 max-w-sm mx-auto">
+                <div class="flex items-center justify-center">
+                    <i class="fas fa-check text-green-500 mr-2"></i>
+                    <span>View daily attendance records</span>
+                </div>
+                <div class="flex items-center justify-center">
+                    <i class="fas fa-check text-green-500 mr-2"></i>
+                    <span>Track attendance patterns</span>
+                </div>
+                <div class="flex items-center justify-center">
+                    <i class="fas fa-check text-green-500 mr-2"></i>
+                    <span>Export attendance reports</span>
+                </div>
+                <div class="flex items-center justify-center">
+                    <i class="fas fa-check text-green-500 mr-2"></i>
+                    <span>View absence reasons</span>
+                </div>
+            </div>
+            <div class="mt-8">
+                <a href="/Student/Dashboard" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors duration-200 font-semibold inline-flex items-center">
+                    <i class="fas fa-arrow-left mr-2"></i>
+                    Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Future Feature Preview Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
+        <!-- Attendance Summary Card -->
+        <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border border-green-200 p-6 dashboard-card-entrance">
+            <div class="flex items-center mb-4">
+                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-chart-line text-green-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-semibold text-gray-900">Attendance Summary</h3>
+                    <p class="text-green-600 text-sm">Coming Soon</p>
+                </div>
+            </div>
+            <p class="text-sm text-gray-600">
+                View your overall attendance statistics, including present days, absences, and attendance percentage.
+            </p>
+        </div>
+
+        <!-- Calendar View Card -->
+        <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-6 dashboard-card-entrance">
+            <div class="flex items-center mb-4">
+                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-calendar-alt text-blue-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-semibold text-gray-900">Calendar View</h3>
+                    <p class="text-blue-600 text-sm">Coming Soon</p>
+                </div>
+            </div>
+            <p class="text-sm text-gray-600">
+                Interactive calendar showing your attendance patterns with color-coded days for easy visualization.
+            </p>
+        </div>
+
+        <!-- Detailed Reports Card -->
+        <div class="bg-gradient-to-br from-purple-50 to-violet-50 rounded-lg border border-purple-200 p-6 dashboard-card-entrance">
+            <div class="flex items-center mb-4">
+                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-file-export text-purple-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-semibold text-gray-900">Detailed Reports</h3>
+                    <p class="text-purple-600 text-sm">Coming Soon</p>
+                </div>
+            </div>
+            <p class="text-sm text-gray-600">
+                Generate and export detailed attendance reports in various formats for your records.
+            </p>
+        </div>
+    </div>
+</div>
+
+<style>
+    .dashboard-card-entrance {
+        animation: dashboardCardEntrance 0.6s ease-out forwards;
+        opacity: 0;
+    }
+    
+    @@keyframes dashboardCardEntrance {
+        0% { 
+            opacity: 0;
+            transform: translateY(30px) scale(0.9);
+        }
+        100% { 
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+    
+    /* Apply staggered delays */
+    .dashboard-card-entrance:nth-child(1) { animation-delay: 0.1s; }
+    .dashboard-card-entrance:nth-child(2) { animation-delay: 0.2s; }
+    .dashboard-card-entrance:nth-child(3) { animation-delay: 0.3s; }
+    .dashboard-card-entrance:nth-child(4) { animation-delay: 0.4s; }
+    .dashboard-card-entrance:nth-child(5) { animation-delay: 0.5s; }
+    .dashboard-card-entrance:nth-child(6) { animation-delay: 0.6s; }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add entrance animations to cards
+        const cards = document.querySelectorAll('.dashboard-card-entrance');
+        cards.forEach((card, index) => {
+            card.style.animationDelay = `${index * 0.1}s`;
+        });
+        
+        console.log('Attendance History page loaded successfully!');
+    });
+</script>

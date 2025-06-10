@@ -54,6 +54,14 @@ namespace AttendanceApp_ASPNET.Controllers
             return View();
         }
 
+        // Student attendance history page.
+        public IActionResult AttendanceHistory()
+        {
+            var studentInfo = _studentManagementService.GetCurrentStudentInfo(HttpContext);
+            ViewBag.StudentInfo = studentInfo;
+            return View();
+        }
+
         // Mark attendance using face recognition.
         public IActionResult MarkAttendance()
         {

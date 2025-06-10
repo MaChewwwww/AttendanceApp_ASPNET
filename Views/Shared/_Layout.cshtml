@@ -239,6 +239,7 @@
                     var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
                     var isDashboard = currentController == "Student" && currentAction == "Dashboard";
                     var isCourses = currentController == "Student" && currentAction == "Courses";
+                    var isAttendanceHistory = currentController == "Student" && currentAction == "AttendanceHistory";
                 }
                 
                 <a href="/Student/Dashboard" class="flex items-center px-6 py-3 @(isDashboard ? "text-gray-700 bg-blue-50 border-r-4 border-blue-600" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900") transition-colors duration-200">
@@ -251,9 +252,9 @@
                     <span class="@(isCourses ? "font-medium" : "")">Courses</span>
                 </a>
                 
-                <a href="#" class="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors duration-200">
+                <a href="/Student/AttendanceHistory" class="flex items-center px-6 py-3 @(isAttendanceHistory ? "text-gray-700 bg-blue-50 border-r-4 border-blue-600" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900") transition-colors duration-200">
                     <i class="fas fa-clipboard-list w-5 h-5 mr-3"></i>
-                    <span>Attendance Log</span>
+                    <span class="@(isAttendanceHistory ? "font-medium" : "")">Attendance History</span>
                 </a>
                 
                 <div class="border-t border-gray-200 mt-6 pt-6">
@@ -332,9 +333,9 @@
                     <span class="@(isCourses ? "font-medium" : "")">Courses</span>
                 </a>
                 
-                <a href="#" class="flex items-center px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors duration-200">
+                <a href="/Student/AttendanceHistory" class="flex items-center px-6 py-3 @(isAttendanceHistory ? "text-gray-700 bg-blue-50 border-r-4 border-blue-600" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900") transition-colors duration-200">
                     <i class="fas fa-clipboard-list w-5 h-5 mr-3"></i>
-                    <span>Attendance Log</span>
+                    <span class="@(isAttendanceHistory ? "font-medium" : "")">Attendance History</span>
                 </a>
                 
                 <div class="border-t border-gray-200 mt-6 pt-6">
