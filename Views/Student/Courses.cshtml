@@ -40,132 +40,232 @@
 
     @if (Model?.Success == true)
     {
-        <!-- Current Academic Year Courses Container -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-8 dashboard-card-entrance">
-            <div class="p-6 border-b border-gray-200">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h2 class="text-xl font-semibold text-gray-900">Current Academic Year 2024-2025</h2>
-                        <p class="text-sm text-gray-600 mt-1">Your enrolled courses for this academic year</p>
+        <!-- Graduation Status Alert -->
+        @if (Model.StudentInfo?.IsGraduated == true)
+        {
+            <div class="mb-6 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4 dashboard-card-entrance">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-graduation-cap text-green-500 text-xl"></i>
                     </div>
-                    <div class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-                        @Model.TotalCurrent Course@(Model.TotalCurrent != 1 ? "s" : "")
+                    <div class="ml-3">
+                        <h4 class="text-lg font-medium text-green-800">Congratulations! 🎓</h4>
+                        <p class="text-sm text-green-700 mt-1">
+                            You have graduated from your program. Below you can view your complete academic history and course records.
+                        </p>
                     </div>
                 </div>
             </div>
+        }
 
-            <!-- Semester Tabs with Dynamic Data -->
-            @{
-                var currentCoursesBySemester = Model.CurrentCourses.GroupBy(c => c.Semester).ToDictionary(g => g.Key, g => g.ToList());
-                var semesters = new[] { "1st", "2nd", "3rd", "Summer" };
-            }
-            <div class="border-b border-gray-200">
-                <nav class="flex space-x-8 px-6" aria-label="Semester Tabs">
+        <!-- Current Academic Year Courses Container -->
+        @if (!Model.StudentInfo?.IsGraduated == true && Model.CurrentCourses.Any())
+        {
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-8 dashboard-card-entrance">
+                <div class="p-6 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-xl font-semibold text-gray-900">Current Academic Year @(Model.StudentInfo?.CurrentAcademicYear ?? "2024-2025")</h2>
+                            <p class="text-sm text-gray-600 mt-1">Your enrolled courses for this academic year</p>
+                        </div>
+                        <div class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                            @Model.TotalCurrent Course@(Model.TotalCurrent != 1 ? "s" : "")
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Semester Tabs with Dynamic Data and Flexible Matching -->
+                @{
+                    // Create a more flexible semester grouping for current courses only
+                    var currentCoursesBySemester = new Dictionary<string, List<AttendanceApp_ASPNET.Services.CourseInfo>>();
+                    
+                    foreach (var course in Model.CurrentCourses.Where(c => c.CourseType == "current"))
+                    {
+                        var semester = course.Semester?.ToLower().Trim() ?? "";
+                        string normalizedSemester;
+                        
+                        // Normalize semester names to match our tab structure
+                        if (semester.Contains("1st") || semester.Contains("first") || semester == "1")
+                            normalizedSemester = "1st";
+                        else if (semester.Contains("2nd") || semester.Contains("second") || semester == "2")
+                            normalizedSemester = "2nd";
+                        else if (semester.Contains("3rd") || semester.Contains("third") || semester == "3")
+                            normalizedSemester = "3rd";
+                        else if (semester.Contains("summer") || semester.Contains("mid") || semester.Contains("mid-year"))
+                            normalizedSemester = "Summer";
+                        else
+                            normalizedSemester = "1st"; // Default fallback
+                        
+                        if (!currentCoursesBySemester.ContainsKey(normalizedSemester))
+                            currentCoursesBySemester[normalizedSemester] = new List<AttendanceApp_ASPNET.Services.CourseInfo>();
+                        
+                        currentCoursesBySemester[normalizedSemester].Add(course);
+                    }
+                    
+                    var semesters = new[] { "1st", "2nd", "3rd", "Summer" };
+                }
+
+                <div class="border-b border-gray-200">
+                    <nav class="flex space-x-8 px-6" aria-label="Semester Tabs">
+                        @foreach (var semester in semesters)
+                        {
+                            var courses = currentCoursesBySemester.ContainsKey(semester) ? currentCoursesBySemester[semester] : new List<AttendanceApp_ASPNET.Services.CourseInfo>();
+                            var isFirst = semester == semesters.First();
+                            
+                            <button onclick="showSemester('@semester')" id="tab-@semester" class="semester-tab @(isFirst ? "active-tab border-b-2 border-blue-500 text-blue-600" : "border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300") py-4 px-1 text-sm font-medium transition-all duration-200">
+                                @semester Semester
+                                <span class="ml-2 @(isFirst ? "bg-blue-100 text-blue-600" : "bg-gray-100 text-gray-600") text-xs px-2 py-0.5 rounded-full">@courses.Count</span>
+                            </button>
+                        }
+                    </nav>
+                </div>
+
+                <!-- Semester Content -->
+                <div class="p-6">
                     @foreach (var semester in semesters)
                     {
                         var courses = currentCoursesBySemester.ContainsKey(semester) ? currentCoursesBySemester[semester] : new List<AttendanceApp_ASPNET.Services.CourseInfo>();
                         var isFirst = semester == semesters.First();
                         
-                        <button onclick="showSemester('@semester')" id="tab-@semester" class="semester-tab @(isFirst ? "active-tab border-b-2 border-blue-500 text-blue-600" : "border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300") py-4 px-1 text-sm font-medium transition-all duration-200">
-                            @semester Semester
-                            <span class="ml-2 @(isFirst ? "bg-blue-100 text-blue-600" : "bg-gray-100 text-gray-600") text-xs px-2 py-0.5 rounded-full">@courses.Count</span>
-                        </button>
-                    }
-                </nav>
-            </div>
-
-            <!-- Semester Content -->
-            <div class="p-6">
-                @foreach (var semester in semesters)
-                {
-                    var courses = currentCoursesBySemester.ContainsKey(semester) ? currentCoursesBySemester[semester] : new List<AttendanceApp_ASPNET.Services.CourseInfo>();
-                    var isFirst = semester == semesters.First();
-                    
-                    <div id="content-@semester" class="semester-content @(isFirst ? "" : "hidden")">
-                        @if (courses.Any())
-                        {
-                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                @foreach (var course in courses)
-                                {
-                                    <div class="course-card bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-lg hover:border-blue-300 transition-all duration-300 cursor-pointer transform hover:scale-105" onclick="openCourse(@course.CourseId, '@Html.Raw(Html.Encode(course.CourseName))')">
-                                        <div class="flex items-start justify-between mb-3">
-                                            <div>
-                                                <h3 class="font-semibold text-gray-900 hover:text-blue-600 transition-colors">@course.CourseName</h3>
-                                                <p class="text-sm text-blue-600 font-medium">@course.CourseCode</p>
+                        <div id="content-@semester" class="semester-content @(isFirst ? "" : "hidden")">
+                            @if (courses.Any())
+                            {
+                                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                    @foreach (var course in courses)
+                                    {
+                                        <div class="course-card bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-lg hover:border-blue-300 transition-all duration-300 cursor-pointer transform hover:scale-105" onclick="openCourse(@course.CourseId, '@Html.Raw(Html.Encode(course.CourseName))')">
+                                            <div class="flex items-start justify-between mb-3">
+                                                <div>
+                                                    <h3 class="font-semibold text-gray-900 hover:text-blue-600 transition-colors">@course.CourseName</h3>
+                                                    <p class="text-sm text-blue-600 font-medium">@course.CourseCode</p>
+                                                </div>
+                                                <div class="flex items-center space-x-2">
+                                                    <span class="@GetStatusBadgeClass(course.EnrollmentStatus) text-xs font-medium px-2 py-1 rounded">
+                                                        @GetStatusDisplayText(course.EnrollmentStatus)
+                                                    </span>
+                                                    <i class="fas fa-arrow-right text-gray-400 text-sm hover:text-blue-500 transition-colors"></i>
+                                                </div>
                                             </div>
-                                            <div class="flex items-center space-x-2">
-                                                <span class="@GetStatusBadgeClass(course.EnrollmentStatus) text-xs font-medium px-2 py-1 rounded">
-                                                    @GetStatusDisplayText(course.EnrollmentStatus)
-                                                </span>
-                                                <i class="fas fa-arrow-right text-gray-400 text-sm hover:text-blue-500 transition-colors"></i>
+                                            <p class="text-sm text-gray-600 mb-3">@course.CourseDescription</p>
+                                            <div class="flex items-center justify-between text-sm text-gray-500">
+                                                <span><i class="fas fa-user-tie mr-1"></i>@course.FacultyName</span>
+                                                <span><i class="fas fa-door-open mr-1"></i>@(!string.IsNullOrEmpty(course.Room) ? course.Room : "TBA")</span>
+                                            </div>
+                                            <div class="mt-2 text-xs text-gray-500">
+                                                <span>@course.Semester • @course.AcademicYear</span>
+                                            </div>
+                                            <!-- Click indicator -->
+                                            <div class="mt-3 flex items-center justify-center text-xs text-gray-500 opacity-75">
+                                                <i class="fas fa-mouse-pointer mr-1"></i>
+                                                <span>Click to view details</span>
                                             </div>
                                         </div>
-                                        <p class="text-sm text-gray-600 mb-3">@course.CourseDescription</p>
-                                        <div class="flex items-center justify-between text-sm text-gray-500">
-                                            <span><i class="fas fa-user-tie mr-1"></i>@course.FacultyName</span>
-                                            <span><i class="fas fa-door-open mr-1"></i>@(!string.IsNullOrEmpty(course.Room) ? course.Room : "TBA")</span>
-                                        </div>
-                                        <div class="mt-2 text-xs text-gray-500">
-                                            <span>@course.Semester • @course.AcademicYear</span>
-                                        </div>
-                                        <!-- Click indicator -->
-                                        <div class="mt-3 flex items-center justify-center text-xs text-gray-500 opacity-75">
-                                            <i class="fas fa-mouse-pointer mr-1"></i>
-                                            <span>Click to view details</span>
-                                        </div>
-                                    </div>
-                                }
-                            </div>
-                        }
-                        else
-                        {
-                            <div class="text-center py-12">
-                                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <i class="fas fa-@(semester == "Summer" ? "sun" : "calendar-alt") text-gray-400 text-xl"></i>
+                                    }
                                 </div>
-                                <h3 class="text-lg font-medium text-gray-900 mb-2">@semester Semester</h3>
-                                <p class="text-gray-600">No courses enrolled for @semester.ToLower() semester.</p>
-                            </div>
-                        }
-                    </div>
-                }
+                            }
+                            else
+                            {
+                                <div class="text-center py-12">
+                                    <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <i class="fas fa-@(semester == "Summer" ? "sun" : "calendar-alt") text-gray-400 text-xl"></i>
+                                    </div>
+                                    <h3 class="text-lg font-medium text-gray-900 mb-2">@semester Semester</h3>
+                                    <p class="text-gray-600">No courses enrolled for @semester.ToLower() semester.</p>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
             </div>
-        </div>
+        }
+        else if (!Model.StudentInfo?.IsGraduated == true)
+        {
+            <!-- No Current Courses State for Active Students -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-8 dashboard-card-entrance">
+                <div class="p-6 text-center">
+                    <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-book-open text-blue-500 text-xl"></i>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">No Current Courses</h3>
+                    <p class="text-gray-600 mb-4">You are not currently enrolled in any courses for the current academic year.</p>
+                </div>
+            </div>
+        }
 
-        <!-- Previous Academic Years Container -->
+        <!-- Academic History Container -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 dashboard-card-entrance">
             <div class="p-6 border-b border-gray-200">
                 <div class="flex items-center justify-between">
                     <div>
-                        <h2 class="text-xl font-semibold text-gray-900">Previous Academic Years</h2>
-                        <p class="text-sm text-gray-600 mt-1">View your completed courses from previous years (@Model.TotalPrevious total)</p>
+                        <h2 class="text-xl font-semibold text-gray-900">
+                            @if (Model.StudentInfo?.IsGraduated == true)
+                            {
+                                @:Complete Academic History
+                            }
+                            else if (Model.CurrentCourses.Any())
+                            {
+                                @:Previous Academic Years
+                            }
+                            else
+                            {
+                                @:Academic History
+                            }
+                        </h2>
+                        <p class="text-sm text-gray-600 mt-1">
+                            @if (Model.StudentInfo?.IsGraduated == true)
+                            {
+                                @($"Your complete academic journey from {Model.StudentInfo?.StudentEnrollmentYear} onwards")
+                            }
+                            else if (Model.CurrentCourses.Any())
+                            {
+                                @($"Your completed courses from previous academic years")
+                            }
+                            else
+                            {
+                                @($"Your academic history and course records")
+                            }
+                        </p>
                     </div>
                     @if (Model.PreviousCourses.Any())
                     {
-                        <div class="relative">
-                            <!-- Modern Academic Year Filter -->
-                            <select id="academicYearFilter" class="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2.5 pr-10 text-sm font-medium text-gray-700 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 cursor-pointer shadow-sm min-w-[180px]">
-                                <option value="">All Previous Years</option>
-                                @{
-                                    var previousYears = Model.PreviousCourses.Select(c => c.AcademicYear).Distinct().OrderByDescending(y => y);
-                                }
-                                @foreach (var year in previousYears)
-                                {
-                                    <option value="@year">@year</option>
-                                }
-                            </select>
-                            <!-- Custom dropdown arrow -->
-                            <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                                </svg>
+                        <div class="flex flex-col items-end space-y-2">
+                            <!-- Total Previous Courses Badge -->
+                            <div class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                                @Model.TotalPrevious Course@(Model.TotalPrevious != 1 ? "s" : "")
+                            </div>
+                            
+                            <!-- Course Filter -->
+                            <div class="relative">
+                                <select id="academicYearFilter" class="appearance-none bg-white border border-gray-300 rounded-lg px-3 py-2 pr-8 text-sm font-medium text-gray-700 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 cursor-pointer shadow-sm min-w-[150px]">
+                                    @if (Model.StudentInfo?.IsGraduated == true || !Model.CurrentCourses.Any())
+                                    {
+                                        <option value="">All Academic Years</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="">All Previous Years</option>
+                                    }
+                                    @{
+                                        var allYears = Model.PreviousCourses.Select(c => c.AcademicYear).Distinct().OrderByDescending(y => y);
+                                    }
+                                    @foreach (var year in allYears)
+                                    {
+                                        <option value="@year">@year</option>
+                                    }
+                                </select>
+                                <!-- Custom dropdown arrow -->
+                                <div class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </div>
                             </div>
                         </div>
                     }
                 </div>
             </div>
 
-            <!-- Previous Courses Content -->
+            <!-- Academic History Content -->
             <div class="p-6" id="previousCoursesContent">
                 @if (Model.PreviousCourses.Any())
                 {
@@ -190,7 +290,7 @@
                                 <p class="text-sm text-gray-600 mb-3">@course.CourseDescription</p>
                                 <div class="flex items-center justify-between text-sm text-gray-500 mb-3">
                                     <span><i class="fas fa-user-tie mr-1"></i>@course.FacultyName</span>
-                                    <span><i class="fas fa-calendar mr-1"></i>@course.AcademicYear</span>
+                                    <span class="font-medium text-blue-600"><i class="fas fa-calendar mr-1"></i>@course.AcademicYear</span>
                                 </div>
                                 <div class="text-xs text-gray-500 mb-2">
                                     <span>@course.Semester • Room: @(!string.IsNullOrEmpty(course.Room) ? course.Room : "TBA")</span>
@@ -216,8 +316,8 @@
                         <div class="w-16 h-16 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
                             <i class="fas fa-history text-blue-500 text-xl"></i>
                         </div>
-                        <h3 class="text-lg font-medium text-gray-900 mb-2">No Previous Courses</h3>
-                        <p class="text-gray-600">You haven't taken any previous courses yet.</p>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">No Academic History</h3>
+                        <p class="text-gray-600">No courses found from previous academic years.</p>
                     </div>
                 }
             </div>
@@ -399,7 +499,7 @@
         console.log(`Switched to ${semester} semester`);
     }
 
-    // Previous courses filter functionality with real data
+    // Previous courses filter functionality
     function filterPreviousCourses() {
         const selectedYear = document.getElementById('academicYearFilter').value;
         const courseCards = document.querySelectorAll('#previousCoursesList .course-card');
@@ -416,21 +516,15 @@
         console.log(`Filtering courses for academic year: ${selectedYear || 'All'}`);
     }
 
-    // Course click functionality
-    function openCourse(courseId, courseName) {
-        console.log(`Opening course: ${courseName} (ID: ${courseId})`);
+    // Clear academic year filter
+    function clearAcademicYearFilter() {
+        const academicYearFilter = document.getElementById('academicYearFilter');
         
-        // Add loading state to clicked card
-        const clickedCard = event.currentTarget;
+        if (academicYearFilter) {
+            academicYearFilter.value = '';
+        }
         
-        // Show loading state
-        clickedCard.style.opacity = '0.7';
-        clickedCard.style.transform = 'scale(0.98)';
-        
-        // Navigate to course details page
-        setTimeout(() => {
-            window.location.href = `/Student/Courses/${courseId}`;
-        }, 300);
+        filterPreviousCourses();
     }
 
     // Add entrance animations

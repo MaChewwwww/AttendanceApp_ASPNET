@@ -15,7 +15,7 @@ namespace AttendanceApp_ASPNET.Services
         {
             try
             {
-                Console.WriteLine($"CourseService: Calling API to get student courses");
+                Console.WriteLine($"CourseService: Calling API to get student courses with revised academic year filtering");
                 var result = await _apiService.GetStudentCoursesAsync(jwtToken);
                 Console.WriteLine($"CourseService: Raw API response length: {result?.Length ?? 0}");
                 
@@ -43,42 +43,69 @@ namespace AttendanceApp_ASPNET.Services
                                   "Courses loaded successfully"
                     };
 
-                    // Parse student info
+                    // Parse student info with graduation status and enrollment year
                     if (apiResponse.TryGetProperty("student_info", out var studentInfoProp))
                     {
                         courseData.StudentInfo = ParseStudentInfo(studentInfoProp);
-                        Console.WriteLine($"CourseService: Parsed student info for user: {courseData.StudentInfo?.Name ?? "Unknown"}");
+                        Console.WriteLine($"CourseService: Parsed student info - Name: {courseData.StudentInfo?.Name ?? "Unknown"}, " +
+                                         $"Enrollment Year: {courseData.StudentInfo?.StudentEnrollmentYear}, " +
+                                         $"Is Graduated: {courseData.StudentInfo?.IsGraduated}, " +
+                                         $"Current Academic Year: {courseData.StudentInfo?.CurrentAcademicYear}");
                     }
 
-                    // Parse current courses
+                    // Parse current courses with detailed logging
                     if (apiResponse.TryGetProperty("current_courses", out var currentCoursesProp))
                     {
                         courseData.CurrentCourses = ParseCourses(currentCoursesProp);
                         Console.WriteLine($"CourseService: Parsed {courseData.CurrentCourses.Count} current courses");
+                        
+                        // Debug current courses by semester
+                        var currentBySemester = courseData.CurrentCourses.GroupBy(c => c.Semester);
+                        foreach (var semesterGroup in currentBySemester)
+                        {
+                            Console.WriteLine($"  Current - {semesterGroup.Key}: {semesterGroup.Count()} courses");
+                        }
                     }
 
-                    // Parse previous courses
+                    // Parse previous courses with detailed logging
                     if (apiResponse.TryGetProperty("previous_courses", out var previousCoursesProp))
                     {
                         courseData.PreviousCourses = ParseCourses(previousCoursesProp);
                         Console.WriteLine($"CourseService: Parsed {courseData.PreviousCourses.Count} previous courses");
+                        
+                        // Debug previous courses by academic year
+                        var previousByYear = courseData.PreviousCourses.GroupBy(c => c.AcademicYear);
+                        foreach (var yearGroup in previousByYear)
+                        {
+                            Console.WriteLine($"  Previous - {yearGroup.Key}: {yearGroup.Count()} courses");
+                        }
                     }
 
                     // Parse totals
                     if (apiResponse.TryGetProperty("total_current", out var totalCurrentProp))
                     {
                         courseData.TotalCurrent = totalCurrentProp.GetInt32();
+                        Console.WriteLine($"CourseService: Total current from API: {courseData.TotalCurrent}");
                     }
 
                     if (apiResponse.TryGetProperty("total_previous", out var totalPreviousProp))
                     {
                         courseData.TotalPrevious = totalPreviousProp.GetInt32();
+                        Console.WriteLine($"CourseService: Total previous from API: {courseData.TotalPrevious}");
                     }
 
                     // Parse enrollment summary
                     if (apiResponse.TryGetProperty("enrollment_summary", out var enrollmentSummaryProp))
                     {
                         courseData.EnrollmentSummary = ParseEnrollmentSummary(enrollmentSummaryProp);
+                        Console.WriteLine($"CourseService: Enrollment summary: {string.Join(", ", courseData.EnrollmentSummary.Select(kvp => $"{kvp.Key}: {kvp.Value}"))}");
+                    }
+
+                    // Parse academic year summary (new field)
+                    if (apiResponse.TryGetProperty("academic_year_summary", out var academicYearSummaryProp))
+                    {
+                        courseData.AcademicYearSummary = ParseEnrollmentSummary(academicYearSummaryProp); // Same parsing logic
+                        Console.WriteLine($"CourseService: Academic year summary: {string.Join(", ", courseData.AcademicYearSummary.Select(kvp => $"{kvp.Key}: {kvp.Value}"))}");
                     }
 
                     Console.WriteLine($"CourseService: Successfully prepared course data");
@@ -197,6 +224,9 @@ namespace AttendanceApp_ASPNET.Services
                     Email = studentInfoElement.TryGetProperty("email", out var emailProp) ? emailProp.GetString() ?? "" : "",
                     StudentNumber = studentInfoElement.TryGetProperty("student_number", out var studentNumberProp) ? studentNumberProp.GetString() ?? "" : "",
                     CurrentSectionId = studentInfoElement.TryGetProperty("current_section_id", out var sectionIdProp) && sectionIdProp.ValueKind != JsonValueKind.Null ? sectionIdProp.GetInt32() : null,
+                    CurrentAcademicYear = studentInfoElement.TryGetProperty("current_academic_year", out var currentAcademicYearProp) && currentAcademicYearProp.ValueKind != JsonValueKind.Null ? currentAcademicYearProp.GetString() : null,
+                    StudentEnrollmentYear = studentInfoElement.TryGetProperty("student_enrollment_year", out var enrollmentYearProp) && enrollmentYearProp.ValueKind != JsonValueKind.Null ? enrollmentYearProp.GetInt32() : null,
+                    IsGraduated = studentInfoElement.TryGetProperty("is_graduated", out var isGraduatedProp) && isGraduatedProp.GetBoolean(),
                     HasSection = studentInfoElement.TryGetProperty("has_section", out var hasSectionProp) && hasSectionProp.GetBoolean()
                 };
             }

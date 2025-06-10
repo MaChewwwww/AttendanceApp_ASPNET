@@ -1243,7 +1243,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('month').value = '8';
         document.getElementById('year').value = '1999';
         document.getElementById('contact_number').value = '09123456789';
-        document.getElementById('student_number').value = 'STU2023001';
+        document.getElementById('student_number').value = '2023-CM0001';
         document.getElementById('email').value = 'johnmathewcparocha@iskolarngbayan.pup.edu.ph';
         document.getElementById('password').value = 'TestPass123!';
         document.getElementById('confirm_password').value = 'TestPass123!';

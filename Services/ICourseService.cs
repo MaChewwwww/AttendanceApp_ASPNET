@@ -16,6 +16,7 @@ namespace AttendanceApp_ASPNET.Services
         public int TotalCurrent { get; set; }
         public int TotalPrevious { get; set; }
         public Dictionary<string, int> EnrollmentSummary { get; set; } = new();
+        public Dictionary<string, int> AcademicYearSummary { get; set; } = new();
     }
 
     public class CourseDetailsResult
@@ -33,6 +34,9 @@ namespace AttendanceApp_ASPNET.Services
         public string Email { get; set; } = string.Empty;
         public string StudentNumber { get; set; } = string.Empty;
         public int? CurrentSectionId { get; set; }
+        public string? CurrentAcademicYear { get; set; }
+        public int? StudentEnrollmentYear { get; set; }
+        public bool IsGraduated { get; set; }
         public bool HasSection { get; set; }
     }
 
