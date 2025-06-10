@@ -135,10 +135,8 @@
     /* Course code styling */
     .font-mono {
         font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-        background-color: #f8fafc;
         padding: 2px 6px;
         border-radius: 4px;
-        border: 1px solid #e2e8f0;
     }
 
     /* Pagination styles */
@@ -316,34 +314,19 @@
                         <thead class="bg-gray-50">
                             <tr>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
-                                    <div class="flex items-center justify-between">
-                                        <span>Date</span>
-                                        <i class="fas fa-sort text-gray-400 cursor-pointer hover:text-gray-600" onclick="toggleSort('date')"></i>
-                                    </div>
+                                    <span>Date</span>
                                 </th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">
-                                    <div class="flex items-center justify-between">
-                                        <span>Course</span>
-                                        <i class="fas fa-sort text-gray-400 cursor-pointer hover:text-gray-600" onclick="toggleSort('course')"></i>
-                                    </div>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-2/5">
+                                    <span>Course</span>
                                 </th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
-                                    <div class="flex items-center justify-between">
-                                        <span>Course Code</span>
-                                        <i class="fas fa-sort text-gray-400 cursor-pointer hover:text-gray-600" onclick="toggleSort('courseCode')"></i>
-                                    </div>
+                                    <span>Course Code</span>
                                 </th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
-                                    <div class="flex items-center justify-between">
-                                        <span>Class</span>
-                                        <i class="fas fa-sort text-gray-400 cursor-pointer hover:text-gray-600" onclick="toggleSort('class')"></i>
-                                    </div>
+                                    <span>Class</span>
                                 </th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
-                                    <div class="flex items-center justify-between">
-                                        <span>Status</span>
-                                        <i class="fas fa-sort text-gray-400 cursor-pointer hover:text-gray-600" onclick="toggleSort('status')"></i>
-                                    </div>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/8">
+                                    <span>Status</span>
                                 </th>
                             </tr>
                         </thead>
@@ -375,7 +358,13 @@
                                         @(record.CourseCode ?? "N/A")
                                     </td>
                                     <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        @(record.SectionName ?? "N/A")
+                                        <div>
+                                            <div class="font-medium">@(record.SectionName ?? "N/A")</div>
+                                            @if (!string.IsNullOrEmpty(record.AcademicYear))
+                                            {
+                                                <div class="text-xs text-gray-500 mt-1">@record.AcademicYear</div>
+                                            }
+                                        </div>
                                     </td>
                                     <td class="px-4 py-4 whitespace-nowrap">
                                         <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium @GetStatusBadgeClass(record.Status)">
@@ -389,38 +378,13 @@
                     </table>
                 </div>
 
-                <!-- Pagination Controls -->
-                <div class="flex flex-col sm:flex-row justify-between items-center mt-6 gap-4">
+                <!-- Simple Record Count Display (no pagination) -->
+                <div class="flex justify-between items-center mt-6">
                     <div class="text-sm text-gray-700">
-                        Showing <span id="showingStart">1</span> to <span id="showingEnd">@Math.Min(10, totalRecords)</span> of <span id="totalRecordsCount">@totalRecords</span> results
+                        Total: <span id="totalRecordsCount">@totalRecords</span> records
                     </div>
-                    
-                    <div class="flex items-center space-x-2">
-                        <!-- Rows per page selector -->
-                        <div class="flex items-center space-x-2">
-                            <label class="text-sm text-gray-700">Show:</label>
-                            <select id="rowsPerPage" onchange="changeRowsPerPage()" class="border border-gray-300 rounded px-2 py-1 text-sm">
-                                <option value="10">10</option>
-                                <option value="25">25</option>
-                                <option value="50">50</option>
-                                <option value="100">100</option>
-                            </select>
-                        </div>
-
-                        <!-- Pagination buttons -->
-                        <div class="flex space-x-1">
-                            <button id="prevPageBtn" onclick="changePage(-1)" class="pagination-button px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-l-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
-                                <i class="fas fa-chevron-left"></i>
-                            </button>
-                            
-                            <div id="pageNumbers" class="flex space-x-1">
-                                <!-- Page numbers will be generated by JavaScript -->
-                            </div>
-                            
-                            <button id="nextPageBtn" onclick="changePage(1)" class="pagination-button px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-r-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
-                                <i class="fas fa-chevron-right"></i>
-                            </button>
-                        </div>
+                    <div class="text-sm text-gray-500" id="recordsInfo">
+                        Showing @totalRecords total records
                     </div>
                 </div>
             </div>
@@ -637,8 +601,6 @@
         column: 'date',
         direction: 'desc'
     };
-    let currentPage = 1;
-    let rowsPerPage = 10;
     let allRecords = @Html.Raw(Json.Serialize(Model?.AttendanceRecords ?? new List<AttendanceRecord>()));
     let filteredRecords = [...allRecords];
 
@@ -653,24 +615,15 @@
         // Initialize table AFTER animations to prevent clearing server-rendered content
         setTimeout(() => {
             initializeTable();
-        }, 1000); // Wait for animations to complete
+        }, 1000);
 
         console.log('Attendance History page loaded with', allRecords.length, 'records');
     });
 
     function initializeTable() {
-        // Don't clear existing table content on initial load
-        // Only apply filters and sort, then update pagination
+        // Apply initial filters and sort
         applyFiltersAndSort();
-        updatePagination();
-        
-        // Only call showCurrentPage if we need to filter/paginate
-        if (filteredRecords.length !== allRecords.length || filteredRecords.length > rowsPerPage) {
-            showCurrentPage();
-        } else {
-            // Just update the pagination info without clearing the table
-            updateShowingText();
-        }
+        updateRecordCounts();
     }
 
     // Filter Modal Functions
@@ -709,10 +662,8 @@
         // Apply filters using C# backend logic in JavaScript
         applyFiltersAndSort();
         
-        // Reset to first page
-        currentPage = 1;
-        updatePagination();
-        showCurrentPage();
+        // Update table display
+        showAllFilteredRecords();
         
         // Update UI
         updateActiveFiltersDisplay();
@@ -795,9 +746,7 @@
             return 0;
         });
 
-        // Update records info
-        document.getElementById('recordsInfo').textContent = 
-            `Showing ${filteredRecords.length} of ${allRecords.length} records`;
+        updateRecordCounts();
     }
 
     function clearFilters() {
@@ -820,9 +769,7 @@
             faculty: ''
         };
         applyFiltersAndSort();
-        currentPage = 1;
-        updatePagination();
-        showCurrentPage();
+        showAllFilteredRecords();
         updateActiveFiltersDisplay();
         updateFilterCount();
     }
@@ -862,110 +809,24 @@
         currentSort = { column: sortBy, direction: sortDirection };
         
         applyFiltersAndSort();
-        showCurrentPage();
+        showAllFilteredRecords();
         
         closeSortModal();
     }
 
-    function toggleSort(column) {
-        if (currentSort.column === column) {
-            currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
-        } else {
-            currentSort.column = column;
-            currentSort.direction = 'desc';
-        }
-        
-        applyFiltersAndSort();
-        showCurrentPage();
-    }
-
-    // Pagination Functions
-    function updatePagination() {
-        const totalPages = Math.ceil(filteredRecords.length / rowsPerPage);
-        const pageNumbers = document.getElementById('pageNumbers');
-        const prevBtn = document.getElementById('prevPageBtn');
-        const nextBtn = document.getElementById('nextPageBtn');
-        
-        prevBtn.disabled = currentPage === 1;
-        nextBtn.disabled = currentPage === totalPages || totalPages === 0;
-        
-        pageNumbers.innerHTML = '';
-        
-        if (totalPages <= 7) {
-            for (let i = 1; i <= totalPages; i++) {
-                pageNumbers.appendChild(createPageButton(i));
-            }
-        } else {
-            pageNumbers.appendChild(createPageButton(1));
-            
-            if (currentPage > 3) {
-                pageNumbers.appendChild(createEllipsis());
-            }
-            
-            const start = Math.max(2, currentPage - 1);
-            const end = Math.min(totalPages - 1, currentPage + 1);
-            
-            for (let i = start; i <= end; i++) {
-                pageNumbers.appendChild(createPageButton(i));
-            }
-            
-            if (currentPage < totalPages - 2) {
-                pageNumbers.appendChild(createEllipsis());
-            }
-            
-            if (totalPages > 1) {
-                pageNumbers.appendChild(createPageButton(totalPages));
-            }
-        }
-    }
-
-    function createPageButton(page) {
-        const button = document.createElement('button');
-        button.className = `pagination-button px-3 py-2 text-sm font-medium border border-gray-300 ${
-            currentPage === page 
-                ? 'bg-blue-600 text-white border-blue-600' 
-                : 'text-gray-500 bg-white hover:bg-gray-50'
-        }`;
-        button.textContent = page;
-        button.onclick = () => showPage(page);
-        return button;
-    }
-
-    function createEllipsis() {
-        const span = document.createElement('span');
-        span.className = 'px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300';
-        span.textContent = '...';
-        return span;
-    }
-
-    function showPage(page) {
-        currentPage = page;
-        showCurrentPage();
-        updatePagination();
-    }
-
-    function showCurrentPage() {
-        const start = (currentPage - 1) * rowsPerPage;
-        const end = start + rowsPerPage;
-        const pageRecords = filteredRecords.slice(start, end);
-        
+    // Replace pagination functions with simple display functions
+    function showAllFilteredRecords() {
         const tbody = document.getElementById('attendanceTableBody');
         
-        // Only clear and rebuild if we're actually filtering/paginating
-        if (currentPage > 1 || pageRecords.length < filteredRecords.length || hasActiveFilters() || currentSort.column !== 'date' || currentSort.direction !== 'desc') {
-            tbody.innerHTML = '';
-            
-            pageRecords.forEach(record => {
-                const row = createTableRow(record);
-                tbody.appendChild(row);
-            });
-        }
+        // Always rebuild the table when filters or sort changes
+        tbody.innerHTML = '';
         
-        updateShowingText();
-    }
-
-    function hasActiveFilters() {
-        return Object.values(currentFilters).some(value => value !== '');
+        filteredRecords.forEach(record => {
+            const row = createTableRow(record);
+            tbody.appendChild(row);
+        });
+        
+        updateRecordCounts();
     }
 
     function createTableRow(record) {
@@ -992,7 +853,12 @@
                 ${record.facultyName ? `<div class="text-xs text-gray-500 mt-1">Faculty: ${record.facultyName}</div>` : ''}
             </td>
             <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 font-mono">${record.courseCode || 'N/A'}</td>
-            <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">${record.sectionName || 'N/A'}</td>
+            <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                <div>
+                    <div class="font-medium">${record.sectionName || 'N/A'}</div>
+                    ${record.academicYear ? `<div class="text-xs text-gray-500 mt-1">${record.academicYear}</div>` : ''}
+                </div>
+            </td>
             <td class="px-4 py-4 whitespace-nowrap">
                 <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${statusClass}">
                     <i class="${statusIcon} mr-1"></i>
@@ -1004,12 +870,9 @@
         return row;
     }
 
-    function updateShowingText() {
-        const start = Math.min((currentPage - 1) * rowsPerPage + 1, filteredRecords.length);
-        const end = Math.min(currentPage * rowsPerPage, filteredRecords.length);
-        
-        document.getElementById('showingStart').textContent = filteredRecords.length === 0 ? 0 : start;
-        document.getElementById('showingEnd').textContent = end;
+    function updateRecordCounts() {
+        document.getElementById('recordsInfo').textContent = 
+            `Showing ${filteredRecords.length} of ${allRecords.length} records`;
         document.getElementById('totalRecordsCount').textContent = filteredRecords.length;
     }
 
@@ -1099,9 +962,7 @@
         }
         
         applyFiltersAndSort();
-        currentPage = 1;
-        updatePagination();
-        showCurrentPage();
+        showAllFilteredRecords();
         updateActiveFiltersDisplay();
         updateFilterCount();
     }
