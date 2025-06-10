@@ -1089,46 +1089,4 @@
         filterPreviousCourses();
     }
 
-    // Add the missing export function
-    function exportStudentsData() {
-        if (!filteredStudents || filteredStudents.length === 0) {
-            alert('No student data to export.');
-            return;
-        }
-        
-        try {
-            // Create CSV content
-            const headers = ['Name', 'Student Number', 'Email', 'Status', 'Present', 'Late', 'Absent', 'Attendance %', 'Latest Attendance'];
-            const csvContent = [
-                headers.join(','),
-                ...filteredStudents.map(student => [
-                    `"${student.name}"`,
-                    `"${student.studentNumber}"`,
-                    `"${student.email}"`,
-                    `"${student.enrollmentStatus}"`,
-                    student.presentCount,
-                    student.lateCount,
-                    student.absentCount,
-                    student.attendancePercentage.toFixed(1) + '%',
-                    `"${student.latestAttendanceStatus || 'N/A'}"`
-                ].join(','))
-            ].join('\n');
-            
-            // Download CSV
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            const url = URL.createObjectURL(blob);
-            link.setAttribute('href', url);
-            link.setAttribute('download', `course_students_${Date.now()}.csv`);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            console.log('Student data exported successfully');
-        } catch (error) {
-            console.error('Export failed:', error);
-            alert('Export failed. Please try again.');
-        }
-    }
 </script>
