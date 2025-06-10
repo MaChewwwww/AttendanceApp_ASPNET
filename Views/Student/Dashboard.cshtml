@@ -141,8 +141,8 @@
                     <span class="text-sm font-medium text-gray-900">@ViewBag.Temperature°C</span>
                 </div>
                 <div class="flex justify-between items-center">
-                    <span class="text-sm text-gray-600">Feels like:</span>
-                    <span class="text-sm font-medium text-gray-900">@ViewBag.HeatIndex°C</span>
+                    <span class="text-sm text-gray-600">Wind speed:</span>
+                    <span class="text-sm font-medium text-gray-900">@ViewBag.WindSpeed km/h</span>
                 </div>
                 <div class="flex justify-between items-center">
                     <span class="text-sm text-gray-600">Condition:</span>
@@ -187,7 +187,7 @@
                     <i class="fas fa-thermometer-half text-orange-600 text-xl"></i>
                 </div>
                 <div class="ml-4">
-                    <h3 class="text-lg font-semibold text-gray-900">Heat Index</h3>
+                    <h3 class="text-lg font-semibold text-gray-900">Temperature Forecast</h3>
                     <p class="text-gray-500 text-sm">@ViewBag.WeatherLocation</p>
                 </div>
             </div>
@@ -197,8 +197,16 @@
                     <span class="text-2xl font-bold text-orange-600">@ViewBag.HeatIndex°C</span>
                 </div>
                 <div class="flex justify-between items-center">
-                    <span class="text-sm text-gray-600">Temperature:</span>
+                    <span class="text-sm text-gray-600">Current:</span>
                     <span class="text-sm font-medium text-gray-900">@ViewBag.Temperature°C</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">High today:</span>
+                    <span class="text-sm font-medium text-red-600">@ViewBag.MaxTemperature°C</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">Low today:</span>
+                    <span class="text-sm font-medium text-blue-600">@ViewBag.MinTemperature°C</span>
                 </div>
                 <div class="flex justify-between items-center">
                     <span class="text-sm text-gray-600">Heat level:</span>
@@ -210,13 +218,6 @@
                         @heatLevelMain
                     </span>
                 </div>
-                @if (ViewBag.UVIndex != null)
-                {
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-600">UV Index:</span>
-                        <span class="text-sm font-medium text-gray-900">@ViewBag.UVIndex</span>
-                    </div>
-                }
             </div>
         </div>
     }
@@ -228,7 +229,7 @@
                     <i class="fas fa-exclamation-triangle text-gray-400 text-xl"></i>
                 </div>
                 <div class="ml-4">
-                    <h3 class="text-lg font-semibold text-gray-900">Heat Index</h3>
+                    <h3 class="text-lg font-semibold text-gray-900">Temperature Forecast</h3>
                     <p class="text-gray-500 text-sm">@(ViewBag.WeatherLocation ?? "Location unavailable")</p>
                 </div>
             </div>
