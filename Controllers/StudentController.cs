@@ -11,16 +11,19 @@ namespace AttendanceApp_ASPNET.Controllers
         private readonly IStudentManagementService _studentManagementService;
         private readonly IEnvironmentService _environmentService;
         private readonly ICourseService _courseService;
+        private readonly IStudentHistoryService _studentHistoryService;
 
         public StudentController(
             IApiService apiService,
             IStudentManagementService studentManagementService,
             IEnvironmentService environmentService,
-            ICourseService courseService) : base(apiService)
+            ICourseService courseService,
+            IStudentHistoryService studentHistoryService) : base(apiService)
         {
             _studentManagementService = studentManagementService;
             _environmentService = environmentService;
             _courseService = courseService;
+            _studentHistoryService = studentHistoryService;
         }
 
         public async Task<IActionResult> Dashboard()
@@ -55,11 +58,63 @@ namespace AttendanceApp_ASPNET.Controllers
         }
 
         // Student attendance history page.
-        public IActionResult AttendanceHistory()
+        public async Task<IActionResult> AttendanceHistory()
         {
             var studentInfo = _studentManagementService.GetCurrentStudentInfo(HttpContext);
             ViewBag.StudentInfo = studentInfo;
-            return View();
+            
+            try
+            {
+                var jwtToken = HttpContext.Session.GetString("AuthToken");
+                if (string.IsNullOrEmpty(jwtToken))
+                {
+                    ViewBag.ErrorMessage = "Authentication required. Please log in again.";
+                    return View(new StudentAttendanceResult { Success = false, Message = "Authentication required" });
+                }
+
+                Console.WriteLine($"Attempting to fetch attendance history with JWT token: {jwtToken.Substring(0, Math.Min(20, jwtToken.Length))}...");
+                
+                var attendanceData = await _studentHistoryService.GetStudentAttendanceHistoryAsync(jwtToken);
+                
+                Console.WriteLine($"Attendance service response - Success: {attendanceData.Success}, Message: {attendanceData.Message}");
+                Console.WriteLine($"Total attendance records: {attendanceData.TotalRecords}");
+                
+                if (!attendanceData.Success)
+                {
+                    if (attendanceData.Message.Contains("timeout", StringComparison.OrdinalIgnoreCase) ||
+                        attendanceData.Message.Contains("connect", StringComparison.OrdinalIgnoreCase) ||
+                        attendanceData.Message.Contains("server", StringComparison.OrdinalIgnoreCase))
+                    {
+                        ViewBag.ErrorMessage = "Unable to connect to the server. Please check that the API is running and try again.";
+                    }
+                    else
+                    {
+                        ViewBag.ErrorMessage = attendanceData.Message;
+                    }
+                }
+                
+                return View(attendanceData);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading attendance history: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                
+                if (ex.Message.Contains("timeout") || ex.Message.Contains("connect"))
+                {
+                    ViewBag.ErrorMessage = "Connection timeout. Please verify the API server is running on http://localhost:8000 and try again.";
+                }
+                else
+                {
+                    ViewBag.ErrorMessage = "Unable to load attendance history at this time. Please try again later.";
+                }
+                
+                return View(new StudentAttendanceResult { 
+                    Success = false, 
+                    Message = ex.Message.Contains("timeout") || ex.Message.Contains("connect") ? 
+                              "API server connection failed" : "System error occurred" 
+                });
+            }
         }
 
         // Mark attendance using face recognition.

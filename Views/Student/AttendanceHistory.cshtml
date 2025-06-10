@@ -1,153 +1,342 @@
+@using AttendanceApp_ASPNET.Services
+@model StudentAttendanceResult
 @{
     ViewData["Title"] = "Attendance History";
+    Layout = "_Layout";
 }
 
-<div class="attendance-history-page">
-    <!-- Page Header -->
-    <div class="mb-8">
-        <div class="flex items-center justify-between">
-            <div>
-                <h1 class="text-3xl font-bold text-gray-900 dashboard-card-entrance">Attendance History</h1>
-                <p class="text-gray-600 mt-2 dashboard-card-entrance">
-                    View your complete attendance records and track your progress
-                </p>
-            </div>
-            <div class="text-right dashboard-card-entrance">
-                <div class="text-sm text-gray-500">Academic Year 2024-2025</div>
-                <div class="text-sm text-blue-600 font-medium">
-                    @{
-                        var sectionName = ViewBag.StudentInfo?.SectionName ?? "No Section Assigned";
-                    }
-                    @sectionName
-                </div>
-            </div>
-        </div>
-    </div>
+@{
+    // Helper functions - Updated to handle actual API status values
+    string GetStatusBadgeClass(string status)
+    {
+        return status?.ToLower() switch
+        {
+            "present" or "1" => "bg-green-100 text-green-800",
+            "late" or "2" => "bg-yellow-100 text-yellow-800", 
+            "absent" or "0" => "bg-red-100 text-red-800",
+            "excused" or "3" => "bg-blue-100 text-blue-800",
+            _ => "bg-gray-100 text-gray-800"
+        };
+    }
 
-    <!-- Coming Soon Card -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 dashboard-card-entrance">
-        <div class="p-12 text-center">
-            <div class="w-24 h-24 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <i class="fas fa-clipboard-list text-blue-500 text-3xl"></i>
-            </div>
-            <h3 class="text-2xl font-bold text-gray-900 mb-4">Attendance History</h3>
-            <p class="text-gray-600 mb-6 max-w-md mx-auto">
-                This feature is coming soon! You'll be able to view your complete attendance records, 
-                track your progress over time, and export your attendance reports.
-            </p>
-            <div class="space-y-3 text-sm text-gray-500 max-w-sm mx-auto">
-                <div class="flex items-center justify-center">
-                    <i class="fas fa-check text-green-500 mr-2"></i>
-                    <span>View daily attendance records</span>
-                </div>
-                <div class="flex items-center justify-center">
-                    <i class="fas fa-check text-green-500 mr-2"></i>
-                    <span>Track attendance patterns</span>
-                </div>
-                <div class="flex items-center justify-center">
-                    <i class="fas fa-check text-green-500 mr-2"></i>
-                    <span>Export attendance reports</span>
-                </div>
-                <div class="flex items-center justify-center">
-                    <i class="fas fa-check text-green-500 mr-2"></i>
-                    <span>View absence reasons</span>
-                </div>
-            </div>
-            <div class="mt-8">
-                <a href="/Student/Dashboard" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors duration-200 font-semibold inline-flex items-center">
-                    <i class="fas fa-arrow-left mr-2"></i>
-                    Back to Dashboard
-                </a>
-            </div>
-        </div>
-    </div>
+    string GetStatusIcon(string status)
+    {
+        return status?.ToLower() switch
+        {
+            "present" or "1" => "fas fa-check-circle",
+            "late" or "2" => "fas fa-clock",
+            "absent" or "0" => "fas fa-times-circle",
+            "excused" or "3" => "fas fa-user-clock",
+            _ => "fas fa-question-circle"
+        };
+    }
 
-    <!-- Future Feature Preview Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
-        <!-- Attendance Summary Card -->
-        <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border border-green-200 p-6 dashboard-card-entrance">
-            <div class="flex items-center mb-4">
-                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                    <i class="fas fa-chart-line text-green-600 text-xl"></i>
-                </div>
-                <div class="ml-4">
-                    <h3 class="text-lg font-semibold text-gray-900">Attendance Summary</h3>
-                    <p class="text-green-600 text-sm">Coming Soon</p>
-                </div>
-            </div>
-            <p class="text-sm text-gray-600">
-                View your overall attendance statistics, including present days, absences, and attendance percentage.
-            </p>
-        </div>
+    string GetStatusDisplayText(string status)
+    {
+        return status?.ToLower() switch
+        {
+            "present" or "1" => "Present",
+            "late" or "2" => "Late", 
+            "absent" or "0" => "Absent",
+            "excused" or "3" => "Excused",
+            _ => $"Unknown ({status})"
+        };
+    }
 
-        <!-- Calendar View Card -->
-        <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-6 dashboard-card-entrance">
-            <div class="flex items-center mb-4">
-                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <i class="fas fa-calendar-alt text-blue-600 text-xl"></i>
-                </div>
-                <div class="ml-4">
-                    <h3 class="text-lg font-semibold text-gray-900">Calendar View</h3>
-                    <p class="text-blue-600 text-sm">Coming Soon</p>
-                </div>
-            </div>
-            <p class="text-sm text-gray-600">
-                Interactive calendar showing your attendance patterns with color-coded days for easy visualization.
-            </p>
-        </div>
+    // Helper function to normalize status for counting
+    bool IsPresent(string status)
+    {
+        return status?.ToLower() == "present" || status == "1";
+    }
 
-        <!-- Detailed Reports Card -->
-        <div class="bg-gradient-to-br from-purple-50 to-violet-50 rounded-lg border border-purple-200 p-6 dashboard-card-entrance">
-            <div class="flex items-center mb-4">
-                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <i class="fas fa-file-export text-purple-600 text-xl"></i>
-                </div>
-                <div class="ml-4">
-                    <h3 class="text-lg font-semibold text-gray-900">Detailed Reports</h3>
-                    <p class="text-purple-600 text-sm">Coming Soon</p>
-                </div>
-            </div>
-            <p class="text-sm text-gray-600">
-                Generate and export detailed attendance reports in various formats for your records.
-            </p>
-        </div>
-    </div>
-</div>
+    bool IsLate(string status)
+    {
+        return status?.ToLower() == "late" || status == "2";
+    }
+
+    bool IsAbsent(string status)
+    {
+        return status?.ToLower() == "absent" || status == "0";
+    }
+}
 
 <style>
-    .dashboard-card-entrance {
-        animation: dashboardCardEntrance 0.6s ease-out forwards;
-        opacity: 0;
-    }
-    
-    @@keyframes dashboardCardEntrance {
-        0% { 
+    @@keyframes slideInFromTop {
+        0% {
             opacity: 0;
-            transform: translateY(30px) scale(0.9);
+            transform: translateY(-20px);
         }
-        100% { 
+        100% {
             opacity: 1;
-            transform: translateY(0) scale(1);
+            transform: translateY(0);
         }
     }
-    
-    /* Apply staggered delays */
-    .dashboard-card-entrance:nth-child(1) { animation-delay: 0.1s; }
-    .dashboard-card-entrance:nth-child(2) { animation-delay: 0.2s; }
-    .dashboard-card-entrance:nth-child(3) { animation-delay: 0.3s; }
-    .dashboard-card-entrance:nth-child(4) { animation-delay: 0.4s; }
-    .dashboard-card-entrance:nth-child(5) { animation-delay: 0.5s; }
-    .dashboard-card-entrance:nth-child(6) { animation-delay: 0.6s; }
+
+    @@keyframes fadeIn {
+        0% {
+            opacity: 0;
+        }
+        100% {
+            opacity: 1;
+        }
+    }
+
+    .slide-in {
+        animation: slideInFromTop 0.6s ease-out;
+    }
+
+    .fade-in {
+        animation: fadeIn 0.8s ease-out;
+    }
+
+    .hover-scale {
+        transition: transform 0.2s ease-in-out;
+    }
+
+    .hover-scale:hover {
+        transform: scale(1.02);
+    }
 </style>
+
+<div class="space-y-6 slide-in">
+    <!-- Page Header -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Attendance History</h1>
+                <p class="text-gray-600 mt-1">Track your attendance records and statistics</p>
+            </div>
+            <div class="text-right">
+                <div class="text-sm text-gray-500">Last updated</div>
+                <div class="text-lg font-semibold text-gray-900">@DateTime.Now.ToString("MMM dd, yyyy")</div>
+            </div>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(ViewBag.ErrorMessage))
+    {
+        <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div class="flex items-center">
+                <i class="fas fa-exclamation-triangle text-red-600 mr-3"></i>
+                <div>
+                    <h3 class="text-red-800 font-medium">Unable to Load Attendance Data</h3>
+                    <p class="text-red-700 text-sm mt-1">@ViewBag.ErrorMessage</p>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (Model != null && Model.Success)
+    {
+        // Calculate statistics - Updated to use helper functions
+        var attendanceRecords = Model.AttendanceRecords ?? new List<AttendanceRecord>();
+        var presentCount = attendanceRecords.Count(r => IsPresent(r.Status));
+        var lateCount = attendanceRecords.Count(r => IsLate(r.Status));
+        var absentCount = attendanceRecords.Count(r => IsAbsent(r.Status));
+        var totalRecords = attendanceRecords.Count;
+
+        // Debug output
+        var uniqueStatuses = attendanceRecords.Select(r => r.Status).Distinct().ToList();
+        
+        <!-- Debug Info (remove in production) -->
+        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+            <h4 class="font-semibold text-yellow-800">Debug Info:</h4>
+            <p class="text-yellow-700">Total Records: @totalRecords</p>
+            <p class="text-yellow-700">Unique Status Values: @string.Join(", ", uniqueStatuses)</p>
+            <p class="text-yellow-700">Present: @presentCount, Late: @lateCount, Absent: @absentCount</p>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 fade-in">
+            <!-- Total Records -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover-scale">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Total Records</p>
+                        <p class="text-2xl font-bold text-gray-900">@totalRecords</p>
+                    </div>
+                    <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-calendar-alt text-blue-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Present -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover-scale">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Present</p>
+                        <p class="text-2xl font-bold text-green-600">@presentCount</p>
+                    </div>
+                    <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-check-circle text-green-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Late -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover-scale">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Late</p>
+                        <p class="text-2xl font-bold text-yellow-600">@lateCount</p>
+                    </div>
+                    <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-clock text-yellow-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Absent -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover-scale">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-600">Absent</p>
+                        <p class="text-2xl font-bold text-red-600">@absentCount</p>
+                    </div>
+                    <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-times-circle text-red-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Attendance Records Table -->
+        @if (attendanceRecords.Any())
+        {
+            // Calculate course groups
+            var courseGroups = attendanceRecords.GroupBy(r => r.CourseName ?? "Unknown Course").ToList();
+
+            @foreach (var courseGroup in courseGroups)
+            {
+                // Calculate course statistics - Updated to use helper functions
+                var courseName = courseGroup.Key;
+                var courseRecords = courseGroup.OrderByDescending(r => DateTime.TryParse(r.AttendanceDate, out var date) ? date : DateTime.MinValue).ToList();
+                var coursePresent = courseRecords.Count(r => IsPresent(r.Status));
+                var courseLate = courseRecords.Count(r => IsLate(r.Status));
+                var courseAbsent = courseRecords.Count(r => IsAbsent(r.Status));
+                var courseTotal = courseRecords.Count;
+                var attendanceRate = courseTotal > 0 ? Math.Round((double)coursePresent / courseTotal * 100, 1) : 0;
+
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 fade-in">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900">@courseName</h3>
+                            <p class="text-sm text-gray-600">Course Code: @(courseRecords.FirstOrDefault()?.CourseCode ?? "N/A")</p>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm text-gray-500">Attendance Rate</div>
+                            <div class="text-2xl font-bold @(attendanceRate >= 75 ? "text-green-600" : attendanceRate >= 60 ? "text-yellow-600" : "text-red-600")">
+                                @attendanceRate%
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Course Statistics -->
+                    <div class="grid grid-cols-4 gap-4 mb-6">
+                        <div class="text-center">
+                            <div class="text-sm text-gray-500">Total</div>
+                            <div class="text-lg font-semibold text-gray-900">@courseTotal</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-sm text-gray-500">Present</div>
+                            <div class="text-lg font-semibold text-green-600">@coursePresent</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-sm text-gray-500">Late</div>
+                            <div class="text-lg font-semibold text-yellow-600">@courseLate</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-sm text-gray-500">Absent</div>
+                            <div class="text-lg font-semibold text-red-600">@courseAbsent</div>
+                        </div>
+                    </div>
+
+                    <!-- Records Table -->
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Faculty</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Section</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                @foreach (var record in courseRecords)
+                                {
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                            @(DateTime.TryParse(record.AttendanceDate, out var recordDate) ? recordDate.ToString("MMM dd, yyyy") : record.AttendanceDate)
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                            @(record.FacultyName ?? "N/A")
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium @GetStatusBadgeClass(record.Status)">
+                                                <i class="@GetStatusIcon(record.Status) mr-1"></i>
+                                                @GetStatusDisplayText(record.Status)
+                                            </span>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            @(record.SectionName ?? "N/A")
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center fade-in">
+                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-calendar-times text-gray-400 text-2xl"></i>
+                </div>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No Attendance Records Found</h3>
+                <p class="text-gray-600">You don't have any attendance records yet. Records will appear here once you start marking attendance.</p>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center fade-in">
+            <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-exclamation-triangle text-red-600 text-2xl"></i>
+            </div>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">Unable to Load Data</h3>
+            <p class="text-gray-600">@(Model?.Message ?? "There was an error loading your attendance history. Please try again later.")</p>
+        </div>
+    }
+</div>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Add entrance animations to cards
-        const cards = document.querySelectorAll('.dashboard-card-entrance');
-        cards.forEach((card, index) => {
-            card.style.animationDelay = `${index * 0.1}s`;
+        // Add staggered animation delays
+        const fadeElements = document.querySelectorAll('.fade-in');
+        fadeElements.forEach((element, index) => {
+            element.style.animationDelay = `${index * 0.1}s`;
+            element.style.animationFillMode = 'both'; // Maintain final state after animation
         });
+
+        // Add smooth scrolling behavior
+        document.documentElement.style.scrollBehavior = 'smooth';
+
+        // Debug: Log model data to console
+        console.log('Attendance History page loaded successfully');
+        console.log('Model data available:', @Html.Raw(Json.Serialize(Model != null)));
+        console.log('Model success:', @Html.Raw(Json.Serialize(Model?.Success ?? false)));
+        console.log('Total records:', @Html.Raw(Json.Serialize(Model?.TotalRecords ?? 0)));
         
-        console.log('Attendance History page loaded successfully!');
+        // Ensure content visibility after animations
+        setTimeout(() => {
+            fadeElements.forEach(element => {
+                element.style.opacity = '1';
+                element.style.transform = 'none';
+            });
+        }, 2000);
     });
 </script>
