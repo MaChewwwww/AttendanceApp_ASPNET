@@ -96,6 +96,76 @@
     .hover-scale:hover {
         transform: scale(1.02);
     }
+
+    /* Filter and Sort Modal Styles */
+    .filter-modal-entrance {
+        animation: filterModalEntrance 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+    
+    @@keyframes filterModalEntrance {
+        0% { 
+            opacity: 0;
+            transform: scale(0.95) translateY(-10px);
+        }
+        100% { 
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+    }
+
+    /* Table styles */
+    .attendance-table {
+        min-width: 100%;
+        table-layout: fixed;
+    }
+
+    /* Responsive table adjustments */
+    @@media (max-width: 768px) {
+        .attendance-table {
+            min-width: 800px;
+        }
+        
+        .attendance-table th,
+        .attendance-table td {
+            padding: 8px 12px;
+            font-size: 0.875rem;
+        }
+    }
+
+    /* Course code styling */
+    .font-mono {
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        background-color: #f8fafc;
+        padding: 2px 6px;
+        border-radius: 4px;
+        border: 1px solid #e2e8f0;
+    }
+
+    /* Pagination styles */
+    .pagination-button {
+        transition: all 0.2s ease-in-out;
+    }
+
+    .pagination-button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Filter badge styles */
+    .filter-badge {
+        animation: filterBadgeEntrance 0.3s ease-out;
+    }
+
+    @@keyframes filterBadgeEntrance {
+        0% {
+            opacity: 0;
+            transform: scale(0.8);
+        }
+        100% {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
 </style>
 
 <div class="space-y-6 slide-in">
@@ -104,7 +174,7 @@
         <div class="flex items-center justify-between">
             <div>
                 <h1 class="text-2xl font-bold text-gray-900">Attendance History</h1>
-                <p class="text-gray-600 mt-1">Track your attendance records and statistics</p>
+                <p class="text-gray-600 mt-1">View and filter your complete attendance records</p>
             </div>
             <div class="text-right">
                 <div class="text-sm text-gray-500">Last updated</div>
@@ -201,94 +271,159 @@
             </div>
         </div>
 
-        <!-- Attendance Records Table -->
+        <!-- Main Table Section -->
         @if (attendanceRecords.Any())
         {
-            // Calculate course groups
-            var courseGroups = attendanceRecords.GroupBy(r => r.CourseName ?? "Unknown Course").ToList();
-
-            @foreach (var courseGroup in courseGroups)
-            {
-                // Calculate course statistics - Updated to use helper functions
-                var courseName = courseGroup.Key;
-                var courseRecords = courseGroup.OrderByDescending(r => DateTime.TryParse(r.AttendanceDate, out var date) ? date : DateTime.MinValue).ToList();
-                var coursePresent = courseRecords.Count(r => IsPresent(r.Status));
-                var courseLate = courseRecords.Count(r => IsLate(r.Status));
-                var courseAbsent = courseRecords.Count(r => IsAbsent(r.Status));
-                var courseTotal = courseRecords.Count;
-                var attendanceRate = courseTotal > 0 ? Math.Round((double)coursePresent / courseTotal * 100, 1) : 0;
-
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 fade-in">
-                    <div class="flex items-center justify-between mb-4">
-                        <div>
-                            <h3 class="text-lg font-semibold text-gray-900">@courseName</h3>
-                            <p class="text-sm text-gray-600">Course Code: @(courseRecords.FirstOrDefault()?.CourseCode ?? "N/A")</p>
-                        </div>
-                        <div class="text-right">
-                            <div class="text-sm text-gray-500">Attendance Rate</div>
-                            <div class="text-2xl font-bold @(attendanceRate >= 75 ? "text-green-600" : attendanceRate >= 60 ? "text-yellow-600" : "text-red-600")">
-                                @attendanceRate%
-                            </div>
-                        </div>
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 fade-in">
+                <!-- Table Header with Controls -->
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900">All Attendance Records</h3>
+                        <p class="text-sm text-gray-600" id="recordsInfo">Showing @totalRecords total records</p>
                     </div>
+                    
+                    <!-- Filter and Sort Controls -->
+                    <div class="flex flex-wrap gap-3">
+                        <!-- Active Filters Display -->
+                        <div id="activeFilters" class="flex flex-wrap gap-2 hidden">
+                            <!-- Active filter badges will be inserted here by JavaScript -->
+                        </div>
 
-                    <!-- Course Statistics -->
-                    <div class="grid grid-cols-4 gap-4 mb-6">
-                        <div class="text-center">
-                            <div class="text-sm text-gray-500">Total</div>
-                            <div class="text-lg font-semibold text-gray-900">@courseTotal</div>
-                        </div>
-                        <div class="text-center">
-                            <div class="text-sm text-gray-500">Present</div>
-                            <div class="text-lg font-semibold text-green-600">@coursePresent</div>
-                        </div>
-                        <div class="text-center">
-                            <div class="text-sm text-gray-500">Late</div>
-                            <div class="text-lg font-semibold text-yellow-600">@courseLate</div>
-                        </div>
-                        <div class="text-center">
-                            <div class="text-sm text-gray-500">Absent</div>
-                            <div class="text-lg font-semibold text-red-600">@courseAbsent</div>
-                        </div>
-                    </div>
+                        <!-- Filter Button -->
+                        <button onclick="openFilterModal()" class="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                            <i class="fas fa-filter mr-2"></i>
+                            <span>Filter</span>
+                            <span id="filterCount" class="ml-2 bg-blue-800 text-white text-xs rounded-full px-2 py-1 hidden">0</span>
+                        </button>
 
-                    <!-- Records Table -->
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Faculty</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Section</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                @foreach (var record in courseRecords)
-                                {
-                                    <tr class="hover:bg-gray-50">
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                            @(DateTime.TryParse(record.AttendanceDate, out var recordDate) ? recordDate.ToString("MMM dd, yyyy") : record.AttendanceDate)
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                            @(record.FacultyName ?? "N/A")
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium @GetStatusBadgeClass(record.Status)">
-                                                <i class="@GetStatusIcon(record.Status) mr-1"></i>
-                                                @GetStatusDisplayText(record.Status)
-                                            </span>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            @(record.SectionName ?? "N/A")
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
+                        <!-- Sort Button -->
+                        <button onclick="openSortModal()" class="flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200">
+                            <i class="fas fa-sort mr-2"></i>
+                            <span>Sort</span>
+                        </button>
+
+                        <!-- Clear All Filters -->
+                        <button id="clearFiltersBtn" onclick="clearAllFilters()" class="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 hidden">
+                            <i class="fas fa-times mr-2"></i>
+                            <span>Clear Filters</span>
+                        </button>
                     </div>
                 </div>
-            }
+
+                <!-- Table Container with Horizontal Scroll -->
+                <div class="overflow-x-auto">
+                    <table class="w-full divide-y divide-gray-200 attendance-table">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
+                                    <div class="flex items-center justify-between">
+                                        <span>Date</span>
+                                        <i class="fas fa-sort text-gray-400 cursor-pointer hover:text-gray-600" onclick="toggleSort('date')"></i>
+                                    </div>
+                                </th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">
+                                    <div class="flex items-center justify-between">
+                                        <span>Course</span>
+                                        <i class="fas fa-sort text-gray-400 cursor-pointer hover:text-gray-600" onclick="toggleSort('course')"></i>
+                                    </div>
+                                </th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
+                                    <div class="flex items-center justify-between">
+                                        <span>Course Code</span>
+                                        <i class="fas fa-sort text-gray-400 cursor-pointer hover:text-gray-600" onclick="toggleSort('courseCode')"></i>
+                                    </div>
+                                </th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
+                                    <div class="flex items-center justify-between">
+                                        <span>Class</span>
+                                        <i class="fas fa-sort text-gray-400 cursor-pointer hover:text-gray-600" onclick="toggleSort('class')"></i>
+                                    </div>
+                                </th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
+                                    <div class="flex items-center justify-between">
+                                        <span>Status</span>
+                                        <i class="fas fa-sort text-gray-400 cursor-pointer hover:text-gray-600" onclick="toggleSort('status')"></i>
+                                    </div>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendanceTableBody" class="bg-white divide-y divide-gray-200">
+                            @{
+                                // Sort records by date (newest first) for initial display
+                                var sortedRecords = attendanceRecords.OrderByDescending(r => DateTime.TryParse(r.AttendanceDate, out var date) ? date : DateTime.MinValue).ToList();
+                            }
+                            @foreach (var record in sortedRecords)
+                            {
+                                <tr class="hover:bg-gray-50 attendance-row" 
+                                    data-date="@record.AttendanceDate" 
+                                    data-course="@record.CourseName" 
+                                    data-course-code="@record.CourseCode"
+                                    data-class="@record.SectionName" 
+                                    data-faculty="@record.FacultyName"
+                                    data-status="@record.Status">
+                                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        @(DateTime.TryParse(record.AttendanceDate, out var recordDate) ? recordDate.ToString("MMM dd, yyyy") : record.AttendanceDate)
+                                    </td>
+                                    <td class="px-4 py-4 text-sm text-gray-900">
+                                        <div class="font-medium">@record.CourseName</div>
+                                        @if (!string.IsNullOrEmpty(record.FacultyName))
+                                        {
+                                            <div class="text-xs text-gray-500 mt-1">Faculty: @record.FacultyName</div>
+                                        }
+                                    </td>
+                                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 font-mono">
+                                        @(record.CourseCode ?? "N/A")
+                                    </td>
+                                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        @(record.SectionName ?? "N/A")
+                                    </td>
+                                    <td class="px-4 py-4 whitespace-nowrap">
+                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium @GetStatusBadgeClass(record.Status)">
+                                            <i class="@GetStatusIcon(record.Status) mr-1"></i>
+                                            @GetStatusDisplayText(record.Status)
+                                        </span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination Controls -->
+                <div class="flex flex-col sm:flex-row justify-between items-center mt-6 gap-4">
+                    <div class="text-sm text-gray-700">
+                        Showing <span id="showingStart">1</span> to <span id="showingEnd">@Math.Min(10, totalRecords)</span> of <span id="totalRecordsCount">@totalRecords</span> results
+                    </div>
+                    
+                    <div class="flex items-center space-x-2">
+                        <!-- Rows per page selector -->
+                        <div class="flex items-center space-x-2">
+                            <label class="text-sm text-gray-700">Show:</label>
+                            <select id="rowsPerPage" onchange="changeRowsPerPage()" class="border border-gray-300 rounded px-2 py-1 text-sm">
+                                <option value="10">10</option>
+                                <option value="25">25</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select>
+                        </div>
+
+                        <!-- Pagination buttons -->
+                        <div class="flex space-x-1">
+                            <button id="prevPageBtn" onclick="changePage(-1)" class="pagination-button px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-l-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            
+                            <div id="pageNumbers" class="flex space-x-1">
+                                <!-- Page numbers will be generated by JavaScript -->
+                            </div>
+                            
+                            <button id="nextPageBtn" onclick="changePage(1)" class="pagination-button px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-r-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         }
         else
         {
@@ -313,30 +448,683 @@
     }
 </div>
 
+<!-- Filter Modal -->
+<div id="filterModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 overflow-y-auto h-full w-full z-50 hidden flex items-center justify-center backdrop-blur-sm">
+    <div id="filterModalContent" class="relative mx-auto p-6 border w-full max-w-lg shadow-2xl rounded-xl bg-white transform transition-all duration-300 scale-95 opacity-0 m-4">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-lg font-bold text-gray-800">
+                <i class="fas fa-filter mr-2 text-blue-600"></i>
+                Filter Attendance Records
+            </h3>
+            <button onclick="closeFilterModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+
+        <!-- Filter Options -->
+        <div class="space-y-6">
+            <!-- Date Range Filter -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">From</label>
+                        <input type="date" id="dateFrom" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">To</label>
+                        <input type="date" id="dateTo" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Course Filter -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Course</label>
+                <select id="courseFilter" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                    <option value="">All Courses</option>
+                    @if (Model?.AttendanceRecords != null)
+                    {
+                        var courses = Model.AttendanceRecords
+                            .GroupBy(r => new { r.CourseName, r.CourseCode })
+                            .Select(g => new { Name = g.Key.CourseName, Code = g.Key.CourseCode })
+                            .OrderBy(c => c.Name)
+                            .ToList();
+                        foreach (var course in courses)
+                        {
+                            <option value="@course.Name">@course.Name @(!string.IsNullOrEmpty(course.Code) ? $"({course.Code})" : "")</option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <!-- Class Filter -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Class</label>
+                <select id="classFilter" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                    <option value="">All Classes</option>
+                    @if (Model?.AttendanceRecords != null)
+                    {
+                        var classes = Model.AttendanceRecords
+                            .Where(r => !string.IsNullOrEmpty(r.SectionName))
+                            .Select(r => r.SectionName)
+                            .Distinct()
+                            .OrderBy(s => s)
+                            .ToList();
+                        foreach (var className in classes)
+                        {
+                            <option value="@className">@className</option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <!-- Status Filter -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                <select id="statusFilter" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                    <option value="">All Statuses</option>
+                    <option value="present">Present</option>
+                    <option value="late">Late</option>
+                    <option value="absent">Absent</option>
+                    <option value="excused">Excused</option>
+                </select>
+            </div>
+
+            <!-- Faculty Filter -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Faculty</label>
+                <select id="facultyFilter" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                    <option value="">All Faculty</option>
+                    @if (Model?.AttendanceRecords != null)
+                    {
+                        var faculty = Model.AttendanceRecords
+                            .Where(r => !string.IsNullOrEmpty(r.FacultyName))
+                            .Select(r => r.FacultyName)
+                            .Distinct()
+                            .OrderBy(f => f)
+                            .ToList();
+                        foreach (var fac in faculty)
+                        {
+                            <option value="@fac">@fac</option>
+                        }
+                    }
+                </select>
+            </div>
+        </div>
+
+        <!-- Modal Buttons -->
+        <div class="flex justify-end space-x-3 mt-8">
+            <button onclick="clearFilters()" class="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors">
+                Clear Filters
+            </button>
+            <button onclick="applyFilters()" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+                Apply Filters
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Sort Modal -->
+<div id="sortModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 overflow-y-auto h-full w-full z-50 hidden flex items-center justify-center backdrop-blur-sm">
+    <div id="sortModalContent" class="relative mx-auto p-6 border w-full max-w-md shadow-2xl rounded-xl bg-white transform transition-all duration-300 scale-95 opacity-0 m-4">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-lg font-bold text-gray-800">
+                <i class="fas fa-sort mr-2 text-gray-600"></i>
+                Sort Records
+            </h3>
+            <button onclick="closeSortModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+
+        <!-- Sort Options -->
+        <div class="space-y-4">
+            <!-- Sort By -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
+                <select id="sortBy" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                    <option value="date">Date</option>
+                    <option value="course">Course</option>
+                    <option value="courseCode">Course Code</option>
+                    <option value="class">Class</option>
+                    <option value="status">Status</option>
+                </select>
+            </div>
+
+            <!-- Sort Direction -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Direction</label>
+                <div class="space-y-2">
+                    <label class="flex items-center">
+                        <input type="radio" name="sortDirection" value="asc" class="mr-2">
+                        <span class="text-sm">Ascending (A-Z, Oldest first)</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="radio" name="sortDirection" value="desc" class="mr-2" checked>
+                        <span class="text-sm">Descending (Z-A, Newest first)</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Buttons -->
+        <div class="flex justify-end space-x-3 mt-8">
+            <button onclick="closeSortModal()" class="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors">
+                Cancel
+            </button>
+            <button onclick="applySort()" class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors">
+                Apply Sort
+            </button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
 <script>
+    // Table management variables for C# backend filtering
+    let currentFilters = {
+        dateFrom: '',
+        dateTo: '',
+        course: '',
+        class: '',
+        status: '',
+        faculty: ''
+    };
+    let currentSort = {
+        column: 'date',
+        direction: 'desc'
+    };
+    let currentPage = 1;
+    let rowsPerPage = 10;
+    let allRecords = @Html.Raw(Json.Serialize(Model?.AttendanceRecords ?? new List<AttendanceRecord>()));
+    let filteredRecords = [...allRecords];
+
     document.addEventListener('DOMContentLoaded', function() {
-        // Add staggered animation delays
+        // Add staggered animation delays first
         const fadeElements = document.querySelectorAll('.fade-in');
         fadeElements.forEach((element, index) => {
             element.style.animationDelay = `${index * 0.1}s`;
-            element.style.animationFillMode = 'both'; // Maintain final state after animation
+            element.style.animationFillMode = 'both';
         });
 
-        // Add smooth scrolling behavior
-        document.documentElement.style.scrollBehavior = 'smooth';
-
-        // Debug: Log model data to console
-        console.log('Attendance History page loaded successfully');
-        console.log('Model data available:', @Html.Raw(Json.Serialize(Model != null)));
-        console.log('Model success:', @Html.Raw(Json.Serialize(Model?.Success ?? false)));
-        console.log('Total records:', @Html.Raw(Json.Serialize(Model?.TotalRecords ?? 0)));
-        
-        // Ensure content visibility after animations
+        // Initialize table AFTER animations to prevent clearing server-rendered content
         setTimeout(() => {
-            fadeElements.forEach(element => {
-                element.style.opacity = '1';
-                element.style.transform = 'none';
+            initializeTable();
+        }, 1000); // Wait for animations to complete
+
+        console.log('Attendance History page loaded with', allRecords.length, 'records');
+    });
+
+    function initializeTable() {
+        // Don't clear existing table content on initial load
+        // Only apply filters and sort, then update pagination
+        applyFiltersAndSort();
+        updatePagination();
+        
+        // Only call showCurrentPage if we need to filter/paginate
+        if (filteredRecords.length !== allRecords.length || filteredRecords.length > rowsPerPage) {
+            showCurrentPage();
+        } else {
+            // Just update the pagination info without clearing the table
+            updateShowingText();
+        }
+    }
+
+    // Filter Modal Functions
+    function openFilterModal() {
+        const modal = document.getElementById('filterModal');
+        const modalContent = document.getElementById('filterModalContent');
+        
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            modalContent.classList.remove('scale-95', 'opacity-0');
+            modalContent.classList.add('scale-100', 'opacity-100', 'filter-modal-entrance');
+        }, 50);
+    }
+
+    function closeFilterModal() {
+        const modal = document.getElementById('filterModal');
+        const modalContent = document.getElementById('filterModalContent');
+        
+        modalContent.classList.remove('scale-100', 'opacity-100');
+        modalContent.classList.add('scale-95', 'opacity-0');
+        
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 300);
+    }
+
+    function applyFilters() {
+        // Get filter values from the modal
+        currentFilters.dateFrom = document.getElementById('dateFrom').value;
+        currentFilters.dateTo = document.getElementById('dateTo').value;
+        currentFilters.course = document.getElementById('courseFilter').value;
+        currentFilters.class = document.getElementById('classFilter').value;
+        currentFilters.status = document.getElementById('statusFilter').value;
+        currentFilters.faculty = document.getElementById('facultyFilter').value;
+
+        // Apply filters using C# backend logic in JavaScript
+        applyFiltersAndSort();
+        
+        // Reset to first page
+        currentPage = 1;
+        updatePagination();
+        showCurrentPage();
+        
+        // Update UI
+        updateActiveFiltersDisplay();
+        updateFilterCount();
+        
+        closeFilterModal();
+    }
+
+    function applyFiltersAndSort() {
+        // Start with all records
+        filteredRecords = [...allRecords];
+
+        // Apply filters using C# backend logic
+        filteredRecords = filteredRecords.filter(record => {
+            // Date range filter
+            if (currentFilters.dateFrom || currentFilters.dateTo) {
+                const recordDate = new Date(record.attendanceDate);
+                if (currentFilters.dateFrom && recordDate < new Date(currentFilters.dateFrom)) return false;
+                if (currentFilters.dateTo && recordDate > new Date(currentFilters.dateTo)) return false;
+            }
+
+            // Course filter
+            if (currentFilters.course && record.courseName !== currentFilters.course) return false;
+
+            // Class filter
+            if (currentFilters.class && record.sectionName !== currentFilters.class) return false;
+
+            // Faculty filter
+            if (currentFilters.faculty && record.facultyName !== currentFilters.faculty) return false;
+
+            // Status filter - handle different formats like C# backend
+            if (currentFilters.status) {
+                const recordStatus = record.status?.toLowerCase();
+                const filterStatus = currentFilters.status.toLowerCase();
+                
+                let statusMatch = false;
+                if ((filterStatus === 'present' && (recordStatus === 'present' || recordStatus === '1')) ||
+                    (filterStatus === 'late' && (recordStatus === 'late' || recordStatus === '2')) ||
+                    (filterStatus === 'absent' && (recordStatus === 'absent' || recordStatus === '0')) ||
+                    (filterStatus === 'excused' && (recordStatus === 'excused' || recordStatus === '3'))) {
+                    statusMatch = true;
+                }
+                if (!statusMatch) return false;
+            }
+
+            return true;
+        });
+
+        // Apply sorting using C# backend logic
+        filteredRecords.sort((a, b) => {
+            let aValue, bValue;
+            
+            switch(currentSort.column) {
+                case 'date':
+                    aValue = new Date(a.attendanceDate);
+                    bValue = new Date(b.attendanceDate);
+                    break;
+                case 'course':
+                    aValue = a.courseName?.toLowerCase() || '';
+                    bValue = b.courseName?.toLowerCase() || '';
+                    break;
+                case 'courseCode':
+                    aValue = a.courseCode?.toLowerCase() || '';
+                    bValue = b.courseCode?.toLowerCase() || '';
+                    break;
+                case 'class':
+                    aValue = a.sectionName?.toLowerCase() || '';
+                    bValue = b.sectionName?.toLowerCase() || '';
+                    break;
+                case 'status':
+                    aValue = a.status?.toLowerCase() || '';
+                    bValue = b.status?.toLowerCase() || '';
+                    break;
+                default:
+                    return 0;
+            }
+            
+            if (aValue < bValue) return currentSort.direction === 'asc' ? -1 : 1;
+            if (aValue > bValue) return currentSort.direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+
+        // Update records info
+        document.getElementById('recordsInfo').textContent = 
+            `Showing ${filteredRecords.length} of ${allRecords.length} records`;
+    }
+
+    function clearFilters() {
+        document.getElementById('dateFrom').value = '';
+        document.getElementById('dateTo').value = '';
+        document.getElementById('courseFilter').value = '';
+        document.getElementById('classFilter').value = '';
+        document.getElementById('statusFilter').value = '';
+        document.getElementById('facultyFilter').value = '';
+    }
+
+    function clearAllFilters() {
+        clearFilters();
+        currentFilters = {
+            dateFrom: '',
+            dateTo: '',
+            course: '',
+            class: '',
+            status: '',
+            faculty: ''
+        };
+        applyFiltersAndSort();
+        currentPage = 1;
+        updatePagination();
+        showCurrentPage();
+        updateActiveFiltersDisplay();
+        updateFilterCount();
+    }
+
+    // Sort Functions
+    function openSortModal() {
+        const modal = document.getElementById('sortModal');
+        const modalContent = document.getElementById('sortModalContent');
+        
+        // Set current sort values
+        document.getElementById('sortBy').value = currentSort.column;
+        document.querySelector(`input[name="sortDirection"][value="${currentSort.direction}"]`).checked = true;
+        
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            modalContent.classList.remove('scale-95', 'opacity-0');
+            modalContent.classList.add('scale-100', 'opacity-100', 'filter-modal-entrance');
+        }, 50);
+    }
+
+    function closeSortModal() {
+        const modal = document.getElementById('sortModal');
+        const modalContent = document.getElementById('sortModalContent');
+        
+        modalContent.classList.remove('scale-100', 'opacity-100');
+        modalContent.classList.add('scale-95', 'opacity-0');
+        
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 300);
+    }
+
+    function applySort() {
+        const sortBy = document.getElementById('sortBy').value;
+        const sortDirection = document.querySelector('input[name="sortDirection"]:checked').value;
+        
+        currentSort = { column: sortBy, direction: sortDirection };
+        
+        applyFiltersAndSort();
+        showCurrentPage();
+        
+        closeSortModal();
+    }
+
+    function toggleSort(column) {
+        if (currentSort.column === column) {
+            currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+        } else {
+            currentSort.column = column;
+            currentSort.direction = 'desc';
+        }
+        
+        applyFiltersAndSort();
+        showCurrentPage();
+    }
+
+    // Pagination Functions
+    function updatePagination() {
+        const totalPages = Math.ceil(filteredRecords.length / rowsPerPage);
+        const pageNumbers = document.getElementById('pageNumbers');
+        const prevBtn = document.getElementById('prevPageBtn');
+        const nextBtn = document.getElementById('nextPageBtn');
+        
+        prevBtn.disabled = currentPage === 1;
+        nextBtn.disabled = currentPage === totalPages || totalPages === 0;
+        
+        pageNumbers.innerHTML = '';
+        
+        if (totalPages <= 7) {
+            for (let i = 1; i <= totalPages; i++) {
+                pageNumbers.appendChild(createPageButton(i));
+            }
+        } else {
+            pageNumbers.appendChild(createPageButton(1));
+            
+            if (currentPage > 3) {
+                pageNumbers.appendChild(createEllipsis());
+            }
+            
+            const start = Math.max(2, currentPage - 1);
+            const end = Math.min(totalPages - 1, currentPage + 1);
+            
+            for (let i = start; i <= end; i++) {
+                pageNumbers.appendChild(createPageButton(i));
+            }
+            
+            if (currentPage < totalPages - 2) {
+                pageNumbers.appendChild(createEllipsis());
+            }
+            
+            if (totalPages > 1) {
+                pageNumbers.appendChild(createPageButton(totalPages));
+            }
+        }
+    }
+
+    function createPageButton(page) {
+        const button = document.createElement('button');
+        button.className = `pagination-button px-3 py-2 text-sm font-medium border border-gray-300 ${
+            currentPage === page 
+                ? 'bg-blue-600 text-white border-blue-600' 
+                : 'text-gray-500 bg-white hover:bg-gray-50'
+        }`;
+        button.textContent = page;
+        button.onclick = () => showPage(page);
+        return button;
+    }
+
+    function createEllipsis() {
+        const span = document.createElement('span');
+        span.className = 'px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300';
+        span.textContent = '...';
+        return span;
+    }
+
+    function showPage(page) {
+        currentPage = page;
+        showCurrentPage();
+        updatePagination();
+    }
+
+    function showCurrentPage() {
+        const start = (currentPage - 1) * rowsPerPage;
+        const end = start + rowsPerPage;
+        const pageRecords = filteredRecords.slice(start, end);
+        
+        const tbody = document.getElementById('attendanceTableBody');
+        
+        // Only clear and rebuild if we're actually filtering/paginating
+        if (currentPage > 1 || pageRecords.length < filteredRecords.length || hasActiveFilters() || currentSort.column !== 'date' || currentSort.direction !== 'desc') {
+            tbody.innerHTML = '';
+            
+            pageRecords.forEach(record => {
+                const row = createTableRow(record);
+                tbody.appendChild(row);
             });
-        }, 2000);
+        }
+        
+        updateShowingText();
+    }
+
+    function hasActiveFilters() {
+        return Object.values(currentFilters).some(value => value !== '');
+    }
+
+    function createTableRow(record) {
+        const row = document.createElement('tr');
+        row.className = 'hover:bg-gray-50 attendance-row';
+        
+        // Format date
+        const date = new Date(record.attendanceDate);
+        const formattedDate = date.toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'short', 
+            day: 'numeric' 
+        });
+        
+        // Get status display info
+        const statusClass = getStatusBadgeClass(record.status);
+        const statusIcon = getStatusIcon(record.status);
+        const statusText = getStatusDisplayText(record.status);
+        
+        row.innerHTML = `
+            <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">${formattedDate}</td>
+            <td class="px-4 py-4 text-sm text-gray-900">
+                <div class="font-medium">${record.courseName || 'N/A'}</div>
+                ${record.facultyName ? `<div class="text-xs text-gray-500 mt-1">Faculty: ${record.facultyName}</div>` : ''}
+            </td>
+            <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 font-mono">${record.courseCode || 'N/A'}</td>
+            <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">${record.sectionName || 'N/A'}</td>
+            <td class="px-4 py-4 whitespace-nowrap">
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${statusClass}">
+                    <i class="${statusIcon} mr-1"></i>
+                    ${statusText}
+                </span>
+            </td>
+        `;
+        
+        return row;
+    }
+
+    function updateShowingText() {
+        const start = Math.min((currentPage - 1) * rowsPerPage + 1, filteredRecords.length);
+        const end = Math.min(currentPage * rowsPerPage, filteredRecords.length);
+        
+        document.getElementById('showingStart').textContent = filteredRecords.length === 0 ? 0 : start;
+        document.getElementById('showingEnd').textContent = end;
+        document.getElementById('totalRecordsCount').textContent = filteredRecords.length;
+    }
+
+    // Helper functions for status display (matching C# backend)
+    function getStatusBadgeClass(status) {
+        const s = status?.toLowerCase();
+        if (s === 'present' || s === '1') return 'bg-green-100 text-green-800';
+        if (s === 'late' || s === '2') return 'bg-yellow-100 text-yellow-800';
+        if (s === 'absent' || s === '0') return 'bg-red-100 text-red-800';
+        if (s === 'excused' || s === '3') return 'bg-blue-100 text-blue-800';
+        return 'bg-gray-100 text-gray-800';
+    }
+
+    function getStatusIcon(status) {
+        const s = status?.toLowerCase();
+        if (s === 'present' || s === '1') return 'fas fa-check-circle';
+        if (s === 'late' || s === '2') return 'fas fa-clock';
+        if (s === 'absent' || s === '0') return 'fas fa-times-circle';
+        if (s === 'excused' || s === '3') return 'fas fa-user-clock';
+        return 'fas fa-question-circle';
+    }
+
+    function getStatusDisplayText(status) {
+        const s = status?.toLowerCase();
+        if (s === 'present' || s === '1') return 'Present';
+        if (s === 'late' || s === '2') return 'Late';
+        if (s === 'absent' || s === '0') return 'Absent';
+        if (s === 'excused' || s === '3') return 'Excused';
+        return `Unknown (${status})`;
+    }
+
+    // Active filters display
+    function updateActiveFiltersDisplay() {
+        const container = document.getElementById('activeFilters');
+        const clearBtn = document.getElementById('clearFiltersBtn');
+        
+        container.innerHTML = '';
+        
+        const activeFilterCount = Object.values(currentFilters).filter(v => v !== '').length;
+        
+        if (activeFilterCount === 0) {
+            container.classList.add('hidden');
+            clearBtn.classList.add('hidden');
+            return;
+        }
+
+        container.classList.remove('hidden');
+        clearBtn.classList.remove('hidden');
+
+        Object.entries(currentFilters).forEach(([key, value]) => {
+            if (value) {
+                const badge = document.createElement('span');
+                badge.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 filter-badge';
+                
+                let displayText = '';
+                switch(key) {
+                    case 'dateFrom': displayText = `From: ${value}`; break;
+                    case 'dateTo': displayText = `To: ${value}`; break;
+                    case 'course': displayText = `Course: ${value}`; break;
+                    case 'class': displayText = `Class: ${value}`; break;
+                    case 'status': displayText = `Status: ${value}`; break;
+                    case 'faculty': displayText = `Faculty: ${value}`; break;
+                }
+                
+                badge.innerHTML = `${displayText} <button onclick="removeFilter('${key}')" class="ml-1 text-blue-600 hover:text-blue-800"><i class="fas fa-times"></i></button>`;
+                container.appendChild(badge);
+            }
+        });
+    }
+
+    function removeFilter(filterKey) {
+        currentFilters[filterKey] = '';
+        
+        // Clear corresponding form field
+        const fieldMap = {
+            'dateFrom': 'dateFrom',
+            'dateTo': 'dateTo',
+            'course': 'courseFilter',
+            'class': 'classFilter',
+            'status': 'statusFilter',
+            'faculty': 'facultyFilter'
+        };
+        
+        const fieldId = fieldMap[filterKey];
+        if (fieldId) {
+            document.getElementById(fieldId).value = '';
+        }
+        
+        applyFiltersAndSort();
+        currentPage = 1;
+        updatePagination();
+        showCurrentPage();
+        updateActiveFiltersDisplay();
+        updateFilterCount();
+    }
+
+    function updateFilterCount() {
+        const count = Object.values(currentFilters).filter(v => v !== '').length;
+        const badge = document.getElementById('filterCount');
+        
+        if (count > 0) {
+            badge.textContent = count;
+            badge.classList.remove('hidden');
+        } else {
+            badge.classList.add('hidden');
+        }
+    }
+
+    // Modal backdrop click handlers
+    document.getElementById('filterModal').addEventListener('click', function(e) {
+        if (e.target === this) closeFilterModal();
+    });
+
+    document.getElementById('sortModal').addEventListener('click', function(e) {
+        if (e.target === this) closeSortModal();
     });
 </script>
+}
