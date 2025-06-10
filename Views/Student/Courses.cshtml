@@ -1,9 +1,24 @@
-@* filepath: d:\repos\AttendanceApp_ASPNET\Views\Student\Courses.cshtml *@
+@model AttendanceApp_ASPNET.Services.CourseDataResult
 @{
     ViewData["Title"] = "My Courses";
 }
 
 <div class="courses-page">
+    <!-- Error Message Display -->
+    @if (!string.IsNullOrEmpty(ViewBag.ErrorMessage))
+    {
+        <div class="mb-6 bg-red-50 border border-red-200 rounded-lg p-4 dashboard-card-entrance">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-exclamation-circle text-red-400"></i>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm text-red-600">@ViewBag.ErrorMessage</p>
+                </div>
+            </div>
+        </div>
+    }
+
     <!-- Page Header -->
     <div class="mb-8">
         <div class="flex items-center justify-between">
@@ -23,239 +38,295 @@
         </div>
     </div>
 
-    <!-- Current Academic Year Courses Container -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-8 dashboard-card-entrance">
-        <div class="p-6 border-b border-gray-200">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h2 class="text-xl font-semibold text-gray-900">Current Academic Year 2024-2025</h2>
-                    <p class="text-sm text-gray-600 mt-1">Your enrolled courses for this academic year</p>
+    @if (Model?.Success == true)
+    {
+        <!-- Current Academic Year Courses Container -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-8 dashboard-card-entrance">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-xl font-semibold text-gray-900">Current Academic Year 2024-2025</h2>
+                        <p class="text-sm text-gray-600 mt-1">Your enrolled courses for this academic year</p>
+                    </div>
+                    <div class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                        @Model.TotalCurrent Course@(Model.TotalCurrent != 1 ? "s" : "")
+                    </div>
                 </div>
-                <div class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-                    Active
-                </div>
+            </div>
+
+            <!-- Semester Tabs with Dynamic Data -->
+            @{
+                var currentCoursesBySemester = Model.CurrentCourses.GroupBy(c => c.Semester).ToDictionary(g => g.Key, g => g.ToList());
+                var semesters = new[] { "1st", "2nd", "3rd", "Summer" };
+            }
+            <div class="border-b border-gray-200">
+                <nav class="flex space-x-8 px-6" aria-label="Semester Tabs">
+                    @foreach (var semester in semesters)
+                    {
+                        var courses = currentCoursesBySemester.ContainsKey(semester) ? currentCoursesBySemester[semester] : new List<AttendanceApp_ASPNET.Services.CourseInfo>();
+                        var isFirst = semester == semesters.First();
+                        
+                        <button onclick="showSemester('@semester')" id="tab-@semester" class="semester-tab @(isFirst ? "active-tab border-b-2 border-blue-500 text-blue-600" : "border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300") py-4 px-1 text-sm font-medium transition-all duration-200">
+                            @semester Semester
+                            <span class="ml-2 @(isFirst ? "bg-blue-100 text-blue-600" : "bg-gray-100 text-gray-600") text-xs px-2 py-0.5 rounded-full">@courses.Count</span>
+                        </button>
+                    }
+                </nav>
+            </div>
+
+            <!-- Semester Content -->
+            <div class="p-6">
+                @foreach (var semester in semesters)
+                {
+                    var courses = currentCoursesBySemester.ContainsKey(semester) ? currentCoursesBySemester[semester] : new List<AttendanceApp_ASPNET.Services.CourseInfo>();
+                    var isFirst = semester == semesters.First();
+                    
+                    <div id="content-@semester" class="semester-content @(isFirst ? "" : "hidden")">
+                        @if (courses.Any())
+                        {
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                @foreach (var course in courses)
+                                {
+                                    <div class="course-card bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-lg hover:border-blue-300 transition-all duration-300 cursor-pointer transform hover:scale-105" onclick="openCourse(@course.CourseId, '@Html.Raw(Html.Encode(course.CourseName))')">
+                                        <div class="flex items-start justify-between mb-3">
+                                            <div>
+                                                <h3 class="font-semibold text-gray-900 hover:text-blue-600 transition-colors">@course.CourseName</h3>
+                                                <p class="text-sm text-blue-600 font-medium">@course.CourseCode</p>
+                                            </div>
+                                            <div class="flex items-center space-x-2">
+                                                <span class="@GetStatusBadgeClass(course.EnrollmentStatus) text-xs font-medium px-2 py-1 rounded">
+                                                    @GetStatusDisplayText(course.EnrollmentStatus)
+                                                </span>
+                                                <i class="fas fa-arrow-right text-gray-400 text-sm hover:text-blue-500 transition-colors"></i>
+                                            </div>
+                                        </div>
+                                        <p class="text-sm text-gray-600 mb-3">@course.CourseDescription</p>
+                                        <div class="flex items-center justify-between text-sm text-gray-500">
+                                            <span><i class="fas fa-user-tie mr-1"></i>@course.FacultyName</span>
+                                            <span><i class="fas fa-door-open mr-1"></i>@(!string.IsNullOrEmpty(course.Room) ? course.Room : "TBA")</span>
+                                        </div>
+                                        <div class="mt-2 text-xs text-gray-500">
+                                            <span>@course.Semester • @course.AcademicYear</span>
+                                        </div>
+                                        <!-- Click indicator -->
+                                        <div class="mt-3 flex items-center justify-center text-xs text-gray-500 opacity-75">
+                                            <i class="fas fa-mouse-pointer mr-1"></i>
+                                            <span>Click to view details</span>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-center py-12">
+                                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <i class="fas fa-@(semester == "Summer" ? "sun" : "calendar-alt") text-gray-400 text-xl"></i>
+                                </div>
+                                <h3 class="text-lg font-medium text-gray-900 mb-2">@semester Semester</h3>
+                                <p class="text-gray-600">No courses enrolled for @semester.ToLower() semester.</p>
+                            </div>
+                        }
+                    </div>
+                }
             </div>
         </div>
 
-        <!-- Semester Tabs -->
-        <div class="border-b border-gray-200">
-            <nav class="flex space-x-8 px-6" aria-label="Semester Tabs">
-                <button onclick="showSemester('1st')" id="tab-1st" class="semester-tab active-tab border-b-2 border-blue-500 py-4 px-1 text-sm font-medium text-blue-600">
-                    1st Semester
-                    <span class="ml-2 bg-blue-100 text-blue-600 text-xs px-2 py-0.5 rounded-full">6</span>
+        <!-- Previous Academic Years Container -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 dashboard-card-entrance">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-xl font-semibold text-gray-900">Previous Academic Years</h2>
+                        <p class="text-sm text-gray-600 mt-1">View your completed courses from previous years (@Model.TotalPrevious total)</p>
+                    </div>
+                    @if (Model.PreviousCourses.Any())
+                    {
+                        <div class="relative">
+                            <!-- Modern Academic Year Filter -->
+                            <select id="academicYearFilter" class="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2.5 pr-10 text-sm font-medium text-gray-700 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 cursor-pointer shadow-sm min-w-[180px]">
+                                <option value="">All Previous Years</option>
+                                @{
+                                    var previousYears = Model.PreviousCourses.Select(c => c.AcademicYear).Distinct().OrderByDescending(y => y);
+                                }
+                                @foreach (var year in previousYears)
+                                {
+                                    <option value="@year">@year</option>
+                                }
+                            </select>
+                            <!-- Custom dropdown arrow -->
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Previous Courses Content -->
+            <div class="p-6" id="previousCoursesContent">
+                @if (Model.PreviousCourses.Any())
+                {
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" id="previousCoursesList">
+                        @foreach (var course in Model.PreviousCourses)
+                        {
+                            <div class="course-card bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4 border border-gray-200 hover:shadow-lg hover:border-blue-300 transition-all duration-300 cursor-pointer transform hover:scale-105" 
+                                 data-academic-year="@course.AcademicYear" 
+                                 onclick="openCourse(@course.CourseId, '@Html.Raw(Html.Encode(course.CourseName))')">
+                                <div class="flex items-start justify-between mb-3">
+                                    <div>
+                                        <h3 class="font-semibold text-gray-900 hover:text-blue-600 transition-colors">@course.CourseName</h3>
+                                        <p class="text-sm text-blue-600 font-medium">@course.CourseCode</p>
+                                    </div>
+                                    <div class="flex items-center space-x-2">
+                                        <span class="@GetStatusBadgeClass(course.EnrollmentStatus) text-xs font-medium px-2.5 py-1 rounded-full">
+                                            @GetStatusDisplayText(course.EnrollmentStatus)
+                                        </span>
+                                        <i class="fas fa-arrow-right text-gray-400 text-sm hover:text-blue-500 transition-colors"></i>
+                                    </div>
+                                </div>
+                                <p class="text-sm text-gray-600 mb-3">@course.CourseDescription</p>
+                                <div class="flex items-center justify-between text-sm text-gray-500 mb-3">
+                                    <span><i class="fas fa-user-tie mr-1"></i>@course.FacultyName</span>
+                                    <span><i class="fas fa-calendar mr-1"></i>@course.AcademicYear</span>
+                                </div>
+                                <div class="text-xs text-gray-500 mb-2">
+                                    <span>@course.Semester • Room: @(!string.IsNullOrEmpty(course.Room) ? course.Room : "TBA")</span>
+                                </div>
+                                @if (!string.IsNullOrEmpty(course.RejectionReason))
+                                {
+                                    <div class="text-xs text-red-600 bg-red-50 rounded px-2 py-1 mb-2">
+                                        <i class="fas fa-info-circle mr-1"></i>@course.RejectionReason
+                                    </div>
+                                }
+                                <!-- Click indicator -->
+                                <div class="mt-3 flex items-center justify-center text-xs text-gray-500 opacity-75">
+                                    <i class="fas fa-mouse-pointer mr-1"></i>
+                                    <span>Click to view details</span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-12">
+                        <div class="w-16 h-16 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-history text-blue-500 text-xl"></i>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">No Previous Courses</h3>
+                        <p class="text-gray-600">You haven't taken any previous courses yet.</p>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Enhanced Error State -->
+        <div class="text-center py-12 dashboard-card-entrance">
+            <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-exclamation-triangle text-red-500 text-xl"></i>
+            </div>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">Unable to Load Courses</h3>
+            <p class="text-gray-600 mb-4">@(Model?.Message ?? "There was an error loading your courses.")</p>
+            
+            @if (Model?.Message?.Contains("connect") == true || Model?.Message?.Contains("timeout") == true || Model?.Message?.Contains("server") == true)
+            {
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4 max-w-md mx-auto">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-info-circle text-yellow-400"></i>
+                        </div>
+                        <div class="ml-3 text-left">
+                            <h4 class="text-sm font-medium text-yellow-800">Connection Issue</h4>
+                            <p class="text-sm text-yellow-700 mt-1">
+                                Make sure the Python API server is running on <code class="bg-yellow-100 px-1 rounded">http://localhost:8000</code>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            }
+            
+            <div class="flex justify-center space-x-3">
+                <button onclick="window.location.reload()" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-refresh mr-2"></i>Retry
                 </button>
-                <button onclick="showSemester('2nd')" id="tab-2nd" class="semester-tab border-b-2 border-transparent py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">
-                    2nd Semester
-                    <span class="ml-2 bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded-full">8</span>
+                <button onclick="window.location.href='/Student/Dashboard'" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition-colors">
+                    <i class="fas fa-home mr-2"></i>Back to Dashboard
                 </button>
-                <button onclick="showSemester('3rd')" id="tab-3rd" class="semester-tab border-b-2 border-transparent py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">
-                    3rd Semester
-                    <span class="ml-2 bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded-full">4</span>
-                </button>
-                <button onclick="showSemester('summer')" id="tab-summer" class="semester-tab border-b-2 border-transparent py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">
-                    Summer
-                    <span class="ml-2 bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded-full">2</span>
-                </button>
-            </nav>
+            </div>
+            
+            @if (Model?.Message?.Contains("connect") == true || Model?.Message?.Contains("timeout") == true)
+            {
+                <div class="mt-6 text-xs text-gray-500">
+                    <p>Troubleshooting steps:</p>
+                    <ul class="text-left max-w-md mx-auto mt-2 space-y-1">
+                        <li>• Check if the Python API is running</li>
+                        <li>• Verify the API URL in settings</li>
+                        <li>• Check your internet connection</li>
+                        <li>• Try refreshing the page</li>
+                    </ul>
+                </div>
+            }
         </div>
-
-        <!-- Semester Content -->
-        <div class="p-6">
-            <!-- 1st Semester Content -->
-            <div id="content-1st" class="semester-content">
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <!-- Sample Course Cards for 1st Semester -->
-                    <div class="course-card bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-lg hover:border-blue-300 transition-all duration-300 cursor-pointer transform hover:scale-105" onclick="openCourse(301, 'Advanced Programming')">
-                        <div class="flex items-start justify-between mb-3">
-                            <div>
-                                <h3 class="font-semibold text-gray-900 hover:text-blue-600 transition-colors">Advanced Programming</h3>
-                                <p class="text-sm text-blue-600 font-medium">CS301</p>
-                            </div>
-                            <div class="flex items-center space-x-2">
-                                <span class="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded">
-                                    Active
-                                </span>
-                                <i class="fas fa-arrow-right text-gray-400 text-sm hover:text-blue-500 transition-colors"></i>
-                            </div>
-                        </div>
-                        <p class="text-sm text-gray-600 mb-3">Object-oriented programming concepts and design patterns</p>
-                        <div class="flex items-center justify-between text-sm text-gray-500">
-                            <span><i class="fas fa-user-tie mr-1"></i>Prof. Smith</span>
-                            <span><i class="fas fa-clock mr-1"></i>MWF 10:00-11:30</span>
-                        </div>
-                        <div class="mt-3">
-                            <div class="flex items-center justify-between mb-1">
-                                <span class="text-xs text-gray-600">Attendance</span>
-                                <span class="text-xs font-semibold text-green-600">92%</span>
-                            </div>
-                            <div class="w-full bg-gray-200 rounded-full h-2">
-                                <div class="bg-green-500 h-2 rounded-full" style="width: 92%"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="course-card bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-lg hover:border-blue-300 transition-all duration-300 cursor-pointer transform hover:scale-105" onclick="openCourse(302, 'Database Systems')">
-                        <div class="flex items-start justify-between mb-3">
-                            <div>
-                                <h3 class="font-semibold text-gray-900 hover:text-blue-600 transition-colors">Database Systems</h3>
-                                <p class="text-sm text-blue-600 font-medium">CS302</p>
-                            </div>
-                            <div class="flex items-center space-x-2">
-                                <span class="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded">
-                                    Active
-                                </span>
-                                <i class="fas fa-arrow-right text-gray-400 text-sm hover:text-blue-500 transition-colors"></i>
-                            </div>
-                        </div>
-                        <p class="text-sm text-gray-600 mb-3">Relational database design and SQL programming</p>
-                        <div class="flex items-center justify-between text-sm text-gray-500">
-                            <span><i class="fas fa-user-tie mr-1"></i>Prof. Johnson</span>
-                            <span><i class="fas fa-clock mr-1"></i>TTh 2:00-3:30</span>
-                        </div>
-                        <div class="mt-3">
-                            <div class="flex items-center justify-between mb-1">
-                                <span class="text-xs text-gray-600">Attendance</span>
-                                <span class="text-xs font-semibold text-yellow-600">75%</span>
-                            </div>
-                            <div class="w-full bg-gray-200 rounded-full h-2">
-                                <div class="bg-yellow-500 h-2 rounded-full" style="width: 75%"></div>
-                            </div>
-                        </div>
-                        <!-- Click indicator -->
-                        <div class="mt-3 flex items-center justify-center text-xs text-gray-500 opacity-75">
-                            <i class="fas fa-mouse-pointer mr-1"></i>
-                        </div>
-                    </div>
-
-                    <!-- Add more course cards as needed -->
-                    <div class="col-span-full text-center py-8">
-                        <div class="text-gray-500">
-                            <i class="fas fa-plus-circle text-2xl mb-2"></i>
-                            <p class="text-sm">More courses will be loaded from the backend...</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 2nd Semester Content -->
-            <div id="content-2nd" class="semester-content hidden">
-                <div class="text-center py-12">
-                    <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <i class="fas fa-calendar-alt text-gray-400 text-xl"></i>
-                    </div>
-                    <h3 class="text-lg font-medium text-gray-900 mb-2">2nd Semester</h3>
-                    <p class="text-gray-600">Courses for 2nd semester will be available soon.</p>
-                </div>
-            </div>
-
-            <!-- 3rd Semester Content -->
-            <div id="content-3rd" class="semester-content hidden">
-                <div class="text-center py-12">
-                    <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <i class="fas fa-calendar-alt text-gray-400 text-xl"></i>
-                    </div>
-                    <h3 class="text-lg font-medium text-gray-900 mb-2">3rd Semester</h3>
-                    <p class="text-gray-600">Courses for 3rd semester will be available soon.</p>
-                </div>
-            </div>
-
-            <!-- Summer Content -->
-            <div id="content-summer" class="semester-content hidden">
-                <div class="text-center py-12">
-                    <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <i class="fas fa-sun text-yellow-400 text-xl"></i>
-                    </div>
-                    <h3 class="text-lg font-medium text-gray-900 mb-2">Summer Semester</h3>
-                    <p class="text-gray-600">Summer courses will be available during summer break.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Previous Academic Years Container -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 dashboard-card-entrance">
-        <div class="p-6 border-b border-gray-200">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h2 class="text-xl font-semibold text-gray-900">Previous Academic Years</h2>
-                    <p class="text-sm text-gray-600 mt-1">View your completed courses from previous years</p>
-                </div>
-                <div class="relative">
-                    <!-- Modern Academic Year Filter -->
-                    <select id="academicYearFilter" class="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2.5 pr-10 text-sm font-medium text-gray-700 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 cursor-pointer shadow-sm min-w-[180px]">
-                        <option value="">All Previous Years</option>
-                        <option value="2023-2024">2023-2024</option>
-                        <option value="2022-2023">2022-2023</option>
-                        <option value="2021-2022">2021-2022</option>
-                        <option value="2020-2021">2020-2021</option>
-                    </select>
-                    <!-- Custom dropdown arrow -->
-                    <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                        </svg>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Previous Courses Content -->
-        <div class="p-6" id="previousCoursesContent">
-            <!-- Default State -->
-            <div id="defaultPreviousState" class="text-center py-12">
-                <div class="w-16 h-16 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <i class="fas fa-history text-blue-500 text-xl"></i>
-                </div>
-                <h3 class="text-lg font-medium text-gray-900 mb-2">Select Academic Year</h3>
-                <p class="text-gray-600">Choose an academic year from the dropdown to view your previous courses, or view all previous years.</p>
-            </div>
-
-            <!-- Filtered Results (Initially Hidden) -->
-            <div id="filteredCoursesContainer" class="hidden">             
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <!-- Sample Previous Course Card -->
-                    <div class="course-card bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4 border border-gray-200 hover:shadow-lg hover:border-blue-300 transition-all duration-300 cursor-pointer transform hover:scale-105" onclick="openCourse(101, 'Introduction to Programming')">
-                        <div class="flex items-start justify-between mb-3">
-                            <div>
-                                <h3 class="font-semibold text-gray-900 hover:text-blue-600 transition-colors">Introduction to Programming</h3>
-                                <p class="text-sm text-blue-600 font-medium">CS101</p>
-                            </div>
-                            <div class="flex items-center space-x-2">
-                                <span class="bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 text-xs font-medium px-2.5 py-1 rounded-full">
-                                    Completed
-                                </span>
-                                <i class="fas fa-arrow-right text-gray-400 text-sm hover:text-blue-500 transition-colors"></i>
-                            </div>
-                        </div>
-                        <p class="text-sm text-gray-600 mb-3">Fundamentals of programming and problem solving</p>
-                        <div class="flex items-center justify-between text-sm text-gray-500 mb-3">
-                            <span><i class="fas fa-user-tie mr-1"></i>Prof. Williams</span>
-                            <span><i class="fas fa-calendar mr-1"></i>2023-2024</span>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <div class="text-sm">
-                                <span class="text-gray-600">Final Grade:</span>
-                                <span class="font-semibold text-green-600 ml-1">A</span>
-                            </div>
-                            <div class="text-sm">
-                                <span class="text-gray-600">Attendance:</span>
-                                <span class="font-semibold text-green-600 ml-1">95%</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Loading placeholder -->
-                    <div class="col-span-full text-center py-8">
-                        <div class="text-gray-500">
-                            <div class="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-                            <p class="text-sm">Loading course data...</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    }
 </div>
+
+@functions {
+    private string GetStatusBadgeClass(string status)
+    {
+        return status switch
+        {
+            "approved" => "bg-green-100 text-green-800",
+            "pending" => "bg-yellow-100 text-yellow-800",
+            "rejected" => "bg-red-100 text-red-800",
+            "not_enrolled" => "bg-gray-100 text-gray-800",
+            "attended_without_enrollment" => "bg-blue-100 text-blue-800",
+            _ => "bg-gray-100 text-gray-800"
+        };
+    }
+
+    private string GetStatusDisplayText(string status)
+    {
+        return status switch
+        {
+            "approved" => "Enrolled",
+            "pending" => "Pending",
+            "rejected" => "Rejected",
+            "not_enrolled" => "Not Enrolled",
+            "attended_without_enrollment" => "Attended",
+            _ => FormatStatusText(status)
+        };
+    }
+
+    private string FormatStatusText(string status)
+    {
+        if (string.IsNullOrEmpty(status))
+            return "Unknown";
+
+        // Replace underscores with spaces and capitalize first letter of each word
+        var words = status.Replace("_", " ").Split(' ');
+        var result = new System.Text.StringBuilder();
+        
+        foreach (var word in words)
+        {
+            if (!string.IsNullOrEmpty(word))
+            {
+                result.Append(char.ToUpper(word[0]));
+                if (word.Length > 1)
+                {
+                    result.Append(word.Substring(1).ToLower());
+                }
+                result.Append(" ");
+            }
+        }
+        
+        return result.ToString().Trim();
+    }
+}
 
 <style>
     .semester-tab {
@@ -328,49 +399,22 @@
         console.log(`Switched to ${semester} semester`);
     }
 
-    // Previous courses filter functionality
+    // Previous courses filter functionality with real data
     function filterPreviousCourses() {
         const selectedYear = document.getElementById('academicYearFilter').value;
-        const defaultState = document.getElementById('defaultPreviousState');
-        const filteredContainer = document.getElementById('filteredCoursesContainer');
-        const filterResultsText = document.getElementById('filterResultsText');
+        const courseCards = document.querySelectorAll('#previousCoursesList .course-card');
         
-        if (selectedYear) {
-            defaultState.classList.add('hidden');
-            filteredContainer.classList.remove('hidden');
-            filterResultsText.textContent = `Showing courses for ${selectedYear}`;
-            
-            console.log(`Filtering courses for academic year: ${selectedYear}`);
-        } else {
-            defaultState.classList.remove('hidden');
-            filteredContainer.classList.add('hidden');
-        }
-    }
-
-    // Clear filter function
-    function clearFilter() {
-        const academicYearFilter = document.getElementById('academicYearFilter');
-        academicYearFilter.value = '';
-        filterPreviousCourses();
-    }
-
-    // Add entrance animations
-    document.addEventListener('DOMContentLoaded', function() {
-        const cards = document.querySelectorAll('.dashboard-card-entrance');
-        cards.forEach((card, index) => {
-            card.style.animationDelay = `${index * 0.1}s`;
+        courseCards.forEach(card => {
+            const cardYear = card.getAttribute('data-academic-year');
+            if (!selectedYear || cardYear === selectedYear) {
+                card.style.display = 'block';
+            } else {
+                card.style.display = 'none';
+            }
         });
         
-        // Initialize with 1st semester selected
-        showSemester('1st');
-        
-        console.log('Courses page loaded successfully!');
-    });
-
-    // Auto-filter when dropdown changes (no button needed)
-    document.getElementById('academicYearFilter').addEventListener('change', function() {
-        filterPreviousCourses();
-    });
+        console.log(`Filtering courses for academic year: ${selectedYear || 'All'}`);
+    }
 
     // Course click functionality
     function openCourse(courseId, courseName) {
@@ -385,10 +429,40 @@
         
         // Navigate to course details page
         setTimeout(() => {
-            // Use actual navigation instead of alert
             window.location.href = `/Student/Courses/${courseId}`;
         }, 300);
     }
+
+    // Add entrance animations
+    document.addEventListener('DOMContentLoaded', function() {
+        const cards = document.querySelectorAll('.dashboard-card-entrance');
+        cards.forEach((card, index) => {
+            card.style.animationDelay = `${index * 0.1}s`;
+        });
+        
+        // Initialize with first available semester
+        const firstTab = document.querySelector('.semester-tab');
+        if (firstTab) {
+            const semester = firstTab.id.replace('tab-', '');
+            showSemester(semester);
+        }
+        
+        // Auto-filter when dropdown changes
+        const yearFilter = document.getElementById('academicYearFilter');
+        if (yearFilter) {
+            yearFilter.addEventListener('change', filterPreviousCourses);
+        }
+        
+        // Make course cards focusable for accessibility
+        const courseCards = document.querySelectorAll('.course-card');
+        courseCards.forEach(card => {
+            card.setAttribute('tabindex', '0');
+            card.setAttribute('role', 'button');
+            card.setAttribute('aria-label', 'View course details');
+        });
+        
+        console.log('Courses page loaded successfully!');
+    });
 
     // Add keyboard navigation support
     document.addEventListener('keydown', function(e) {
@@ -400,18 +474,4 @@
             }
         }
     });
-
-    // Make course cards focusable for accessibility
-    document.addEventListener('DOMContentLoaded', function() {
-        const courseCards = document.querySelectorAll('.course-card');
-        courseCards.forEach(card => {
-            card.setAttribute('tabindex', '0');
-            card.setAttribute('role', 'button');
-            card.setAttribute('aria-label', 'View course details');
-        });
-        
-        // ...existing code...
-    });
-
-    // ...existing code...
 </script>

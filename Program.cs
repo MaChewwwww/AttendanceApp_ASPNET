@@ -35,6 +35,7 @@ builder.Services.AddHttpClient<IEnvironmentService, EnvironmentService>();
 // Register consolidated services
 builder.Services.AddScoped<IEnvironmentService, EnvironmentService>();
 builder.Services.AddScoped<IStudentManagementService, StudentManagementService>();
+builder.Services.AddScoped<ICourseService, CourseService>();
 
 // Add antiforgery token services
 builder.Services.AddAntiforgery(options => {
