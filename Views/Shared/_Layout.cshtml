@@ -233,7 +233,7 @@
         }
     </style>
 </head>
-<body class="bg-gray-50">
+<body data-has-attendance-rate="@(ViewBag.HasAttendanceRate?.ToString().ToLower() ?? "false")">
     <!-- Onboarding Modal - OUTSIDE dashboard container to avoid blur effects -->
     @await Html.PartialAsync("_OnboardingModal")
     

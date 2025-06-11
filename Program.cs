@@ -38,6 +38,7 @@ builder.Services.AddScoped<IStudentManagementService, StudentManagementService>(
 builder.Services.AddScoped<ICourseService, CourseService>();
 builder.Services.AddScoped<IStudentHistoryService, StudentHistoryService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<IAttendanceService, AttendanceService>();
 
 // Add antiforgery token services
 builder.Services.AddAntiforgery(options => {

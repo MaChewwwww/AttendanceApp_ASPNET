@@ -35,6 +35,7 @@ namespace AttendanceApp_ASPNET.Services
         
         // Attendance data methods
         Task<string> GetStudentAttendanceAsync(string jwtToken);
+        Task<string> GetCurrentSemesterAttendanceAsync(string jwtToken);
         
         // Dashboard data methods
         Task<string> GetStudentDashboardAsync(string jwtToken);
@@ -221,6 +222,22 @@ namespace AttendanceApp_ASPNET.Services
             });
         }
 
+        public async Task<string> GetCurrentSemesterAttendanceAsync(string jwtToken)
+        {
+            return await GetApiRequestWithStructuredErrorAsync("/student/attendance/current-semester", jwtToken, "Failed to fetch current semester attendance", new
+            {
+                success = false,
+                message = "",
+                student_info = new { },
+                attendance_logs = new object[0],
+                total_logs = 0,
+                courses = new object[0],
+                academic_year = (object)null,
+                semester = (object)null,
+                attendance_summary = new { }
+            });
+        }
+
         public async Task<string> GetStudentDashboardAsync(string jwtToken)
         {
             return await GetApiRequestWithStructuredErrorAsync("/student/dashboard", jwtToken, "Failed to fetch student dashboard", new
@@ -334,7 +351,7 @@ namespace AttendanceApp_ASPNET.Services
                     return errorResponse.Replace("\"message\": \"\"", $"\"message\": \"API returned {response.StatusCode}: {responseContent}\"");
                 }
                 
-                return responseContent;
+                return responseContent ?? string.Empty;
             }
             catch (Exception ex)
             {

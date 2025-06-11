@@ -13,6 +13,7 @@ namespace AttendanceApp_ASPNET.Controllers
         private readonly ICourseService _courseService;
         private readonly IStudentHistoryService _studentHistoryService;
         private readonly IDashboardService _dashboardService;
+        private readonly IAttendanceService _attendanceService;
 
         public StudentController(
             IApiService apiService,
@@ -20,13 +21,15 @@ namespace AttendanceApp_ASPNET.Controllers
             IEnvironmentService environmentService,
             ICourseService courseService,
             IStudentHistoryService studentHistoryService,
-            IDashboardService dashboardService) : base(apiService)
+            IDashboardService dashboardService,
+            IAttendanceService attendanceService) : base(apiService)
         {
             _studentManagementService = studentManagementService;
             _environmentService = environmentService;
             _courseService = courseService;
             _studentHistoryService = studentHistoryService;
             _dashboardService = dashboardService;
+            _attendanceService = attendanceService;
         }
 
         public async Task<IActionResult> Dashboard()
@@ -42,10 +45,11 @@ namespace AttendanceApp_ASPNET.Controllers
             // Fetch weather data using consolidated service
             await _environmentService.SetWeatherViewBagAsync(this, HttpContext);
             
+            var jwtToken = HttpContext.Session.GetString("AuthToken");
+            
             // Fetch dashboard data from API
             try
             {
-                var jwtToken = HttpContext.Session.GetString("AuthToken");
                 if (!string.IsNullOrEmpty(jwtToken))
                 {
                     var dashboardData = await _dashboardService.GetStudentDashboardAsync(jwtToken);
@@ -87,6 +91,85 @@ namespace AttendanceApp_ASPNET.Controllers
                 ViewBag.HasDashboardData = false;
                 ViewBag.DashboardError = "Unable to load dashboard data";
                 Console.WriteLine($"Error fetching dashboard data: {ex.Message}");
+            }
+            
+            // Fetch attendance rate
+            try
+            {
+                if (!string.IsNullOrEmpty(jwtToken))
+                {
+                    Console.WriteLine("=== CONTROLLER: Starting attendance rate calculation ===");
+                    var attendanceRate = await _attendanceService.CalculateAttendanceRateAsync(jwtToken);
+                    
+                    Console.WriteLine($"CONTROLLER: Attendance service result - Success: {attendanceRate.Success}");
+                    Console.WriteLine($"CONTROLLER: Message: {attendanceRate.Message}");
+                    Console.WriteLine($"CONTROLLER: Rate: {attendanceRate.AttendanceRate}%");
+                    Console.WriteLine($"CONTROLLER: Total: {attendanceRate.TotalClasses}, Present: {attendanceRate.PresentClasses}, Absent: {attendanceRate.AbsentClasses}, Late: {attendanceRate.LateClasses}");
+                    
+                    if (attendanceRate.Success)
+                    {
+                        // Set ViewBag data regardless of total classes count
+                        ViewBag.AttendanceRate = attendanceRate.AttendanceRate;
+                        ViewBag.AttendanceDetails = new
+                        {
+                            TotalClasses = attendanceRate.TotalClasses,
+                            PresentClasses = attendanceRate.PresentClasses,
+                            AbsentClasses = attendanceRate.AbsentClasses,
+                            LateClasses = attendanceRate.LateClasses,
+                            AcademicYear = attendanceRate.AcademicYear ?? "2023-2024",
+                            Semester = attendanceRate.Semester ?? "1st Semester"
+                        };
+                        ViewBag.HasAttendanceRate = true;
+                        
+                        Console.WriteLine($"CONTROLLER: ViewBag set successfully");
+                        Console.WriteLine($"CONTROLLER: HasAttendanceRate = {ViewBag.HasAttendanceRate}");
+                        Console.WriteLine($"CONTROLLER: AttendanceRate = {ViewBag.AttendanceRate}");
+                        
+                        // Also fetch and pre-load charts data
+                        try
+                        {
+                            var chartsData = await _attendanceService.GetAttendanceChartsDataAsync(jwtToken);
+                            if (chartsData.Success)
+                            {
+                                ViewBag.AttendanceChartsData = chartsData;
+                                ViewBag.HasAttendanceChartsData = true;
+                                Console.WriteLine($"CONTROLLER: Charts data loaded - Weekly: {chartsData.WeeklyData.Count}, Monthly: {chartsData.MonthlyData.Count}, Course: {chartsData.CourseWiseData.Count}");
+                            }
+                            else
+                            {
+                                ViewBag.HasAttendanceChartsData = false;
+                                Console.WriteLine($"CONTROLLER: Charts data failed: {chartsData.Message}");
+                            }
+                        }
+                        catch (Exception chartsEx)
+                        {
+                            Console.WriteLine($"CONTROLLER: Error loading charts data: {chartsEx.Message}");
+                            ViewBag.HasAttendanceChartsData = false;
+                        }
+                    }
+                    else
+                    {
+                        ViewBag.AttendanceRate = 0;
+                        ViewBag.HasAttendanceRate = false;
+                        ViewBag.HasAttendanceChartsData = false;
+                        Console.WriteLine($"CONTROLLER: Attendance service failed - {attendanceRate.Message}");
+                    }
+                }
+                else
+                {
+                    ViewBag.AttendanceRate = 0;
+                    ViewBag.HasAttendanceRate = false;
+                    ViewBag.HasAttendanceChartsData = false;
+                    Console.WriteLine("CONTROLLER: No JWT token available for attendance rate calculation");
+                }
+            }
+            catch (Exception ex)
+            {
+                ViewBag.AttendanceRate = 0;
+                ViewBag.HasAttendanceRate = false;
+                ViewBag.HasAttendanceChartsData = false;
+                Console.WriteLine($"CONTROLLER: Exception in attendance rate calculation: {ex.Message}");
+                Console.WriteLine($"CONTROLLER: Stack trace: {ex.StackTrace}");
             }
             
             return View();
@@ -416,6 +499,36 @@ namespace AttendanceApp_ASPNET.Controllers
             {
                 Console.WriteLine($"Error loading course students for assigned course {assignedCourseId}: {ex.Message}");
                 return Json(new { success = false, message = "Unable to load course students at this time. Please try again later." });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetAttendanceChartsData()
+        {
+            try
+            {
+                var jwtToken = HttpContext.Session.GetString("AuthToken");
+                if (string.IsNullOrEmpty(jwtToken))
+                {
+                    return Json(new { success = false, message = "Authentication required" });
+                }
+
+                var chartsData = await _attendanceService.GetAttendanceChartsDataAsync(jwtToken);
+                
+                return Json(new
+                {
+                    success = chartsData.Success,
+                    message = chartsData.Message,
+                    weeklyData = chartsData.WeeklyData,
+                    monthlyData = chartsData.MonthlyData,
+                    courseWiseData = chartsData.CourseWiseData,
+                    overallStats = chartsData.OverallStats
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting attendance charts data: {ex.Message}");
+                return Json(new { success = false, message = "Unable to load charts data" });
             }
         }
     }
