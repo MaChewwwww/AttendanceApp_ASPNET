@@ -130,15 +130,36 @@ function initializeWeeklyTrendChart() {
     showEmptyChartState(ctx.parentElement, 'Weekly attendance trends will be displayed here once you start attending classes regularly');
 }
 
+function getColorForCourse(index) {
+    const colors = [
+        '#3B82F6', // Blue
+        '#10B981', // Green
+        '#F59E0B', // Yellow
+        '#EF4444', // Red
+        '#8B5CF6', // Purple
+        '#F97316', // Orange
+        '#06B6D4', // Cyan
+        '#84CC16', // Lime
+        '#EC4899', // Pink
+        '#6B7280'  // Gray
+    ];
+    return colors[index % colors.length];
+}
+
 function initializeMonthlyBarChart(monthlyData = null) {
     const ctx = document.getElementById('monthlyBarChart');
     if (!ctx) return;
 
+    console.log('Initializing monthly chart with data:', monthlyData);
+
     // Check if we have real data
     if (!monthlyData || monthlyData.length === 0) {
+        console.log('No monthly data available, showing empty state');
         showEmptyChartState(ctx.parentElement, 'Monthly attendance patterns will show your progress over time throughout the semester');
         return;
     }
+
+    console.log(`Processing ${monthlyData.length} monthly data points`);
 
     // Hide empty state if it exists and show canvas
     const container = ctx.parentElement;
@@ -148,55 +169,99 @@ function initializeMonthlyBarChart(monthlyData = null) {
     }
     ctx.style.display = 'block';
 
-    const months = monthlyData.map(item => item.month);
-    const monthlyRates = monthlyData.map(item => item.attendanceRate);
+    // For simple monthly data (no course breakdown), create a single line chart
+    const months = monthlyData.map(item => item.month || item.Month);
+    const monthlyRates = monthlyData.map(item => item.attendanceRate || item.AttendanceRate);
 
-    console.log('Monthly chart data:', { months, monthlyRates });
+    console.log('Final chart data:');
+    console.log('- Months:', months);
+    console.log('- Rates:', monthlyRates);
 
     // Destroy existing chart if it exists
     if (monthlyBarChart) {
         monthlyBarChart.destroy();
     }
 
+    // Create a beautiful line chart
     monthlyBarChart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: months,
             datasets: [{
-                label: 'Attendance Rate (%)',
+                label: 'Overall Attendance Rate',
                 data: monthlyRates,
                 borderColor: '#3B82F6',
-                backgroundColor: '#3B82F6',
-                borderWidth: 3,
-                fill: false,
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                borderWidth: 4,
+                fill: true,
                 tension: 0.4,
                 pointBackgroundColor: '#3B82F6',
                 pointBorderColor: '#ffffff',
-                pointBorderWidth: 2,
-                pointRadius: 6,
-                pointHoverRadius: 8
+                pointBorderWidth: 3,
+                pointRadius: 8,
+                pointHoverRadius: 12,
+                pointHoverBackgroundColor: '#1D4ED8',
+                pointHoverBorderColor: '#ffffff',
+                pointHoverBorderWidth: 4
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            animation: {
+                duration: 2000,
+                easing: 'easeInOutQuart'
+            },
+            layout: {
+                padding: {
+                    top: 20,
+                    right: 20,
+                    bottom: 20,
+                    left: 20
+                }
+            },
             scales: {
                 x: {
                     grid: {
+                        display: true,
+                        color: 'rgba(59, 130, 246, 0.1)',
+                        lineWidth: 1
+                    },
+                    ticks: {
+                        font: {
+                            size: 12,
+                            weight: '600'
+                        },
+                        color: '#374151',
+                        padding: 10
+                    },
+                    border: {
                         display: false
                     }
                 },
                 y: {
                     beginAtZero: false,
-                    min: Math.max(0, Math.min(...monthlyRates) - 10),
-                    max: Math.min(100, Math.max(...monthlyRates) + 5),
+                    min: Math.max(0, Math.min(...monthlyRates) - 15),
+                    max: Math.min(100, Math.max(...monthlyRates) + 15),
+                    grid: {
+                        display: true,
+                        color: 'rgba(156, 163, 175, 0.2)',
+                        lineWidth: 1
+                    },
                     ticks: {
                         callback: function(value) {
                             return value + '%';
-                        }
+                        },
+                        font: {
+                            size: 12,
+                            weight: '600'
+                        },
+                        color: '#374151',
+                        padding: 15,
+                        stepSize: 10
                     },
-                    grid: {
-                        color: '#F3F4F6'
+                    border: {
+                        display: false
                     }
                 }
             },
@@ -205,15 +270,51 @@ function initializeMonthlyBarChart(monthlyData = null) {
                     display: false
                 },
                 tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                    titleColor: '#ffffff',
+                    bodyColor: '#ffffff',
+                    borderColor: '#3B82F6',
+                    borderWidth: 2,
+                    cornerRadius: 12,
+                    padding: 16,
+                    titleFont: {
+                        size: 14,
+                        weight: 'bold'
+                    },
+                    bodyFont: {
+                        size: 13,
+                        weight: '500'
+                    },
+                    displayColors: false,
                     callbacks: {
+                        title: function(context) {
+                            return context[0].label;
+                        },
                         label: function(context) {
-                            return `Attendance: ${context.raw}%`;
+                            const dataPoint = monthlyData[context.dataIndex];
+                            return [
+                                `Attendance Rate: ${context.raw}%`,
+                                `Classes Attended: ${dataPoint.attendedClasses || dataPoint.AttendedClasses || 'N/A'}`,
+                                `Total Classes: ${dataPoint.totalClasses || dataPoint.TotalClasses || 'N/A'}`
+                            ];
                         }
                     }
+                }
+            },
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            },
+            elements: {
+                line: {
+                    borderCapStyle: 'round',
+                    borderJoinStyle: 'round'
                 }
             }
         }
     });
+
+    console.log('Monthly chart initialized successfully');
 }
 
 function initializeCourseWiseStats(courseData = null) {
