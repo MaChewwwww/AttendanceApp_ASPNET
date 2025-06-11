@@ -668,7 +668,8 @@ namespace AttendanceApp_ASPNET.Services
                 monthlyData.Add(new MonthlyDataPoint
                 {
                     Month = new DateTime(monthGroup.Key.Year, monthGroup.Key.Month, 1).ToString("MMM yyyy"),
-                    AttendanceRate = Math.Round(rate, 1),
+                    // Round to whole number to avoid floating point precision issues
+                    AttendanceRate = Math.Round(rate, 0),
                     TotalClasses = totalClasses,
                     AttendedClasses = attendedClasses
                 });

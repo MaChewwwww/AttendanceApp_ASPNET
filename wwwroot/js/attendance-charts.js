@@ -171,7 +171,11 @@ function initializeMonthlyBarChart(monthlyData = null) {
 
     // For simple monthly data (no course breakdown), create a single line chart
     const months = monthlyData.map(item => item.month || item.Month);
-    const monthlyRates = monthlyData.map(item => item.attendanceRate || item.AttendanceRate);
+    const monthlyRates = monthlyData.map(item => {
+        const rate = item.attendanceRate || item.AttendanceRate;
+        // Round to whole number to avoid floating point precision issues
+        return Math.round(rate);
+    });
 
     console.log('Final chart data:');
     console.log('- Months:', months);
@@ -250,7 +254,8 @@ function initializeMonthlyBarChart(monthlyData = null) {
                     },
                     ticks: {
                         callback: function(value) {
-                            return value + '%';
+                            // Ensure we return whole numbers only
+                            return Math.round(value) + '%';
                         },
                         font: {
                             size: 12,
@@ -258,7 +263,9 @@ function initializeMonthlyBarChart(monthlyData = null) {
                         },
                         color: '#374151',
                         padding: 15,
-                        stepSize: 10
+                        stepSize: 10,
+                        // Force ticks to be integers
+                        precision: 0
                     },
                     border: {
                         display: false
@@ -292,8 +299,10 @@ function initializeMonthlyBarChart(monthlyData = null) {
                         },
                         label: function(context) {
                             const dataPoint = monthlyData[context.dataIndex];
+                            // Round the displayed percentage to whole number
+                            const roundedRate = Math.round(context.raw);
                             return [
-                                `Attendance Rate: ${context.raw}%`,
+                                `Attendance Rate: ${roundedRate}%`,
                                 `Classes Attended: ${dataPoint.attendedClasses || dataPoint.AttendedClasses || 'N/A'}`,
                                 `Total Classes: ${dataPoint.totalClasses || dataPoint.TotalClasses || 'N/A'}`
                             ];
