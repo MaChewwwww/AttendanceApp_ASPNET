@@ -19,6 +19,7 @@ namespace AttendanceApp_ASPNET.Services
         public Dictionary<string, object> StudentInfo { get; set; } = new();
         public List<DashboardClassInfo> CurrentClasses { get; set; } = new();
         public List<DashboardScheduleItem> TodaySchedule { get; set; } = new();
+        public List<DashboardScheduleItem> AllSchedules { get; set; } = new();
         public int TotalEnrolledCourses { get; set; }
         public int PendingApprovals { get; set; }
         public DashboardScheduleSummary ScheduleSummary { get; set; } = new();
@@ -56,6 +57,7 @@ namespace AttendanceApp_ASPNET.Services
     public class DashboardScheduleSummary
     {
         public int TotalClassesToday { get; set; }
+        public int TotalWeeklySchedules { get; set; }
         public DashboardScheduleItem? CurrentClass { get; set; }
         public DashboardScheduleItem? NextClass { get; set; }
         public string CurrentDay { get; set; } = string.Empty;

@@ -230,11 +230,13 @@ namespace AttendanceApp_ASPNET.Services
                 student_info = new { },
                 current_classes = new object[0],
                 today_schedule = new object[0],
+                all_schedules = new object[0],
                 total_enrolled_courses = 0,
                 pending_approvals = 0,
                 schedule_summary = new
                 {
                     total_classes_today = 0,
+                    total_weekly_schedules = 0,
                     current_class = (object)null,
                     next_class = (object)null,
                     current_day = ""

@@ -114,6 +114,13 @@ namespace AttendanceApp_ASPNET.Services
                 dashboardData.TodaySchedule = ParseTodaySchedule(todayScheduleElement);
             }
 
+            // Parse all schedules
+            if (apiResponse.TryGetProperty("all_schedules", out var allSchedulesElement) && 
+                allSchedulesElement.ValueKind == JsonValueKind.Array)
+            {
+                dashboardData.AllSchedules = ParseTodaySchedule(allSchedulesElement);
+            }
+
             // Parse enrollment data
             if (apiResponse.TryGetProperty("total_enrolled_courses", out var totalCoursesElement))
             {
@@ -211,6 +218,7 @@ namespace AttendanceApp_ASPNET.Services
             var summary = new DashboardScheduleSummary
             {
                 TotalClassesToday = GetIntProperty(scheduleSummaryElement, "total_classes_today"),
+                TotalWeeklySchedules = GetIntProperty(scheduleSummaryElement, "total_weekly_schedules"),
                 CurrentDay = GetStringProperty(scheduleSummaryElement, "current_day")
             };
 
