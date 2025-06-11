@@ -184,6 +184,13 @@
             backdrop-filter: blur(8px) !important;
             pointer-events: auto !important;
         }
+
+        #filterModal, #sortModal {
+            z-index: 10050 !important;
+            filter: none !important;
+            backdrop-filter: blur(8px) !important;
+            pointer-events: auto !important;
+        }
         
         /* Layout z-index management */
         .dashboard-sidebar {
@@ -203,6 +210,27 @@
             z-index: 1 !important;
             pointer-events: none;
         }
+
+        /* Centralized modal z-index management */
+        .page-modal {
+            z-index: 10050 !important;
+        }
+        
+        .modal-blur-background #dashboardSidebar,
+        .modal-blur-background #dashboardNavbar,
+        .modal-blur-background #dashboardMain,
+        .modal-blur-background #mobile-sidebar-overlay {
+            filter: blur(2px) !important;
+            opacity: 0.4 !important;
+            pointer-events: none !important;
+            transition: all 0.3s ease-out;
+        }
+        
+        /* Ensure modal content is never blurred */
+        .page-modal {
+            filter: none !important;
+            pointer-events: auto !important;
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -211,6 +239,12 @@
     
     <!-- Course Students Modal - OUTSIDE dashboard container to avoid blur effects -->
     @await Html.PartialAsync("_CourseStudentsModal")
+    
+    <!-- Filter Modal - OUTSIDE dashboard container to avoid blur effects -->
+    @await Html.PartialAsync("_FilterModal")
+    
+    <!-- Sort Modal - OUTSIDE dashboard container to avoid blur effects -->
+    @await Html.PartialAsync("_SortModal")
     
     <div id="dashboardContainer" class="flex h-screen dashboard-entrance">
         <!-- Sidebar - Hidden on mobile by default -->
@@ -388,6 +422,117 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     <script>
+        // Centralized Modal Management System
+        window.ModalManager = {
+            openModals: new Set(),
+            
+            openModal: function(modalId, options = {}) {
+                const modal = document.getElementById(modalId);
+                const modalContent = modal?.querySelector('[id$="ModalContent"], .modal-content');
+                
+                if (!modal) {
+                    console.error(`Modal with id '${modalId}' not found`);
+                    return false;
+                }
+                
+                console.log(`Opening modal: ${modalId}`);
+                
+                // Add to open modals set
+                this.openModals.add(modalId);
+                
+                // Apply background blur and disable interactions
+                document.body.classList.add('modal-blur-background');
+                
+                // Show modal
+                modal.classList.remove('hidden');
+                modal.classList.add('page-modal');
+                
+                // Apply entrance animation if content element exists
+                if (modalContent) {
+                    setTimeout(() => {
+                        modalContent.classList.remove('scale-95', 'opacity-0');
+                        modalContent.classList.add('scale-100', 'opacity-100', 'filter-modal-entrance');
+                    }, 50);
+                }
+                
+                // Prevent background scrolling
+                document.body.style.overflow = 'hidden';
+                
+                return true;
+            },
+            
+            closeModal: function(modalId) {
+                const modal = document.getElementById(modalId);
+                const modalContent = modal?.querySelector('[id$="ModalContent"], .modal-content');
+                
+                if (!modal) {
+                    console.error(`Modal with id '${modalId}' not found`);
+                    return false;
+                }
+                
+                console.log(`Closing modal: ${modalId}`);
+                
+                // Remove from open modals set
+                this.openModals.delete(modalId);
+                
+                // Apply exit animation if content element exists
+                if (modalContent) {
+                    modalContent.classList.remove('scale-100', 'opacity-100');
+                    modalContent.classList.add('scale-95', 'opacity-0');
+                }
+                
+                // Hide modal after animation
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('page-modal');
+                    
+                    // Remove background effects if no other modals are open
+                    if (this.openModals.size === 0) {
+                        document.body.classList.remove('modal-blur-background');
+                        document.body.style.overflow = '';
+                        console.log('All modals closed, removing blur effects');
+                    }
+                }, 300);
+                
+                return true;
+            },
+            
+            closeAllModals: function() {
+                this.openModals.forEach(modalId => {
+                    this.closeModal(modalId);
+                });
+            },
+            
+            isModalOpen: function(modalId) {
+                return this.openModals.has(modalId);
+            },
+            
+            hasOpenModals: function() {
+                return this.openModals.size > 0;
+            }
+        };
+        
+        // Global modal functions for backward compatibility and convenience
+        window.openFilterModal = function() {
+            console.log('Global openFilterModal called');
+            return ModalManager.openModal('filterModal');
+        };
+        
+        window.closeFilterModal = function() {
+            console.log('Global closeFilterModal called');
+            return ModalManager.closeModal('filterModal');
+        };
+        
+        window.openSortModal = function() {
+            console.log('Global openSortModal called');
+            return ModalManager.openModal('sortModal');
+        };
+        
+        window.closeSortModal = function() {
+            console.log('Global closeSortModal called');
+            return ModalManager.closeModal('sortModal');
+        };
+        
         // Enhanced mobile menu functionality
         function openMobileSidebar() {
             const overlay = document.getElementById('mobile-sidebar-overlay');
@@ -439,9 +584,16 @@
             }
         });
 
-        // Handle escape key to close mobile sidebar
+        // Handle escape key to close modals and mobile sidebar
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
+                // Close page modals first
+                if (ModalManager.hasOpenModals()) {
+                    ModalManager.closeAllModals();
+                    return;
+                }
+                
+                // Then handle mobile sidebar
                 const overlay = document.getElementById('mobile-sidebar-overlay');
                 if (!overlay.classList.contains('hidden')) {
                     closeMobileSidebar();

@@ -300,6 +300,12 @@
                             <span>Sort</span>
                         </button>
 
+                        <!-- Export Button -->
+                        <button onclick="exportToCSV()" class="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200">
+                            <i class="fas fa-download mr-2"></i>
+                            <span>Export CSV</span>
+                        </button>
+
                         <!-- Clear All Filters -->
                         <button id="clearFiltersBtn" onclick="clearAllFilters()" class="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 hidden">
                             <i class="fas fa-times mr-2"></i>
@@ -383,9 +389,6 @@
                     <div class="text-sm text-gray-700">
                         Total: <span id="totalRecordsCount">@totalRecords</span> records
                     </div>
-                    <div class="text-sm text-gray-500" id="recordsInfo">
-                        Showing @totalRecords total records
-                    </div>
                 </div>
             </div>
         }
@@ -413,8 +416,8 @@
 </div>
 
 <!-- Filter Modal -->
-<div id="filterModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 overflow-y-auto h-full w-full z-50 hidden flex items-center justify-center backdrop-blur-sm">
-    <div id="filterModalContent" class="relative mx-auto p-6 border w-full max-w-lg shadow-2xl rounded-xl bg-white transform transition-all duration-300 scale-95 opacity-0 m-4">
+<div id="filterModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 overflow-y-auto h-full w-full hidden flex items-center justify-center backdrop-blur-sm">
+    <div id="filterModalContent" class="modal-content relative mx-auto p-6 border w-full max-w-lg shadow-2xl rounded-xl bg-white transform transition-all duration-300 scale-95 opacity-0 m-4">
         <!-- Modal Header -->
         <div class="flex items-center justify-between mb-6">
             <h3 class="text-lg font-bold text-gray-800">
@@ -448,18 +451,6 @@
                 <label class="block text-sm font-medium text-gray-700 mb-2">Course</label>
                 <select id="courseFilter" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
                     <option value="">All Courses</option>
-                    @if (Model?.AttendanceRecords != null)
-                    {
-                        var courses = Model.AttendanceRecords
-                            .GroupBy(r => new { r.CourseName, r.CourseCode })
-                            .Select(g => new { Name = g.Key.CourseName, Code = g.Key.CourseCode })
-                            .OrderBy(c => c.Name)
-                            .ToList();
-                        foreach (var course in courses)
-                        {
-                            <option value="@course.Name">@course.Name @(!string.IsNullOrEmpty(course.Code) ? $"({course.Code})" : "")</option>
-                        }
-                    }
                 </select>
             </div>
 
@@ -468,19 +459,6 @@
                 <label class="block text-sm font-medium text-gray-700 mb-2">Class</label>
                 <select id="classFilter" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
                     <option value="">All Classes</option>
-                    @if (Model?.AttendanceRecords != null)
-                    {
-                        var classes = Model.AttendanceRecords
-                            .Where(r => !string.IsNullOrEmpty(r.SectionName))
-                            .Select(r => r.SectionName)
-                            .Distinct()
-                            .OrderBy(s => s)
-                            .ToList();
-                        foreach (var className in classes)
-                        {
-                            <option value="@className">@className</option>
-                        }
-                    }
                 </select>
             </div>
 
@@ -501,19 +479,6 @@
                 <label class="block text-sm font-medium text-gray-700 mb-2">Faculty</label>
                 <select id="facultyFilter" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
                     <option value="">All Faculty</option>
-                    @if (Model?.AttendanceRecords != null)
-                    {
-                        var faculty = Model.AttendanceRecords
-                            .Where(r => !string.IsNullOrEmpty(r.FacultyName))
-                            .Select(r => r.FacultyName)
-                            .Distinct()
-                            .OrderBy(f => f)
-                            .ToList();
-                        foreach (var fac in faculty)
-                        {
-                            <option value="@fac">@fac</option>
-                        }
-                    }
                 </select>
             </div>
         </div>
@@ -531,8 +496,8 @@
 </div>
 
 <!-- Sort Modal -->
-<div id="sortModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 overflow-y-auto h-full w-full z-50 hidden flex items-center justify-center backdrop-blur-sm">
-    <div id="sortModalContent" class="relative mx-auto p-6 border w-full max-w-md shadow-2xl rounded-xl bg-white transform transition-all duration-300 scale-95 opacity-0 m-4">
+<div id="sortModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 overflow-y-auto h-full w-full hidden flex items-center justify-center backdrop-blur-sm">
+    <div id="sortModalContent" class="modal-content relative mx-auto p-6 border w-full max-w-md shadow-2xl rounded-xl bg-white transform transition-all duration-300 scale-95 opacity-0 m-4">
         <!-- Modal Header -->
         <div class="flex items-center justify-between mb-6">
             <h3 class="text-lg font-bold text-gray-800">
@@ -615,39 +580,55 @@
         // Initialize table AFTER animations to prevent clearing server-rendered content
         setTimeout(() => {
             initializeTable();
+            populateFilterOptions();
         }, 1000);
 
         console.log('Attendance History page loaded with', allRecords.length, 'records');
     });
 
+    function populateFilterOptions() {
+        // Populate course filter
+        const courseFilter = document.getElementById('courseFilter');
+        const courses = [...new Set(allRecords.map(r => r.courseName))].filter(Boolean).sort();
+        
+        // Clear existing options (except "All Courses")
+        courseFilter.innerHTML = '<option value="">All Courses</option>';
+        courses.forEach(course => {
+            const option = document.createElement('option');
+            option.value = course;
+            option.textContent = course;
+            courseFilter.appendChild(option);
+        });
+
+        // Populate class filter
+        const classFilter = document.getElementById('classFilter');
+        const classes = [...new Set(allRecords.map(r => r.sectionName))].filter(Boolean).sort();
+        
+        classFilter.innerHTML = '<option value="">All Classes</option>';
+        classes.forEach(className => {
+            const option = document.createElement('option');
+            option.value = className;
+            option.textContent = className;
+            classFilter.appendChild(option);
+        });
+
+        // Populate faculty filter
+        const facultyFilter = document.getElementById('facultyFilter');
+        const faculty = [...new Set(allRecords.map(r => r.facultyName))].filter(Boolean).sort();
+        
+        facultyFilter.innerHTML = '<option value="">All Faculty</option>';
+        faculty.forEach(fac => {
+            const option = document.createElement('option');
+            option.value = fac;
+            option.textContent = fac;
+            facultyFilter.appendChild(option);
+        });
+    }
+
     function initializeTable() {
         // Apply initial filters and sort
         applyFiltersAndSort();
         updateRecordCounts();
-    }
-
-    // Filter Modal Functions
-    function openFilterModal() {
-        const modal = document.getElementById('filterModal');
-        const modalContent = document.getElementById('filterModalContent');
-        
-        modal.classList.remove('hidden');
-        setTimeout(() => {
-            modalContent.classList.remove('scale-95', 'opacity-0');
-            modalContent.classList.add('scale-100', 'opacity-100', 'filter-modal-entrance');
-        }, 50);
-    }
-
-    function closeFilterModal() {
-        const modal = document.getElementById('filterModal');
-        const modalContent = document.getElementById('filterModalContent');
-        
-        modalContent.classList.remove('scale-100', 'opacity-100');
-        modalContent.classList.add('scale-95', 'opacity-0');
-        
-        setTimeout(() => {
-            modal.classList.add('hidden');
-        }, 300);
     }
 
     function applyFilters() {
@@ -669,7 +650,21 @@
         updateActiveFiltersDisplay();
         updateFilterCount();
         
-        closeFilterModal();
+        // Use ModalManager to close the modal
+        window.closeFilterModal();
+    }
+
+    function applySort() {
+        const sortBy = document.getElementById('sortBy').value;
+        const sortDirection = document.querySelector('input[name="sortDirection"]:checked').value;
+        
+        currentSort = { column: sortBy, direction: sortDirection };
+        
+        applyFiltersAndSort();
+        showAllFilteredRecords();
+        
+        // Use ModalManager to close the modal
+        window.closeSortModal();
     }
 
     function applyFiltersAndSort() {
@@ -772,46 +767,6 @@
         showAllFilteredRecords();
         updateActiveFiltersDisplay();
         updateFilterCount();
-    }
-
-    // Sort Functions
-    function openSortModal() {
-        const modal = document.getElementById('sortModal');
-        const modalContent = document.getElementById('sortModalContent');
-        
-        // Set current sort values
-        document.getElementById('sortBy').value = currentSort.column;
-        document.querySelector(`input[name="sortDirection"][value="${currentSort.direction}"]`).checked = true;
-        
-        modal.classList.remove('hidden');
-        setTimeout(() => {
-            modalContent.classList.remove('scale-95', 'opacity-0');
-            modalContent.classList.add('scale-100', 'opacity-100', 'filter-modal-entrance');
-        }, 50);
-    }
-
-    function closeSortModal() {
-        const modal = document.getElementById('sortModal');
-        const modalContent = document.getElementById('sortModalContent');
-        
-        modalContent.classList.remove('scale-100', 'opacity-100');
-        modalContent.classList.add('scale-95', 'opacity-0');
-        
-        setTimeout(() => {
-            modal.classList.add('hidden');
-        }, 300);
-    }
-
-    function applySort() {
-        const sortBy = document.getElementById('sortBy').value;
-        const sortDirection = document.querySelector('input[name="sortDirection"]:checked').value;
-        
-        currentSort = { column: sortBy, direction: sortDirection };
-        
-        applyFiltersAndSort();
-        showAllFilteredRecords();
-        
-        closeSortModal();
     }
 
     // Replace pagination functions with simple display functions
@@ -979,13 +934,115 @@
         }
     }
 
-    // Modal backdrop click handlers
-    document.getElementById('filterModal').addEventListener('click', function(e) {
-        if (e.target === this) closeFilterModal();
-    });
+    // Export functionality
+    function exportToCSV() {
+        // Use the current filtered and sorted records
+        const dataToExport = [...filteredRecords];
+        
+        if (dataToExport.length === 0) {
+            alert('No records to export. Please adjust your filters.');
+            return;
+        }
 
-    document.getElementById('sortModal').addEventListener('click', function(e) {
-        if (e.target === this) closeSortModal();
+        // Create CSV headers
+        const headers = ['Date', 'Course', 'Course Code', 'Section', 'Faculty', 'Status'];
+        
+        // Convert data to CSV format with Excel-safe formatting
+        const csvContent = [
+            headers.join(','),
+            ...dataToExport.map(record => {
+                // Format date as text to prevent Excel conversion
+                const date = new Date(record.attendanceDate);
+                const formattedDate = `="${date.toLocaleDateString('en-US', { 
+                    year: 'numeric', 
+                    month: 'short', 
+                    day: '2-digit' 
+                }).replace(/,/g, '')}"`;
+                
+                const course = `"${(record.courseName || 'N/A').replace(/"/g, '""')}"`;
+                const courseCode = `="${record.courseCode || 'N/A'}"`;  // Fixed: removed $ and used proper template literal
+                
+                // Better handling of section name with Excel text formatting
+                let sectionName = record.sectionName || 'N/A';
+                const className = `="${sectionName.replace(/"/g, '""')}"`;  // Force text with =
+                
+                const faculty = `"${(record.facultyName || 'N/A').replace(/"/g, '""')}"`;
+                const status = `"${getStatusDisplayText(record.status).replace(/"/g, '""')}"`;
+                
+                return [formattedDate, course, courseCode, className, faculty, status].join(',');
+            })
+        ].join('\n');
+
+        // Add BOM for proper UTF-8 encoding in Excel
+        const BOM = '\uFEFF';
+        const csvWithBOM = BOM + csvContent;
+
+        // Create and download the file
+        const blob = new Blob([csvWithBOM], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        
+        if (link.download !== undefined) {
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            
+            // Generate filename with current date and filter info
+            const currentDate = new Date().toISOString().split('T')[0];
+            const activeFiltersCount = Object.values(currentFilters).filter(v => v !== '').length;
+            const filterSuffix = activeFiltersCount > 0 ? '_filtered' : '';
+            const filename = `attendance_history_${currentDate}${filterSuffix}.csv`;
+            
+            link.setAttribute('download', filename);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Show success message with Excel tip
+            showExportSuccess(dataToExport.length, filename);
+        }
+    }
+
+    function showExportSuccess(recordCount, filename) {
+        // Create a temporary success message
+        const successMsg = document.createElement('div');
+        successMsg.className = 'fixed top-4 right-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded shadow-lg z-50 max-w-sm';
+        successMsg.innerHTML = `
+            <div class="flex items-start">
+                <i class="fas fa-check-circle mr-2 mt-1"></i>
+                <div>
+                    <strong>Export Successful!</strong><br>
+                    <small>${recordCount} records exported to ${filename}</small><br>
+                    <small class="text-green-600 font-medium">💡 Excel will preserve text formatting</small>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(successMsg);
+        
+        // Remove the message after 4 seconds (longer for the tip)
+        setTimeout(() => {
+            if (successMsg.parentNode) {
+                successMsg.parentNode.removeChild(successMsg);
+            }
+        }, 4000);
+    }
+
+    // Modal backdrop click handlers - updated to use ModalManager
+    document.addEventListener('DOMContentLoaded', function() {
+        const filterModal = document.getElementById('filterModal');
+        const sortModal = document.getElementById('sortModal');
+        
+        if (filterModal) {
+            filterModal.addEventListener('click', function(e) {
+                if (e.target === this) window.closeFilterModal();
+            });
+        }
+
+        if (sortModal) {
+            sortModal.addEventListener('click', function(e) {
+                if (e.target === this) window.closeSortModal();
+            });
+        }
     });
 </script>
 }

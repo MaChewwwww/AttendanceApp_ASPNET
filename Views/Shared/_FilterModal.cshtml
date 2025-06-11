@@ -1,0 +1,79 @@
+<!-- Filter Modal -->
+<div id="filterModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 overflow-y-auto h-full w-full hidden flex items-center justify-center backdrop-blur-sm">
+    <div id="filterModalContent" class="modal-content relative mx-auto p-6 border w-full max-w-lg shadow-2xl rounded-xl bg-white transform transition-all duration-300 scale-95 opacity-0 m-4">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-lg font-bold text-gray-800">
+                <i class="fas fa-filter mr-2 text-blue-600"></i>
+                Filter Attendance Records
+            </h3>
+            <button onclick="closeFilterModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+
+        <!-- Filter Options -->
+        <div class="space-y-6">
+            <!-- Date Range Filter -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">From</label>
+                        <input type="date" id="dateFrom" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">To</label>
+                        <input type="date" id="dateTo" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Course Filter -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Course</label>
+                <select id="courseFilter" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                    <option value="">All Courses</option>
+                </select>
+            </div>
+
+            <!-- Class Filter -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Class</label>
+                <select id="classFilter" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                    <option value="">All Classes</option>
+                </select>
+            </div>
+
+            <!-- Status Filter -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                <select id="statusFilter" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                    <option value="">All Statuses</option>
+                    <option value="present">Present</option>
+                    <option value="late">Late</option>
+                    <option value="absent">Absent</option>
+                    <option value="excused">Excused</option>
+                </select>
+            </div>
+
+            <!-- Faculty Filter -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Faculty</label>
+                <select id="facultyFilter" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                    <option value="">All Faculty</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Modal Buttons -->
+        <div class="flex justify-end space-x-3 mt-8">
+            <button onclick="clearFilters()" class="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors">
+                Clear Filters
+            </button>
+            <button onclick="applyFilters()" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+                Apply Filters
+            </button>
+        </div>
+    </div>
+</div>
