@@ -79,10 +79,21 @@
         {
             <!-- Mark Attendance Button - Top Right Corner -->
             <div class="absolute top-4 right-4 mt-4">
-                <button class="bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors duration-200 font-semibold flex items-center text-sm">
+                <button data-action="mark-attendance" class="bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors duration-200 font-semibold flex items-center text-sm">
                     <i class="fas fa-camera mr-2"></i>Mark Attendance
                 </button>
             </div>
+            
+            <!-- Hidden data attributes for JavaScript -->
+            <div data-current-class 
+                 data-course-name="@ViewBag.CurrentClass.CourseName"
+                 data-course-code="@(ViewBag.CurrentClass.CourseCode ?? "N/A")"
+                 data-faculty-name="@ViewBag.CurrentClass.FacultyName"
+                 data-room="@(ViewBag.CurrentClass.Room ?? "TBA")"
+                 data-start-time="@ViewBag.CurrentClass.StartTime"
+                 data-end-time="@ViewBag.CurrentClass.EndTime"
+                 data-status="@ViewBag.CurrentClass.Status"
+                 class="hidden"></div>
             
             <div class="flex items-center mb-4 pr-40">
                 <div class="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
@@ -896,11 +907,18 @@
     </div>
 </div>
 
+<!-- Add weather data for JavaScript -->
+@if (ViewBag.WeatherDataAvailable == true)
+{
+    <div data-max-feels-like="@ViewBag.MaxFeelsLike" class="hidden"></div>
+}
+
 @section Scripts {
     <script src="~/js/OnboardingModal.js"></script>
     <script src="~/js/dashboard.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="~/js/attendance-charts.js"></script>
+    <script src="~/js/mark-attendance.js"></script>
     
     <style>
         /* Animation classes for schedule components */
