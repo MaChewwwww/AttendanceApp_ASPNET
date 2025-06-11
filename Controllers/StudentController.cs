@@ -12,18 +12,21 @@ namespace AttendanceApp_ASPNET.Controllers
         private readonly IEnvironmentService _environmentService;
         private readonly ICourseService _courseService;
         private readonly IStudentHistoryService _studentHistoryService;
+        private readonly IDashboardService _dashboardService;
 
         public StudentController(
             IApiService apiService,
             IStudentManagementService studentManagementService,
             IEnvironmentService environmentService,
             ICourseService courseService,
-            IStudentHistoryService studentHistoryService) : base(apiService)
+            IStudentHistoryService studentHistoryService,
+            IDashboardService dashboardService) : base(apiService)
         {
             _studentManagementService = studentManagementService;
             _environmentService = environmentService;
             _courseService = courseService;
             _studentHistoryService = studentHistoryService;
+            _dashboardService = dashboardService;
         }
 
         public async Task<IActionResult> Dashboard()
@@ -38,6 +41,53 @@ namespace AttendanceApp_ASPNET.Controllers
             
             // Fetch weather data using consolidated service
             await _environmentService.SetWeatherViewBagAsync(this, HttpContext);
+            
+            // Fetch dashboard data from API
+            try
+            {
+                var jwtToken = HttpContext.Session.GetString("AuthToken");
+                if (!string.IsNullOrEmpty(jwtToken))
+                {
+                    var dashboardData = await _dashboardService.GetStudentDashboardAsync(jwtToken);
+                    
+                    if (dashboardData.Success && dashboardData.Data != null)
+                    {
+                        ViewBag.DashboardData = dashboardData.Data;
+                        ViewBag.HasDashboardData = true;
+                        
+                        // Update ViewBag with current class information
+                        if (dashboardData.Data.ScheduleSummary.CurrentClass != null)
+                        {
+                            ViewBag.CurrentClass = dashboardData.Data.ScheduleSummary.CurrentClass;
+                            ViewBag.HasCurrentClass = true;
+                        }
+                        else
+                        {
+                            ViewBag.HasCurrentClass = false;
+                        }
+                        
+                        ViewBag.TotalEnrolledCourses = dashboardData.Data.TotalEnrolledCourses;
+                        ViewBag.PendingApprovals = dashboardData.Data.PendingApprovals;
+                    }
+                    else
+                    {
+                        ViewBag.HasDashboardData = false;
+                        ViewBag.DashboardError = dashboardData.Message;
+                        Console.WriteLine($"Dashboard data fetch failed: {dashboardData.Message}");
+                    }
+                }
+                else
+                {
+                    ViewBag.HasDashboardData = false;
+                    ViewBag.DashboardError = "Authentication token not found";
+                }
+            }
+            catch (Exception ex)
+            {
+                ViewBag.HasDashboardData = false;
+                ViewBag.DashboardError = "Unable to load dashboard data";
+                Console.WriteLine($"Error fetching dashboard data: {ex.Message}");
+            }
             
             return View();
         }

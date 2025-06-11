@@ -59,39 +59,87 @@
 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
     <!-- Current Class & Attendance Status -->
     <div class="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow duration-200 dashboard-card-entrance">
-        <div class="flex items-center mb-4">
-            <div class="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
-                <i class="fas fa-clock text-indigo-600 text-xl"></i>
-            </div>
-            <div class="ml-4">
-                <h3 class="text-lg font-semibold text-gray-900">Current Class</h3>
-                @if (ViewBag.HasSection == true)
-                {
-                    <p class="text-gray-500 text-sm">Database Systems</p>
-                }
-                else
-                {
-                    <p class="text-gray-500 text-sm">No section assigned</p>
-                }
-            </div>
-        </div>
-        @if (ViewBag.HasSection == true)
+        @if (ViewBag.HasDashboardData == true && ViewBag.HasCurrentClass == true)
         {
+            <div class="flex items-center mb-4">
+                <div class="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-clock text-indigo-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-semibold text-gray-900">Current Class</h3>
+                    <p class="text-gray-500 text-sm">@ViewBag.CurrentClass.CourseName</p>
+                </div>
+            </div>
             <div class="space-y-2 mb-4">
                 <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">Course Code:</span>
+                    <span class="text-sm font-medium text-gray-900">@(ViewBag.CurrentClass.CourseCode ?? "N/A")</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">Faculty:</span>
+                    <span class="text-sm font-medium text-gray-900">@ViewBag.CurrentClass.FacultyName</span>
+                </div>
+                <div class="flex justify-between items-center">
                     <span class="text-sm text-gray-600">Room:</span>
-                    <span class="text-sm font-medium text-gray-900">203</span>
+                    <span class="text-sm font-medium text-gray-900">@(ViewBag.CurrentClass.Room ?? "TBA")</span>
                 </div>
                 <div class="flex justify-between items-center">
                     <span class="text-sm text-gray-600">Time:</span>
-                    <span class="text-sm font-medium text-gray-900">2:00 PM - 3:30 PM</span>
+                    <span class="text-sm font-medium text-gray-900">@ViewBag.CurrentClass.StartTime - @ViewBag.CurrentClass.EndTime</span>
                 </div>
                 <div class="flex justify-between items-center">
                     <span class="text-sm text-gray-600">Status:</span>
-                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                        <i class="fas fa-hourglass-half mr-1"></i>
-                        Not Marked
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        <i class="fas fa-clock mr-1"></i>
+                        @{
+                            var status = ViewBag.CurrentClass.Status?.ToString() ?? "Unknown";
+                            var titleCaseStatus = char.ToUpper(status[0]) + status.Substring(1).ToLower();
+                        }
+                        @titleCaseStatus
                     </span>
+                </div>
+            </div>
+            <!-- Mark Attendance Button - Centered at Bottom -->
+            <div class="text-center">
+                <button class="bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 transition-colors duration-200 font-semibold flex items-center justify-center mx-auto">
+                    <i class="fas fa-camera mr-2"></i>Mark Attendance
+                </button>
+            </div>
+        }
+        else if (ViewBag.HasDashboardData == true)
+        {
+            <div class="text-center py-4 mb-4">
+                <div class="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+                    <i class="fas fa-calendar-times text-gray-400 text-2xl"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">No Current Class</h3>
+                <p class="text-gray-500 text-sm mb-2">No class is currently in session</p>
+                @if (ViewBag.DashboardData != null && ViewBag.DashboardData.ScheduleSummary.NextClass != null)
+                {
+                    <p class="text-xs text-gray-400">Next: @ViewBag.DashboardData.ScheduleSummary.NextClass.CourseName</p>
+                    <p class="text-xs text-gray-400">at @ViewBag.DashboardData.ScheduleSummary.NextClass.StartTime</p>
+                }
+                else
+                {
+                    <p class="text-xs text-gray-400">Check your schedule for upcoming classes</p>
+                }
+            </div>
+            <!-- Mark Attendance Button - Centered at Bottom (Disabled) -->
+            <div class="text-center">
+                <button class="bg-gray-400 text-white py-3 px-6 rounded-lg cursor-not-allowed font-semibold flex items-center justify-center mx-auto" disabled>
+                    <i class="fas fa-clock mr-2"></i>No Active Class
+                </button>
+            </div>
+        }
+        else if (ViewBag.HasSection == true)
+        {
+            <div class="flex items-center mb-4">
+                <div class="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-clock text-indigo-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-semibold text-gray-900">Current Class</h3>
+                    <p class="text-gray-500 text-sm">Loading...</p>
                 </div>
             </div>
             <!-- Mark Attendance Button - Centered at Bottom -->
@@ -103,8 +151,26 @@
         }
         else
         {
+            <div class="flex items-center mb-4">
+                <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-exclamation-triangle text-gray-400 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-semibold text-gray-900">Current Class</h3>
+                    <p class="text-gray-500 text-sm">No section assigned</p>
+                </div>
+            </div>
             <div class="text-center py-4 mb-4">
-                <p class="text-gray-500 text-sm">Section assignment required to view class information.</p>
+                <p class="text-gray-500 text-sm">
+                    @if (ViewBag.HasDashboardData == false && !string.IsNullOrEmpty(ViewBag.DashboardError?.ToString()))
+                    {
+                        @:Unable to load class data: @ViewBag.DashboardError
+                    }
+                    else
+                    {
+                        @:Section assignment required to view class information.
+                    }
+                </p>
             </div>
             <!-- Mark Attendance Button - Centered at Bottom (Disabled) -->
             <div class="text-center">
@@ -252,42 +318,114 @@
     <div class="bg-white rounded-lg shadow-sm p-6 dashboard-card-entrance">
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-sm font-medium text-gray-600">Total Classes</p>
-                <p class="text-2xl font-bold text-gray-900">24</p>
+                <p class="text-sm font-medium text-gray-600">Enrolled Courses</p>
+                <p class="text-2xl font-bold text-gray-900">
+                    @if (ViewBag.HasDashboardData == true)
+                    {
+                        @ViewBag.TotalEnrolledCourses
+                    }
+                    else
+                    {
+                        @:24
+                    }
+                </p>
             </div>
             <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                 <i class="fas fa-book text-blue-600"></i>
             </div>
         </div>
-        <p class="mt-2 text-sm text-gray-500">This semester</p>
+        <p class="mt-2 text-sm text-gray-500">
+            @if (ViewBag.HasDashboardData == true)
+            {
+                @:Current semester
+            }
+            else
+            {
+                @:This semester
+            }
+        </p>
     </div>
 
     <!-- Present -->
     <div class="bg-white rounded-lg shadow-sm p-6 dashboard-card-entrance">
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-sm font-medium text-gray-600">Present</p>
-                <p class="text-2xl font-bold text-green-600">18</p>
+                <p class="text-sm font-medium text-gray-600">
+                    @if (ViewBag.HasDashboardData == true)
+                    {
+                        @:Classes Today
+                    }
+                    else
+                    {
+                        @:Present
+                    }
+                </p>
+                <p class="text-2xl font-bold text-green-600">
+                    @if (ViewBag.HasDashboardData == true && ViewBag.DashboardData != null)
+                    {
+                        @ViewBag.DashboardData.ScheduleSummary.TotalClassesToday
+                    }
+                    else
+                    {
+                        @:18
+                    }
+                </p>
             </div>
             <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
                 <i class="fas fa-check text-green-600"></i>
             </div>
         </div>
-        <p class="mt-2 text-sm text-gray-500">75% attendance</p>
+        <p class="mt-2 text-sm text-gray-500">
+            @if (ViewBag.HasDashboardData == true)
+            {
+                @:@DateTime.Now.ToString("dddd")
+            }
+            else
+            {
+                @:75% attendance
+            }
+        </p>
     </div>
 
-    <!-- Absent -->
+    <!-- Pending Approvals -->
     <div class="bg-white rounded-lg shadow-sm p-6 dashboard-card-entrance">
         <div class="flex items-center justify-between">
             <div>
-                <p class="text-sm font-medium text-gray-600">Absent</p>
-                <p class="text-2xl font-bold text-red-600">6</p>
+                <p class="text-sm font-medium text-gray-600">
+                    @if (ViewBag.HasDashboardData == true)
+                    {
+                        @:Pending Approvals
+                    }
+                    else
+                    {
+                        @:Absent
+                    }
+                </p>
+                <p class="text-2xl font-bold text-red-600">
+                    @if (ViewBag.HasDashboardData == true)
+                    {
+                        @ViewBag.PendingApprovals
+                    }
+                    else
+                    {
+                        @:6
+                    }
+                </p>
             </div>
             <div class="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
                 <i class="fas fa-times text-red-600"></i>
             </div>
         </div>
-        <p class="mt-2 text-sm text-gray-500">25% missed</p>
+        <p class="mt-2 text-sm text-gray-500">
+            @if (ViewBag.HasDashboardData == true)
+            {
+                @:Awaiting approval
+            }
+            else
+            {
+                @:25% missed
+            }
+        </p>
     </div>
 
     <!-- This Week -->
@@ -306,80 +444,111 @@
 </div>
 
 <!-- Recent Activity & Upcoming Classes -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-    <!-- Recent Activity -->
-    <div class="bg-white rounded-lg shadow-sm dashboard-card-entrance">
-        <div class="p-6 border-b border-gray-200">
-            <h3 class="text-lg font-semibold text-gray-900">Recent Activity</h3>
-        </div>
-        <div class="p-6">
-            <div class="space-y-4">
-                <div class="flex items-center">
-                    <div class="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
-                    <div class="flex-1">
-                        <p class="text-sm font-medium text-gray-900">Present - Computer Science 101</p>
-                        <p class="text-xs text-gray-500">Today, 10:00 AM</p>
-                    </div>
-                    <i class="fas fa-check-circle text-green-500"></i>
-                </div>
-                <div class="flex items-center">
-                    <div class="w-2 h-2 bg-green-500 rounded-full mr-3"></div>
-                    <div class="flex-1">
-                        <p class="text-sm font-medium text-gray-900">Present - Mathematics 201</p>
-                        <p class="text-xs text-gray-500">Yesterday, 2:00 PM</p>
-                    </div>
-                    <i class="fas fa-check-circle text-green-500"></i>
-                </div>
-                <div class="flex items-center">
-                    <div class="w-2 h-2 bg-red-500 rounded-full mr-3"></div>
-                    <div class="flex-1">
-                        <p class="text-sm font-medium text-gray-900">Absent - Physics 101</p>
-                        <p class="text-xs text-gray-500">Yesterday, 8:00 AM</p>
-                    </div>
-                    <i class="fas fa-times-circle text-red-500"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-
+<div class="grid grid-cols-1 gap-8">
     <!-- Upcoming Classes -->
     <div class="bg-white rounded-lg shadow-sm dashboard-card-entrance">
         <div class="p-6 border-b border-gray-200">
-            <h3 class="text-lg font-semibold text-gray-900">Upcoming Classes</h3>
+            <h3 class="text-lg font-semibold text-gray-900">
+                @if (ViewBag.HasDashboardData == true)
+                {
+                    @:Today's Schedule
+                }
+                else
+                {
+                    @:Upcoming Classes
+                }
+            </h3>
         </div>
         <div class="p-6">
-            <div class="space-y-4">
-                <div class="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
-                    <div>
-                        <p class="font-medium text-gray-900">Database Systems</p>
-                        <p class="text-sm text-gray-500">Room 203</p>
+            @if (ViewBag.HasDashboardData == true && ViewBag.DashboardData != null)
+            {
+                var dashboardData = ViewBag.DashboardData as AttendanceApp_ASPNET.Services.StudentDashboardData;
+                var todaySchedule = dashboardData?.TodaySchedule ?? new List<AttendanceApp_ASPNET.Services.DashboardScheduleItem>();
+                
+                if (todaySchedule.Count > 0)
+                {
+                    <div class="space-y-4">
+                        @foreach (var scheduleItem in todaySchedule)
+                        {
+                            var bgClass = scheduleItem.Status == "ongoing" ? "bg-blue-50" :
+                                         scheduleItem.Status == "completed" ? "bg-gray-50" : "bg-green-50";
+                            var textClass = scheduleItem.Status == "ongoing" ? "text-blue-600" :
+                                           scheduleItem.Status == "completed" ? "text-gray-600" : "text-green-600";
+
+                            <div class="flex items-center justify-between p-4 @bgClass rounded-lg">
+                                <div>
+                                    <p class="font-medium text-gray-900">@scheduleItem.CourseName</p>
+                                    <p class="text-sm text-gray-500">@scheduleItem.FacultyName</p>
+                                    @if (!string.IsNullOrEmpty(scheduleItem.Room))
+                                    {
+                                        <p class="text-sm text-gray-500">Room @scheduleItem.Room</p>
+                                    }
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-medium @textClass">
+                                        @if (!string.IsNullOrEmpty(scheduleItem.StartTime))
+                                        {
+                                            @scheduleItem.StartTime
+                                        }
+                                        else
+                                        {
+                                            @:TBA
+                                        }
+                                    </p>
+                                    <p class="text-xs text-gray-500 capitalize">@scheduleItem.Status</p>
+                                </div>
+                            </div>
+                        }
                     </div>
-                    <div class="text-right">
-                        <p class="font-medium text-blue-600">2:00 PM</p>
-                        <p class="text-xs text-gray-500">Today</p>
+                }
+                else
+                {
+                    <div class="text-center py-4">
+                        <p class="text-gray-500 text-sm">No classes scheduled for today</p>
+                    </div>
+                }
+            }
+            else if (ViewBag.HasDashboardData == false && !string.IsNullOrEmpty(ViewBag.DashboardError?.ToString()))
+            {
+                <div class="text-center py-4">
+                    <p class="text-gray-500 text-sm">Unable to load schedule: @ViewBag.DashboardError</p>
+                </div>
+            }
+            else
+            {
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
+                        <div>
+                            <p class="font-medium text-gray-900">Database Systems</p>
+                            <p class="text-sm text-gray-500">Room 203</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-medium text-blue-600">2:00 PM</p>
+                            <p class="text-xs text-gray-500">Today</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div>
+                            <p class="font-medium text-gray-900">Web Development</p>
+                            <p class="text-sm text-gray-500">Room 105</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-medium text-gray-600">10:00 AM</p>
+                            <p class="text-xs text-gray-500">Tomorrow</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div>
+                            <p class="font-medium text-gray-900">Software Engineering</p>
+                            <p class="text-sm text-gray-500">Room 301</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-medium text-gray-600">3:00 PM</p>
+                            <p class="text-xs text-gray-500">Tomorrow</p>
+                        </div>
                     </div>
                 </div>
-                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <div>
-                        <p class="font-medium text-gray-900">Web Development</p>
-                        <p class="text-sm text-gray-500">Room 105</p>
-                    </div>
-                    <div class="text-right">
-                        <p class="font-medium text-gray-600">10:00 AM</p>
-                        <p class="text-xs text-gray-500">Tomorrow</p>
-                    </div>
-                </div>
-                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <div>
-                        <p class="font-medium text-gray-900">Software Engineering</p>
-                        <p class="text-sm text-gray-500">Room 301</p>
-                    </div>
-                    <div class="text-right">
-                        <p class="font-medium text-gray-600">3:00 PM</p>
-                        <p class="text-xs text-gray-500">Tomorrow</p>
-                    </div>
-                </div>
-            </div>
+            }
         </div>
     </div>
 </div>
