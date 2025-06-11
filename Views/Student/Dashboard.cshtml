@@ -18,36 +18,6 @@
 {
     <script type="application/json" id="charts-data">@Html.Raw(Json.Serialize(ViewBag.AttendanceChartsData))</script>
 }
-<!-- Debug info -->
-<script type="text/plain" id="debug-attendance-rate">@(ViewBag.AttendanceRate?.ToString() ?? "null")</script>
-<script type="text/plain" id="debug-attendance-details">@(ViewBag.AttendanceDetails != null ? Json.Serialize(ViewBag.AttendanceDetails) : "null")</script>
-
-<!-- Debug Dashboard State -->
-@if (true) // Set to false in production
-{
-    <div class="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-xs">
-        <strong>Debug Info:</strong><br/>
-        IsOnboarded: @(ViewBag.IsOnboarded?.ToString() ?? "null")<br/>
-        HasSection: @(ViewBag.HasSection?.ToString() ?? "null")<br/>
-        HasDashboardData: @(ViewBag.HasDashboardData?.ToString() ?? "null")<br/>
-        HasCurrentClass: @(ViewBag.HasCurrentClass?.ToString() ?? "null")<br/>
-        CurrentClass: @(ViewBag.CurrentClass != null ? "Not null" : "null")<br/>
-        DashboardError: @(ViewBag.DashboardError?.ToString() ?? "null")<br/>
-        DashboardData: @(ViewBag.DashboardData != null ? "Not null" : "null")<br/>
-        JWT Token Available: @(!string.IsNullOrEmpty(Context.Session.GetString("AuthToken")) ? "Yes" : "No")<br/>
-        API Base URL: @(ViewBag.ApiBaseUrl?.ToString() ?? "Not set")<br/>
-        @if (ViewBag.DashboardData != null)
-        {
-            var data = ViewBag.DashboardData as AttendanceApp_ASPNET.Services.StudentDashboardData;
-            @:Dashboard Data Details:<br/>
-            @:- Total Enrolled Courses: @data.TotalEnrolledCourses<br/>
-            @:- Today Schedule Count: @data.TodaySchedule.Count<br/>
-            @:- All Schedules Count: @data.AllSchedules.Count<br/>
-            @:- Current Class: @(data.ScheduleSummary?.CurrentClass?.CourseName ?? "None")<br/>
-            @:- Next Class: @(data.ScheduleSummary?.NextClass?.CourseName ?? "None")<br/>
-        }
-    </div>
-}
 
 <!-- Welcome Section with Heat Index -->
 <div class="mb-8">
@@ -378,8 +348,6 @@
                 else
                 {
                     <p class="text-2xl font-bold text-gray-400">--</p>
-                    <!-- Debug info -->
-                    <p class="text-xs text-red-500">Debug: HasRate=@(ViewBag.HasAttendanceRate?.ToString() ?? "null"), Rate=@(ViewBag.AttendanceRate?.ToString() ?? "null")</p>
                 }
             </div>
             <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
