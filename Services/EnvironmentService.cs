@@ -1,15 +1,18 @@
 using System.Text.Json;
+using Microsoft.Extensions.Configuration;
 
 namespace AttendanceApp_ASPNET.Services
 {
     public class EnvironmentService : IEnvironmentService
     {
         private readonly HttpClient _httpClient;
+        private readonly IConfiguration _configuration;
         private const string WeatherApiKey = "87dbe1388ca54392a53202040250906";
 
-        public EnvironmentService(HttpClient httpClient)
+        public EnvironmentService(HttpClient httpClient, IConfiguration configuration)
         {
             _httpClient = httpClient;
+            _configuration = configuration;
             _httpClient.Timeout = TimeSpan.FromSeconds(10);
         }
 
@@ -266,6 +269,11 @@ namespace AttendanceApp_ASPNET.Services
         {
             var result = new WeatherData { IsAvailable = true };
 
+            // Check for manual overrides first
+            var enableOverride = _configuration.GetValue<bool>("WeatherOverrides:EnableFeelsLikeOverride");
+            var overrideFeelsLike = _configuration.GetValue<double?>("WeatherOverrides:FeelsLikeTemperature");
+            var overrideMaxFeelsLike = _configuration.GetValue<double?>("WeatherOverrides:MaxFeelsLikeTemperature");
+
             // Extract current weather data
             if (weatherData.TryGetProperty("current", out var current))
             {
@@ -273,7 +281,18 @@ namespace AttendanceApp_ASPNET.Services
                     result.Temperature = Math.Round(tempC.GetDouble(), 1);
                 
                 if (current.TryGetProperty("feelslike_c", out var feelsLikeC))
-                    result.HeatIndex = Math.Round(feelsLikeC.GetDouble(), 1);
+                {
+                    // Use override if enabled, otherwise use API data
+                    if (enableOverride && overrideFeelsLike.HasValue)
+                    {
+                        result.HeatIndex = overrideFeelsLike.Value;
+                        Console.WriteLine($"WEATHER OVERRIDE: Using manual feels like temperature: {overrideFeelsLike.Value}°C");
+                    }
+                    else
+                    {
+                        result.HeatIndex = Math.Round(feelsLikeC.GetDouble(), 1);
+                    }
+                }
                 
                 if (current.TryGetProperty("condition", out var condition))
                 {
@@ -345,18 +364,26 @@ namespace AttendanceApp_ASPNET.Services
                 if (todayForecast.TryGetProperty("hour", out var hourlyData) &&
                     hourlyData.ValueKind == JsonValueKind.Array)
                 {
-                    double maxFeelsLike = 0;
-                    foreach (var hour in hourlyData.EnumerateArray())
+                    if (enableOverride && overrideMaxFeelsLike.HasValue)
                     {
-                        if (hour.TryGetProperty("feelslike_c", out var hourFeelsLike))
-                        {
-                            var feelsLikeTemp = hourFeelsLike.GetDouble();
-                            if (feelsLikeTemp > maxFeelsLike)
-                                maxFeelsLike = feelsLikeTemp;
-                        }
+                        result.MaxFeelsLike = overrideMaxFeelsLike.Value;
+                        Console.WriteLine($"WEATHER OVERRIDE: Using manual max feels like temperature: {overrideMaxFeelsLike.Value}°C");
                     }
-                    if (maxFeelsLike > 0)
-                        result.MaxFeelsLike = Math.Round(maxFeelsLike, 1);
+                    else
+                    {
+                        double maxFeelsLike = 0;
+                        foreach (var hour in hourlyData.EnumerateArray())
+                        {
+                            if (hour.TryGetProperty("feelslike_c", out var hourFeelsLike))
+                            {
+                                var feelsLikeTemp = hourFeelsLike.GetDouble();
+                                if (feelsLikeTemp > maxFeelsLike)
+                                    maxFeelsLike = feelsLikeTemp;
+                            }
+                        }
+                        if (maxFeelsLike > 0)
+                            result.MaxFeelsLike = Math.Round(maxFeelsLike, 1);
+                    }
                 }
             }
 
