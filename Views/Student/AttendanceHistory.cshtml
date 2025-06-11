@@ -203,17 +203,6 @@
         var absentCount = attendanceRecords.Count(r => IsAbsent(r.Status));
         var totalRecords = attendanceRecords.Count;
 
-        // Debug output
-        var uniqueStatuses = attendanceRecords.Select(r => r.Status).Distinct().ToList();
-        
-        <!-- Debug Info (remove in production) -->
-        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-            <h4 class="font-semibold text-yellow-800">Debug Info:</h4>
-            <p class="text-yellow-700">Total Records: @totalRecords</p>
-            <p class="text-yellow-700">Unique Status Values: @string.Join(", ", uniqueStatuses)</p>
-            <p class="text-yellow-700">Present: @presentCount, Late: @lateCount, Absent: @absentCount</p>
-        </div>
-
         <!-- Statistics Cards -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 fade-in">
             <!-- Total Records -->
