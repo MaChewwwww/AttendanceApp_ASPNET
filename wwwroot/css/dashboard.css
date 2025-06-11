@@ -1,0 +1,151 @@
+/* Animation classes for schedule components */
+.schedule-card-enter {
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s ease-out;
+}
+
+.schedule-card-enter-active {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.schedule-content {
+    opacity: 0;
+    transform: translateX(20px);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.schedule-content:not(.hidden) {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.calendar-day {
+    transition: all 0.2s ease-in-out;
+    transform: scale(1);
+}
+
+.calendar-day:hover {
+    transform: scale(1.05);
+    background-color: #e5e7eb;
+}
+
+.calendar-day.selected {
+    animation: pulse 0.3s ease-in-out;
+}
+
+.calendar-day.today-date.selected {
+    box-shadow: 0 0 0 2px white;
+}
+
+.calendar-day.selected:not(.today-date) {
+    box-shadow: 0 0 0 2px #3b82f6;
+}
+
+.filter-button {
+    transition: all 0.3s ease-in-out;
+    transform: translateX(0);
+}
+
+.filter-button:hover {
+    transform: translateX(3px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.filter-button.active {
+    animation: slideIn 0.3s ease-out;
+}
+
+.schedule-item {
+    opacity: 0;
+    transform: translateY(15px);
+    animation: fadeInUp 0.5s ease-out forwards;
+}
+
+.schedule-item:nth-child(1) { animation-delay: 0.1s; }
+.schedule-item:nth-child(2) { animation-delay: 0.2s; }
+.schedule-item:nth-child(3) { animation-delay: 0.3s; }
+.schedule-item:nth-child(4) { animation-delay: 0.4s; }
+.schedule-item:nth-child(5) { animation-delay: 0.5s; }
+
+.calendar-nav {
+    transition: all 0.2s ease-in-out;
+}
+
+.calendar-nav:hover {
+    background-color: #d1d5db;
+    transform: scale(1.1);
+}
+
+.calendar-nav:active {
+    transform: scale(0.95);
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(-10px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.loading-shimmer {
+    background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+.fade-transition {
+    transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+}
+
+.slide-up {
+    animation: slideUp 0.4s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
