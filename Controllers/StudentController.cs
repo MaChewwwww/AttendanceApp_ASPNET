@@ -52,45 +52,65 @@ namespace AttendanceApp_ASPNET.Controllers
             {
                 if (!string.IsNullOrEmpty(jwtToken))
                 {
+                    Console.WriteLine("=== CONTROLLER: Starting dashboard data fetch ===");
+                    Console.WriteLine($"CONTROLLER: Using JWT token: {jwtToken.Substring(0, Math.Min(20, jwtToken.Length))}...");
+                    
                     var dashboardData = await _dashboardService.GetStudentDashboardAsync(jwtToken);
+                    
+                    Console.WriteLine($"CONTROLLER: Dashboard service result - Success: {dashboardData.Success}");
+                    Console.WriteLine($"CONTROLLER: Message: {dashboardData.Message}");
                     
                     if (dashboardData.Success && dashboardData.Data != null)
                     {
+                        Console.WriteLine("CONTROLLER: Dashboard data loaded successfully");
                         ViewBag.DashboardData = dashboardData.Data;
                         ViewBag.HasDashboardData = true;
+                        ViewBag.DashboardError = null;
                         
                         // Update ViewBag with current class information
-                        if (dashboardData.Data.ScheduleSummary.CurrentClass != null)
+                        if (dashboardData.Data.ScheduleSummary?.CurrentClass != null)
                         {
+                            Console.WriteLine($"CONTROLLER: Current class found: {dashboardData.Data.ScheduleSummary.CurrentClass.CourseName}");
                             ViewBag.CurrentClass = dashboardData.Data.ScheduleSummary.CurrentClass;
                             ViewBag.HasCurrentClass = true;
                         }
                         else
                         {
+                            Console.WriteLine("CONTROLLER: No current class found");
                             ViewBag.HasCurrentClass = false;
                         }
                         
                         ViewBag.TotalEnrolledCourses = dashboardData.Data.TotalEnrolledCourses;
                         ViewBag.PendingApprovals = dashboardData.Data.PendingApprovals;
+                        
+                        Console.WriteLine($"CONTROLLER: Enrolled courses: {dashboardData.Data.TotalEnrolledCourses}");
+                        Console.WriteLine($"CONTROLLER: Today's schedule count: {dashboardData.Data.TodaySchedule.Count}");
+                        Console.WriteLine($"CONTROLLER: All schedules count: {dashboardData.Data.AllSchedules.Count}");
                     }
                     else
                     {
+                        Console.WriteLine($"CONTROLLER: Dashboard data fetch failed - {dashboardData.Message}");
                         ViewBag.HasDashboardData = false;
-                        ViewBag.DashboardError = dashboardData.Message;
-                        Console.WriteLine($"Dashboard data fetch failed: {dashboardData.Message}");
+                        ViewBag.HasCurrentClass = false;
+                        ViewBag.DashboardError = !string.IsNullOrEmpty(dashboardData.Message) ? 
+                                                dashboardData.Message : "Failed to load dashboard data";
                     }
                 }
                 else
                 {
+                    Console.WriteLine("CONTROLLER: No JWT token available");
                     ViewBag.HasDashboardData = false;
+                    ViewBag.HasCurrentClass = false;
                     ViewBag.DashboardError = "Authentication token not found";
                 }
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"CONTROLLER: Exception in dashboard data fetch: {ex.Message}");
+                Console.WriteLine($"CONTROLLER: Stack trace: {ex.StackTrace}");
                 ViewBag.HasDashboardData = false;
-                ViewBag.DashboardError = "Unable to load dashboard data";
-                Console.WriteLine($"Error fetching dashboard data: {ex.Message}");
+                ViewBag.HasCurrentClass = false;
+                ViewBag.DashboardError = "Unable to load dashboard data due to system error";
             }
             
             // Fetch attendance rate

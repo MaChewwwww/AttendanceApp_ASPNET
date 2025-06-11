@@ -15,12 +15,14 @@ namespace AttendanceApp_ASPNET.Services
         {
             try
             {
-                Console.WriteLine("Fetching student dashboard data from API...");
+                Console.WriteLine("=== DASHBOARD SERVICE: Starting API call ===");
+                Console.WriteLine($"DASHBOARD SERVICE: JWT token provided: {!string.IsNullOrEmpty(jwtToken)}");
                 
                 var response = await _apiService.GetStudentDashboardAsync(jwtToken);
                 
                 if (string.IsNullOrEmpty(response))
                 {
+                    Console.WriteLine("DASHBOARD SERVICE: Empty response from API");
                     return new DashboardDataResult
                     {
                         Success = false,
@@ -28,30 +30,65 @@ namespace AttendanceApp_ASPNET.Services
                     };
                 }
 
-                Console.WriteLine($"Dashboard API response received: {response.Substring(0, Math.Min(200, response.Length))}...");
+                Console.WriteLine($"DASHBOARD SERVICE: API response received ({response.Length} characters)");
+                Console.WriteLine($"DASHBOARD SERVICE: Response preview: {response.Substring(0, Math.Min(300, response.Length))}...");
 
                 var options = new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true
                 };
 
-                var apiResponse = JsonSerializer.Deserialize<JsonElement>(response, options);
+                JsonElement apiResponse;
+                try
+                {
+                    apiResponse = JsonSerializer.Deserialize<JsonElement>(response, options);
+                }
+                catch (JsonException ex)
+                {
+                    Console.WriteLine($"DASHBOARD SERVICE: JSON parsing error: {ex.Message}");
+                    Console.WriteLine($"DASHBOARD SERVICE: Raw response: {response}");
+                    return new DashboardDataResult
+                    {
+                        Success = false,
+                        Message = "Invalid JSON response from API"
+                    };
+                }
 
-                if (!apiResponse.TryGetProperty("success", out var successElement) || !successElement.GetBoolean())
+                // Check for success property
+                if (!apiResponse.TryGetProperty("success", out var successElement))
+                {
+                    Console.WriteLine("DASHBOARD SERVICE: No 'success' property found in API response");
+                    return new DashboardDataResult
+                    {
+                        Success = false,
+                        Message = "Invalid API response format - missing success property"
+                    };
+                }
+
+                bool isSuccess = successElement.GetBoolean();
+                Console.WriteLine($"DASHBOARD SERVICE: API success status: {isSuccess}");
+
+                if (!isSuccess)
                 {
                     var message = apiResponse.TryGetProperty("message", out var msgElement) ? 
                                  msgElement.GetString() : "Failed to fetch dashboard data";
                     
+                    Console.WriteLine($"DASHBOARD SERVICE: API returned failure: {message}");
                     return new DashboardDataResult
                     {
                         Success = false,
-                        Message = message ?? "Unknown error occurred"
+                        Message = message ?? "API request was unsuccessful"
                     };
                 }
 
+                Console.WriteLine("DASHBOARD SERVICE: API returned success, parsing data...");
                 var dashboardData = ParseDashboardData(apiResponse);
                 
-                Console.WriteLine($"Dashboard data parsed successfully - Enrolled courses: {dashboardData.TotalEnrolledCourses}, Today's classes: {dashboardData.TodaySchedule.Count}");
+                Console.WriteLine($"DASHBOARD SERVICE: Data parsed successfully");
+                Console.WriteLine($"DASHBOARD SERVICE: - Enrolled courses: {dashboardData.TotalEnrolledCourses}");
+                Console.WriteLine($"DASHBOARD SERVICE: - Today's classes: {dashboardData.TodaySchedule.Count}");
+                Console.WriteLine($"DASHBOARD SERVICE: - All schedules: {dashboardData.AllSchedules.Count}");
+                Console.WriteLine($"DASHBOARD SERVICE: - Current class: {(dashboardData.ScheduleSummary.CurrentClass != null ? dashboardData.ScheduleSummary.CurrentClass.CourseName : "None")}");
 
                 return new DashboardDataResult
                 {
@@ -62,7 +99,7 @@ namespace AttendanceApp_ASPNET.Services
             }
             catch (HttpRequestException ex)
             {
-                Console.WriteLine($"HTTP error fetching dashboard data: {ex.Message}");
+                Console.WriteLine($"DASHBOARD SERVICE: HTTP error: {ex.Message}");
                 return new DashboardDataResult
                 {
                     Success = false,
@@ -71,7 +108,7 @@ namespace AttendanceApp_ASPNET.Services
             }
             catch (TaskCanceledException ex)
             {
-                Console.WriteLine($"Timeout fetching dashboard data: {ex.Message}");
+                Console.WriteLine($"DASHBOARD SERVICE: Timeout error: {ex.Message}");
                 return new DashboardDataResult
                 {
                     Success = false,
@@ -80,12 +117,12 @@ namespace AttendanceApp_ASPNET.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error fetching dashboard data: {ex.Message}");
-                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                Console.WriteLine($"DASHBOARD SERVICE: Unexpected error: {ex.Message}");
+                Console.WriteLine($"DASHBOARD SERVICE: Stack trace: {ex.StackTrace}");
                 return new DashboardDataResult
                 {
                     Success = false,
-                    Message = $"Failed to fetch dashboard data: {ex.Message}"
+                    Message = $"System error: {ex.Message}"
                 };
             }
         }

@@ -22,6 +22,33 @@
 <script type="text/plain" id="debug-attendance-rate">@(ViewBag.AttendanceRate?.ToString() ?? "null")</script>
 <script type="text/plain" id="debug-attendance-details">@(ViewBag.AttendanceDetails != null ? Json.Serialize(ViewBag.AttendanceDetails) : "null")</script>
 
+<!-- Debug Dashboard State -->
+@if (true) // Set to false in production
+{
+    <div class="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-xs">
+        <strong>Debug Info:</strong><br/>
+        IsOnboarded: @(ViewBag.IsOnboarded?.ToString() ?? "null")<br/>
+        HasSection: @(ViewBag.HasSection?.ToString() ?? "null")<br/>
+        HasDashboardData: @(ViewBag.HasDashboardData?.ToString() ?? "null")<br/>
+        HasCurrentClass: @(ViewBag.HasCurrentClass?.ToString() ?? "null")<br/>
+        CurrentClass: @(ViewBag.CurrentClass != null ? "Not null" : "null")<br/>
+        DashboardError: @(ViewBag.DashboardError?.ToString() ?? "null")<br/>
+        DashboardData: @(ViewBag.DashboardData != null ? "Not null" : "null")<br/>
+        JWT Token Available: @(!string.IsNullOrEmpty(Context.Session.GetString("AuthToken")) ? "Yes" : "No")<br/>
+        API Base URL: @(ViewBag.ApiBaseUrl?.ToString() ?? "Not set")<br/>
+        @if (ViewBag.DashboardData != null)
+        {
+            var data = ViewBag.DashboardData as AttendanceApp_ASPNET.Services.StudentDashboardData;
+            @:Dashboard Data Details:<br/>
+            @:- Total Enrolled Courses: @data.TotalEnrolledCourses<br/>
+            @:- Today Schedule Count: @data.TodaySchedule.Count<br/>
+            @:- All Schedules Count: @data.AllSchedules.Count<br/>
+            @:- Current Class: @(data.ScheduleSummary?.CurrentClass?.CourseName ?? "None")<br/>
+            @:- Next Class: @(data.ScheduleSummary?.NextClass?.CourseName ?? "None")<br/>
+        }
+    </div>
+}
+
 <!-- Welcome Section with Heat Index -->
 <div class="mb-8">
     <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -78,7 +105,7 @@
 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
     <!-- Current Class & Attendance Status -->
     <div class="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow duration-200 dashboard-card-entrance relative">
-        @if (ViewBag.HasDashboardData == true && ViewBag.HasCurrentClass == true)
+        @if (ViewBag.HasSection == true && ViewBag.CurrentClass != null)
         {
             <!-- Mark Attendance Button - Top Right Corner -->
             <div class="absolute top-4 right-4 mt-4">
@@ -126,9 +153,9 @@
                 </div>
             </div>
         }
-        else if (ViewBag.HasDashboardData == true)
+        else if (ViewBag.HasSection == true)
         {
-            <!-- Mark Attendance Button - Top Right Corner (Disabled) -->
+            <!-- Has section but no current class -->
             <div class="absolute top-4 right-4">
                 <button class="bg-gray-400 text-white py-2 px-4 rounded-lg cursor-not-allowed font-semibold flex items-center text-sm" disabled>
                     <i class="fas fa-clock mr-2"></i>No Active Class
@@ -144,63 +171,27 @@
                     <p class="text-gray-500 text-sm">No class is currently in session</p>
                 </div>
             </div>
-            @if (ViewBag.DashboardData != null && ViewBag.DashboardData.ScheduleSummary.NextClass != null)
-            {
-                <p class="text-xs text-gray-400">Next: @ViewBag.DashboardData.ScheduleSummary.NextClass.CourseName</p>
-                <p class="text-xs text-gray-400">at @ViewBag.DashboardData.ScheduleSummary.NextClass.StartTime</p>
-            }
-            else
-            {
-                <p class="text-xs text-gray-400">Check your schedule for upcoming classes</p>
-            }
-        }
-        else if (ViewBag.HasSection == true)
-        {
-            <!-- Mark Attendance Button - Top Right Corner -->
-            <div class="absolute top-4 right-4">
-                <button class="bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors duration-200 font-semibold flex items-center text-sm">
-                    <i class="fas fa-camera mr-2"></i>Mark Attendance
-                </button>
-            </div>
-            
-            <div class="flex items-center mb-4 pr-40">
-                <div class="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
-                    <i class="fas fa-clock text-indigo-600 text-xl"></i>
-                </div>
-                <div class="ml-4">
-                    <h3 class="text-lg font-semibold text-gray-900">Current Class</h3>
-                    <p class="text-gray-500 text-sm">Loading...</p>
-                </div>
-            </div>
+            <p class="text-xs text-gray-400">Check your schedule for upcoming classes</p>
         }
         else
         {
-            <!-- Mark Attendance Button - Top Right Corner (Disabled) -->
+            <!-- No section assigned -->
             <div class="absolute top-4 right-4">
                 <button class="bg-gray-400 text-white py-2 px-4 rounded-lg cursor-not-allowed font-semibold flex items-center text-sm" disabled>
-                    <i class="fas fa-exclamation-triangle mr-2"></i>Setup Required
+                    <i class="fas fa-exclamation-triangle mr-2"></i>Section Required
                 </button>
             </div>
             
             <div class="flex items-center mb-4 pr-32">
-                <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-                    <i class="fas fa-exclamation-triangle text-gray-400 text-xl"></i>
+                <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-exclamation-triangle text-yellow-600 text-xl"></i>
                 </div>
                 <div class="ml-4">
                     <h3 class="text-lg font-semibold text-gray-900">Current Class</h3>
-                    <p class="text-gray-500 text-sm">No section assigned</p>
+                    <p class="text-gray-500 text-sm">Section assignment required</p>
                 </div>
             </div>
-            <p class="text-gray-500 text-sm">
-                @if (ViewBag.HasDashboardData == false && !string.IsNullOrEmpty(ViewBag.DashboardError?.ToString()))
-                {
-                    @:Unable to load class data: @ViewBag.DashboardError
-                }
-                else
-                {
-                    @:Section assignment required to view class information.
-                }
-            </p>
+            <p class="text-gray-500 text-sm">You need to be assigned to a section to view class information.</p>
         }
     </div>
 
