@@ -74,5 +74,37 @@ namespace AttendanceApp_ASPNET.Controllers
             TempData["SuccessMessage"] = "You have been logged out successfully.";
             return RedirectToAction("Login", "Auth");
         }
+
+        public IActionResult Classes()
+        {
+            // Call base class authorization checks
+            var faculty = GetCurrentFacultyInfo();
+            
+            if (!faculty.Verified)
+            {
+                TempData["WarningMessage"] = "Your account needs to be verified to access all features.";
+            }
+            
+            // Extend session
+            ExtendSession();
+            
+            return View();
+        }
+
+        public IActionResult Attendance()
+        {
+            // Call base class authorization checks
+            var faculty = GetCurrentFacultyInfo();
+            
+            if (!faculty.Verified)
+            {
+                TempData["WarningMessage"] = "Your account needs to be verified to access all features.";
+            }
+            
+            // Extend session
+            ExtendSession();
+            
+            return View();
+        }
     }
 }
