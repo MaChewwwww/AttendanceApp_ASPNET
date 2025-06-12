@@ -37,6 +37,11 @@ namespace AttendanceApp_ASPNET.Services
         Task<string> GetStudentAttendanceAsync(string jwtToken);
         Task<string> GetCurrentSemesterAttendanceAsync(string jwtToken);
         
+        // Attendance submission methods
+        Task<string> ValidateAttendanceSubmissionAsync(object validationData, string jwtToken);
+        Task<string> SubmitAttendanceAsync(object submissionData, string jwtToken);
+        Task<string> GetTodayAttendanceStatusAsync(string jwtToken);
+        
         // Dashboard data methods
         Task<string> GetStudentDashboardAsync(string jwtToken);
         
@@ -235,6 +240,43 @@ namespace AttendanceApp_ASPNET.Services
                 academic_year = (object)null,
                 semester = (object)null,
                 attendance_summary = new { }
+            });
+        }
+
+        public async Task<string> ValidateAttendanceSubmissionAsync(object validationData, string jwtToken)
+        {
+            return await PostApiRequestWithStructuredErrorAsync("/student/attendance/validate", validationData, jwtToken, "Failed to validate attendance submission", new
+            {
+                can_submit = false,
+                message = "",
+                schedule_info = (object)null,
+                existing_attendance = (object)null
+            });
+        }
+
+        public async Task<string> SubmitAttendanceAsync(object submissionData, string jwtToken)
+        {
+            return await PostApiRequestWithStructuredErrorAsync("/student/attendance/submit", submissionData, jwtToken, "Failed to submit attendance", new
+            {
+                success = false,
+                message = "",
+                attendance_id = (object)null,
+                status = (object)null,
+                submitted_at = (object)null,
+                course_info = (object)null
+            });
+        }
+
+        public async Task<string> GetTodayAttendanceStatusAsync(string jwtToken)
+        {
+            return await GetApiRequestWithStructuredErrorAsync("/student/attendance/today", jwtToken, "Failed to fetch today's attendance status", new
+            {
+                success = false,
+                message = "",
+                attendance_status = new object[0],
+                total_courses = 0,
+                submitted_today = 0,
+                pending_submissions = 0
             });
         }
 

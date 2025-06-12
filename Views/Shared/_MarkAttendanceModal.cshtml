@@ -110,3 +110,151 @@
         </div>
     </div>
 </div>
+
+<!-- Success Modal -->
+<div id="attendanceSuccessModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full transform transition-all duration-300 scale-95">
+            <div class="p-6">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mr-4">
+                        <svg class="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-green-900">Attendance Submitted!</h3>
+                        <p class="text-sm text-green-700" id="successModalSubtitle">Your attendance has been recorded</p>
+                    </div>
+                </div>
+                
+                <div class="mb-6">
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-green-700 mb-2" id="attendanceStatus">Present</div>
+                            <div class="text-green-600 text-sm font-medium mb-2">Status</div>
+                            <div class="text-green-500 text-xs" id="submissionTime">Submitted successfully</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 space-y-2" id="attendanceDetails">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">Course:</span>
+                            <span class="font-medium text-gray-900" id="successCourseName">-</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">Faculty:</span>
+                            <span class="font-medium text-gray-900" id="successFacultyName">-</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">Time:</span>
+                            <span class="font-medium text-gray-900" id="successTime">-</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">Date:</span>
+                            <span class="font-medium text-gray-900" id="successDate">-</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex space-x-3">
+                    <button id="closeSuccessModalBtn" class="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-all duration-200 transform hover:scale-105">
+                        <i class="fas fa-check mr-2"></i>
+                        Continue
+                    </button>
+                    <button id="viewAttendanceBtn" class="flex-1 bg-gray-100 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-200 transition-all duration-200 transform hover:scale-105">
+                        <i class="fas fa-calendar mr-2"></i>
+                        View Records
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Enhanced Success Modal Animations */
+#attendanceSuccessModal .transform {
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+#attendanceSuccessModal button {
+    transition: all 0.2s ease-in-out;
+    position: relative;
+    overflow: hidden;
+}
+
+#attendanceSuccessModal button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+}
+
+#attendanceSuccessModal button:hover::before {
+    left: 100%;
+}
+
+/* Status animation */
+#attendanceStatus {
+    transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* Details animation */
+#attendanceDetails > div {
+    transition: all 0.4s ease-out;
+}
+
+/* Pulse animation for submission time */
+@@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+/* Enhanced modal backdrop */
+#attendanceSuccessModal {
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+/* Success glow effect */
+#attendanceSuccessModal .bg-green-50 {
+    box-shadow: 0 0 20px rgba(34, 197, 94, 0.1);
+    border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+/* Late status glow effect */
+#attendanceSuccessModal .bg-yellow-50 {
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+/* Icon animation */
+#attendanceSuccessModal .w-12.h-12 {
+    transition: all 0.3s ease-in-out;
+}
+
+#attendanceSuccessModal .w-12.h-12:hover {
+    transform: rotate(360deg);
+}
+
+/* Auto-close warning animation */
+.animate-pulse {
+    animation: pulseGlow 2s ease-in-out infinite;
+}
+
+@@keyframes pulseGlow {
+    0%, 100% { 
+        opacity: 1; 
+        box-shadow: 0 0 5px rgba(107, 114, 128, 0.3);
+    }
+    50% { 
+        opacity: 0.8; 
+        box-shadow: 0 0 15px rgba(107, 114, 128, 0.5);
+    }
+}
+</style>

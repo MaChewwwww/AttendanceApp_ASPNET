@@ -551,5 +551,91 @@ namespace AttendanceApp_ASPNET.Controllers
                 return Json(new { success = false, message = "Unable to load charts data" });
             }
         }
+
+        [HttpPost]
+        public async Task<IActionResult> SubmitAttendance([FromBody] JsonElement submissionData)
+        {
+            try
+            {
+                var jwtToken = HttpContext.Session.GetString("AuthToken");
+                if (string.IsNullOrEmpty(jwtToken))
+                {
+                    return Json(new { success = false, message = "Authentication required" });
+                }
+
+                // Extract only the required fields and ensure no extra fields are sent
+                var cleanedSubmissionData = new
+                {
+                    assigned_course_id = submissionData.GetProperty("assigned_course_id").GetInt32(),
+                    face_image = submissionData.GetProperty("face_image").GetString()
+                };
+
+                Console.WriteLine($"Controller: Cleaned submission data - assigned_course_id: {cleanedSubmissionData.assigned_course_id}, face_image_length: {cleanedSubmissionData.face_image?.Length ?? 0}");
+
+                var response = await _apiService.SubmitAttendanceAsync(cleanedSubmissionData, jwtToken);
+                var result = JsonSerializer.Deserialize<JsonElement>(response);
+                
+                return Json(result);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error submitting attendance: {ex.Message}");
+                return Json(new { success = false, message = "Unable to submit attendance" });
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ValidateAttendanceSubmission([FromBody] JsonElement requestData)
+        {
+            try
+            {
+                var jwtToken = HttpContext.Session.GetString("AuthToken");
+                if (string.IsNullOrEmpty(jwtToken))
+                {
+                    return Json(new { success = false, message = "Authentication required" });
+                }
+
+                // Extract only the required field for validation
+                var cleanedValidationData = new
+                {
+                    assigned_course_id = requestData.GetProperty("assigned_course_id").GetInt32()
+                };
+
+                Console.WriteLine($"Controller: Cleaned validation data - assigned_course_id: {cleanedValidationData.assigned_course_id}");
+
+                var response = await _apiService.ValidateAttendanceSubmissionAsync(cleanedValidationData, jwtToken);
+                var result = JsonSerializer.Deserialize<JsonElement>(response);
+                
+                return Json(result);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error validating attendance submission: {ex.Message}");
+                return Json(new { success = false, message = "Unable to validate attendance submission" });
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetTodayAttendanceStatus()
+        {
+            try
+            {
+                var jwtToken = HttpContext.Session.GetString("AuthToken");
+                if (string.IsNullOrEmpty(jwtToken))
+                {
+                    return Json(new { success = false, message = "Authentication required" });
+                }
+
+                var response = await _apiService.GetTodayAttendanceStatusAsync(jwtToken);
+                var result = JsonSerializer.Deserialize<JsonElement>(response);
+                
+                return Json(result);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting today's attendance status: {ex.Message}");
+                return Json(new { success = false, message = "Unable to get attendance status" });
+            }
+        }
     }
 }
