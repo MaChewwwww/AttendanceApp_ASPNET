@@ -85,22 +85,17 @@ namespace AttendanceApp_ASPNET.Controllers
         {
             try
             {
-                // Perform base class authorization check but handle the response
+                // Remove the redundant authorization check since it's handled by the base controller
                 var faculty = GetCurrentFacultyInfo();
-                if (faculty == null || string.IsNullOrEmpty(faculty.Email))
-                {
-                    TempData["ErrorMessage"] = "Please log in to access the faculty portal.";
-                    return RedirectToAction("Login", "Auth");
-                }
-
+                
                 if (!faculty.Verified)
                 {
                     TempData["WarningMessage"] = "Your account needs to be verified to access all features.";
                 }
 
-                // Get JWT token from session with debug logging
                 var jwtToken = HttpContext.Session.GetString("AuthToken");
                 
+                // Debug logging...
                 Console.WriteLine($"=== JWT TOKEN DEBUG ===");
                 Console.WriteLine($"JWT Token found: {!string.IsNullOrEmpty(jwtToken)}");
                 Console.WriteLine($"Session keys present: {string.Join(", ", HttpContext.Session.Keys)}");
@@ -110,23 +105,13 @@ namespace AttendanceApp_ASPNET.Controllers
 
                 if (string.IsNullOrEmpty(jwtToken))
                 {
-                    TempData["ErrorMessage"] = "Authentication token not found. Please login again.";
                     return RedirectToAction("Login", "Auth");
                 }
 
                 // Extend session before making API call
                 ExtendSession();
 
-                // Fetch faculty courses with the auth token
                 var coursesResponse = await _classService.GetFacultyCoursesAsync(jwtToken);
-                
-                // Log API response for debugging
-                Console.WriteLine($"=== API RESPONSE DEBUG ===");
-                Console.WriteLine($"API call success: {coursesResponse.Success}");
-                Console.WriteLine($"Courses count: {coursesResponse.CurrentCourses?.Count ?? 0}");
-                Console.WriteLine($"======================");
-                
-                // Pass data to view
                 return View(coursesResponse);
             }
             catch (Exception ex)

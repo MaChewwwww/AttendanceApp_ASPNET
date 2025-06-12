@@ -16,14 +16,16 @@ namespace AttendanceApp_ASPNET.Controllers.Base
 
         public override void OnActionExecuting(ActionExecutingContext context)
         {
-            // Check if this is a response to a redirect
-            var isRedirected = TempData["IsRedirected"]?.ToString() == "true";
-            if (isRedirected)
+            // Check if this is a response to a redirect or if we're already handling a response
+            if (TempData["IsRedirected"]?.ToString() == "true" || context.Result != null)
             {
                 TempData.Remove("IsRedirected");
                 base.OnActionExecuting(context);
                 return;
             }
+
+            // Reset any existing error messages to prevent them from persisting
+            TempData.Remove("ErrorMessage");
 
             // 1. Check if user is authenticated
             var isAuthenticated = HttpContext.Session.GetString("IsAuthenticated");
