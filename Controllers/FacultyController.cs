@@ -1,14 +1,20 @@
 using Microsoft.AspNetCore.Mvc;
 using AttendanceApp_ASPNET.Controllers.Base;
 using AttendanceApp_ASPNET.Services;
+using AttendanceApp_ASPNET.Models;  // Add this line
 
 namespace AttendanceApp_ASPNET.Controllers
 {
     public class FacultyController : FacultyBaseController
     {
-        public FacultyController(IApiService apiService) : base(apiService)
+        private readonly IClassService _classService;
+
+        public FacultyController(IApiService apiService, IClassService classService) 
+            : base(apiService)
         {
+            _classService = classService;
         }
+
         public IActionResult Dashboard()
         {
             // Check if user is authenticated
@@ -75,20 +81,70 @@ namespace AttendanceApp_ASPNET.Controllers
             return RedirectToAction("Login", "Auth");
         }
 
-        public IActionResult Classes()
+        public async Task<IActionResult> Classes()
         {
-            // Call base class authorization checks
-            var faculty = GetCurrentFacultyInfo();
-            
-            if (!faculty.Verified)
+            try
             {
-                TempData["WarningMessage"] = "Your account needs to be verified to access all features.";
+                // Perform base class authorization check but handle the response
+                var faculty = GetCurrentFacultyInfo();
+                if (faculty == null || string.IsNullOrEmpty(faculty.Email))
+                {
+                    TempData["ErrorMessage"] = "Please log in to access the faculty portal.";
+                    return RedirectToAction("Login", "Auth");
+                }
+
+                if (!faculty.Verified)
+                {
+                    TempData["WarningMessage"] = "Your account needs to be verified to access all features.";
+                }
+
+                // Get JWT token from session with debug logging
+                var jwtToken = HttpContext.Session.GetString("AuthToken");
+                
+                Console.WriteLine($"=== JWT TOKEN DEBUG ===");
+                Console.WriteLine($"JWT Token found: {!string.IsNullOrEmpty(jwtToken)}");
+                Console.WriteLine($"Session keys present: {string.Join(", ", HttpContext.Session.Keys)}");
+                Console.WriteLine($"Token value: {(string.IsNullOrEmpty(jwtToken) ? "null" : "present")}");
+                Console.WriteLine($"Faculty Info: {faculty.Email} - {faculty.FullName}");
+                Console.WriteLine($"====================");
+
+                if (string.IsNullOrEmpty(jwtToken))
+                {
+                    TempData["ErrorMessage"] = "Authentication token not found. Please login again.";
+                    return RedirectToAction("Login", "Auth");
+                }
+
+                // Extend session before making API call
+                ExtendSession();
+
+                // Fetch faculty courses with the auth token
+                var coursesResponse = await _classService.GetFacultyCoursesAsync(jwtToken);
+                
+                // Log API response for debugging
+                Console.WriteLine($"=== API RESPONSE DEBUG ===");
+                Console.WriteLine($"API call success: {coursesResponse.Success}");
+                Console.WriteLine($"Courses count: {coursesResponse.CurrentCourses?.Count ?? 0}");
+                Console.WriteLine($"======================");
+                
+                // Pass data to view
+                return View(coursesResponse);
             }
-            
-            // Extend session
-            ExtendSession();
-            
-            return View();
+            catch (Exception ex)
+            {
+                Console.WriteLine($"=== ERROR DEBUG ===");
+                Console.WriteLine($"Error type: {ex.GetType().Name}");
+                Console.WriteLine($"Error message: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                Console.WriteLine($"=================");
+
+                TempData["ErrorMessage"] = "Failed to load courses. Please try again later.";
+                return View(new FacultyCoursesResponse 
+                { 
+                    Success = false,
+                    Message = "An error occurred while fetching courses.",
+                    CurrentCourses = new List<FacultyCourse>()
+                });
+            }
         }
 
         public IActionResult Attendance()
@@ -108,3 +164,4 @@ namespace AttendanceApp_ASPNET.Controllers
         }
     }
 }
+

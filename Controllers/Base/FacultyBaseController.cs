@@ -16,6 +16,15 @@ namespace AttendanceApp_ASPNET.Controllers.Base
 
         public override void OnActionExecuting(ActionExecutingContext context)
         {
+            // Check if this is a response to a redirect
+            var isRedirected = TempData["IsRedirected"]?.ToString() == "true";
+            if (isRedirected)
+            {
+                TempData.Remove("IsRedirected");
+                base.OnActionExecuting(context);
+                return;
+            }
+
             // 1. Check if user is authenticated
             var isAuthenticated = HttpContext.Session.GetString("IsAuthenticated");
             if (string.IsNullOrEmpty(isAuthenticated) || isAuthenticated != "true")
@@ -25,6 +34,7 @@ namespace AttendanceApp_ASPNET.Controllers.Base
                 var returnUrl = HttpContext.Request.Path + HttpContext.Request.QueryString;
                 TempData["ReturnUrl"] = returnUrl;
                 TempData["ErrorMessage"] = "Please log in to access the faculty portal.";
+                TempData["IsRedirected"] = "true";
                 
                 context.Result = RedirectToAction("Login", "Auth");
                 return;

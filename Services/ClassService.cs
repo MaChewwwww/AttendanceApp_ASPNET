@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;  // Add this for JsonNumberHandling
 using AttendanceApp_ASPNET.Models;
 
 namespace AttendanceApp_ASPNET.Services
@@ -16,13 +17,52 @@ namespace AttendanceApp_ASPNET.Services
         {
             try
             {
+                Console.WriteLine("=== API CALL DEBUG ===");
+                Console.WriteLine("Calling /faculty/courses endpoint");
+                
                 var response = await _apiService.GetAuthenticatedDataAsync("/faculty/courses", jwtToken);
-                return JsonSerializer.Deserialize<FacultyCoursesResponse>(response) ?? 
+                
+                Console.WriteLine($"Raw API Response: {response}");
+
+                var options = new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true,
+                    NumberHandling = JsonNumberHandling.AllowReadingFromString
+                };
+
+                var coursesResponse = JsonSerializer.Deserialize<FacultyCoursesResponse>(response, options);
+                if (coursesResponse == null)
+                {
                     throw new Exception("Failed to deserialize faculty courses response");
+                }
+
+                Console.WriteLine($"Deserialized Response - Success: {coursesResponse.Success}");
+                Console.WriteLine($"Current Courses Count: {coursesResponse.CurrentCourses?.Count ?? 0}");
+                Console.WriteLine($"Message: {coursesResponse.Message}");
+                Console.WriteLine("====================");
+
+                return coursesResponse;
             }
             catch (Exception ex)
             {
-                throw new Exception($"Error fetching faculty courses: {ex.Message}", ex);
+                Console.WriteLine($"=== API ERROR DEBUG ===");
+                Console.WriteLine($"Error Type: {ex.GetType().Name}");
+                Console.WriteLine($"Error Message: {ex.Message}");
+                Console.WriteLine($"Stack Trace: {ex.StackTrace}");
+                Console.WriteLine("=====================");
+
+                // Return a valid response object with error information
+                return new FacultyCoursesResponse
+                {
+                    Success = false,
+                    Message = $"Unable to fetch faculty courses: {ex.Message}",
+                    CurrentCourses = new List<FacultyCourse>(),
+                    PreviousCourses = new List<FacultyCourse>(),
+                    FacultyInfo = new Dictionary<string, object>(),
+                    TotalCurrent = 0,
+                    TotalPrevious = 0,
+                    SemesterSummary = new Dictionary<string, SemesterSummary>()  // Changed to use SemesterSummary type
+                };
             }
         }
 
