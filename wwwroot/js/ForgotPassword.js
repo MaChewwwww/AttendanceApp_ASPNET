@@ -471,8 +471,8 @@ async function sendPasswordResetInstructions() {
     }
     
     // Check PUP domain
-    if (!email.endsWith('@iskolarngbayan.pup.edu.ph')) {
-        showForgotPasswordError('Please use your PUP email address (@iskolarngbayan.pup.edu.ph).');
+    if (!email.endsWith('@iskolarngbayan.pup.edu.ph') && !email.endsWith('@pup.edu.ph')) {
+        showForgotPasswordError('Please use your PUP email address (@iskolarngbayan.pup.edu.ph or @pup.edu.ph).');
         return;
     }
     

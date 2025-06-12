@@ -44,8 +44,8 @@ window.performLogin = async function() {
     }
     
     // Check PUP domain
-    if (!email.endsWith('@iskolarngbayan.pup.edu.ph')) {
-        showLoginError('Please use your PUP email address (@iskolarngbayan.pup.edu.ph).');
+    if (!email.endsWith('@iskolarngbayan.pup.edu.ph') && !email.endsWith('@pup.edu.ph')) {
+        showLoginError('Please use your PUP email address (@iskolarngbayan.pup.edu.ph or @pup.edu.ph).');
         return;
     }
     

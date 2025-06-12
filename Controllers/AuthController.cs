@@ -118,26 +118,65 @@ namespace AttendanceApp_ASPNET.Controllers
             {
                 var userRole = HttpContext.Session.GetString("UserRole");
                 
-                // Redirect based on role
+                // Debug output to trace role and redirection
+                Console.WriteLine($"=== LOGIN REDIRECTION DEBUG ===");
+                Console.WriteLine($"User is authenticated: {isAuthenticated}");
+                Console.WriteLine($"User role from session: '{userRole}'");
+                Console.WriteLine($"Role type: {(userRole == null ? "null" : userRole.GetType().Name)}");
+                Console.WriteLine($"Role lowercase: '{userRole?.ToLower()}'");
+                
+                // Add standard message for all redirects
+                TempData["InfoMessage"] = "You are already logged in.";
+                
+                // Debug the switch case evaluation
+                string redirectTarget = "Unknown";
+                
                 switch (userRole?.ToLower())
                 {
                     case "student":
-                        TempData["InfoMessage"] = "You are already logged in.";
-                        return RedirectToAction("Dashboard", "Student");
+                        redirectTarget = "Student/Dashboard";
+                        Console.WriteLine("Role matched: student");
+                        break;
                     case "faculty":
+                        redirectTarget = "Faculty/Dashboard";
+                        Console.WriteLine("Role matched: faculty");
+                        break;
                     case "teacher":
+                        redirectTarget = "Faculty/Dashboard";
+                        Console.WriteLine("Role matched: teacher");
+                        break;
                     case "instructor":
-                        TempData["InfoMessage"] = "You are already logged in.";
-                        return RedirectToAction("Dashboard", "Faculty");
+                        redirectTarget = "Faculty/Dashboard";
+                        Console.WriteLine("Role matched: instructor");
+                        break;
                     case "admin":
+                        redirectTarget = "Admin/Dashboard";
+                        Console.WriteLine("Role matched: admin");
+                        break;
                     case "administrator":
-                        TempData["InfoMessage"] = "You are already logged in.";
-                        return RedirectToAction("Dashboard", "Admin");
+                        redirectTarget = "Admin/Dashboard";
+                        Console.WriteLine("Role matched: administrator");
+                        break;
                     default:
-                        // Default to student dashboard
-                        TempData["InfoMessage"] = "You are already logged in.";
-                        return RedirectToAction("Dashboard", "Student");
+                        redirectTarget = "Student/Dashboard";
+                        Console.WriteLine("Role match defaulted to: Student/Dashboard");
+                        break;
                 }
+                
+                Console.WriteLine($"Redirecting to: {redirectTarget}");
+                Console.WriteLine("===============================");
+                
+                // Redirect based on role with simplified switch expression
+                return userRole?.ToLower() switch
+                {
+                    "student" => RedirectToAction("Dashboard", "Student"),
+                    "faculty" => RedirectToAction("Dashboard", "Faculty"),
+                    "teacher" => RedirectToAction("Dashboard", "Faculty"),
+                    "instructor" => RedirectToAction("Dashboard", "Faculty"),
+                    "admin" => RedirectToAction("Dashboard", "Admin"),
+                    "administrator" => RedirectToAction("Dashboard", "Admin"),
+                    _ => RedirectToAction("Dashboard", "Student") // Default to Student dashboard
+                };
             }
             
             return View();
@@ -632,6 +671,9 @@ namespace AttendanceApp_ASPNET.Controllers
 
                 var result = await _apiService.VerifyLoginOTPAsync(verifyOtpData);
                 
+                Console.WriteLine($"=== VERIFY LOGIN OTP DEBUG ===");
+                Console.WriteLine($"Raw API response: {result}");
+                
                 // Handle null or empty API response
                 if (string.IsNullOrWhiteSpace(result))
                 {
@@ -704,25 +746,46 @@ namespace AttendanceApp_ASPNET.Controllers
                     }
                 }
                 
-                // Safely extract user information - matching Python API response structure
+                // Safely extract user information with detailed logging
                 if (apiResponse.TryGetProperty("user", out var userProperty) && userProperty.ValueKind != JsonValueKind.Null)
                 {
                     userInfo = userProperty;
+                    Console.WriteLine($"User info found in response: {userInfo.ToString()}");
                     
-                    // Extract role from Python API response structure
+                    // Extract role from Python API response structure with detailed logging
                     if (userInfo.TryGetProperty("role", out var roleProp))
                     {
-                        userRole = roleProp.GetString()?.ToLower() ?? "student";
+                        var roleFromApi = roleProp.GetString();
+                        Console.WriteLine($"Role property found: '{roleFromApi}', type: {roleProp.ValueKind}");
+                        userRole = roleFromApi?.ToLower() ?? "student";
+                        Console.WriteLine($"Role after normalization: '{userRole}'");
                     }
                     else if (userInfo.TryGetProperty("student_number", out var studentNumberProp) && 
                              !string.IsNullOrEmpty(studentNumberProp.GetString()))
                     {
+                        Console.WriteLine("No role property found, but student_number exists - defaulting to 'student' role");
                         userRole = "student";
                     }
                     else
                     {
+                        Console.WriteLine("No role property found, defaulting to 'student'");
                         userRole = "student";
                     }
+                    
+                    // Log other potential role indicators
+                    if (userInfo.TryGetProperty("user_type", out var userTypeProp))
+                    {
+                        Console.WriteLine($"Found user_type property: '{userTypeProp.GetString()}'");
+                    }
+                    
+                    if (userInfo.TryGetProperty("account_type", out var accountTypeProp))
+                    {
+                        Console.WriteLine($"Found account_type property: '{accountTypeProp.GetString()}'");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("No user info found in response, defaulting role to 'student'");
                 }
 
                 // Safely extract token
@@ -734,31 +797,57 @@ namespace AttendanceApp_ASPNET.Controllers
                 // Set redirect URL based on role if successful
                 if (success)
                 {
-                    switch (userRole.ToLower())
+                    Console.WriteLine($"Setting redirect URL based on role: '{userRole}'");
+                    
+                    switch (userRole.ToLower().Trim())
                     {
                         case "student":
                             redirectUrl = "/Student/Dashboard";
+                            Console.WriteLine("Redirect set to Student dashboard");
                             break;
                         case "faculty":
+                            redirectUrl = "/Faculty/Dashboard";
+                            Console.WriteLine("Redirect set to Faculty dashboard");
+                            break;
                         case "teacher":
+                            redirectUrl = "/Faculty/Dashboard";
+                            Console.WriteLine("Redirect set to Faculty dashboard (teacher)");
+                            break;
                         case "instructor":
                             redirectUrl = "/Faculty/Dashboard";
+                            Console.WriteLine("Redirect set to Faculty dashboard (instructor)");
                             break;
                         case "admin":
-                        case "administrator":
                             redirectUrl = "/Admin/Dashboard";
+                            Console.WriteLine("Redirect set to Admin dashboard");
+                            break;
+                        case "administrator":
+                            redirectUrl = "/Admin/Dashboard"; 
+                            Console.WriteLine("Redirect set to Admin dashboard (administrator)");
                             break;
                         default:
                             redirectUrl = "/Student/Dashboard";
+                            Console.WriteLine($"Unknown role '{userRole}' - defaulting to Student dashboard");
                             break;
                     }
                 }
 
-                // Store session data if successful and user info exists - using Python API field names
+                // Store session data if successful and user info exists
                 if (success && userInfo.ValueKind != JsonValueKind.Undefined)
                 {
                     HttpContext.Session.SetString("IsAuthenticated", "true");
+                    
+                    // Store the exact role string as received (preserving case) for debugging
+                    if (userInfo.TryGetProperty("role", out var originalRoleProp))
+                    {
+                        var originalRole = originalRoleProp.GetString() ?? "";
+                        HttpContext.Session.SetString("UserRoleOriginal", originalRole);
+                        Console.WriteLine($"Stored original role in session: '{originalRole}'");
+                    }
+                    
+                    // Store normalized role (lowercase)
                     HttpContext.Session.SetString("UserRole", userRole);
+                    Console.WriteLine($"Stored normalized role in session: '{userRole}'");
                     
                     // Map Python API response fields to session
                     if (userInfo.TryGetProperty("user_id", out var userIdProp))
@@ -816,7 +905,7 @@ namespace AttendanceApp_ASPNET.Controllers
                     token = !string.IsNullOrEmpty(token) ? token : (object)null,
                     redirect_url = redirectUrl,
                     user_role = userRole,
-                    transition_delay = 1200 // Add delay for smooth animation transition
+                    transition_delay = 1200
                 };
                 
                 return Json(response);
@@ -824,6 +913,7 @@ namespace AttendanceApp_ASPNET.Controllers
             catch (Exception ex)
             {
                 Console.WriteLine($"Login OTP verification error: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
                 
                 return Json(new { 
                     success = false, 
