@@ -36,6 +36,7 @@ builder.Services.AddHttpClient<IEnvironmentService, EnvironmentService>();
 builder.Services.AddScoped<IEnvironmentService, EnvironmentService>();
 builder.Services.AddScoped<IStudentManagementService, StudentManagementService>();
 builder.Services.AddScoped<ICourseService, CourseService>();
+builder.Services.AddScoped<IClassService, ClassService>();  // Add this line
 builder.Services.AddScoped<IStudentHistoryService, StudentHistoryService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IAttendanceService, AttendanceService>();
