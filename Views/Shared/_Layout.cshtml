@@ -271,25 +271,59 @@
                 @{
                     var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
                     var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
-                    var isDashboard = currentController == "Student" && currentAction == "Dashboard";
-                    var isCourses = currentController == "Student" && currentAction == "Courses";
-                    var isAttendanceHistory = currentController == "Student" && currentAction == "AttendanceHistory";
+                    var userRole = Context.Session.GetString("UserRole")?.ToLower() ?? "student";
+                    var isStudent = userRole == "student";
+                    var isFaculty = userRole == "faculty" || userRole == "teacher" || userRole == "instructor";
+                    
+                    // Student variables
+                    var isStudentDashboard = currentController == "Student" && currentAction == "Dashboard";
+                    var isStudentCourses = currentController == "Student" && currentAction == "Courses";
+                    var isStudentAttendanceHistory = currentController == "Student" && currentAction == "AttendanceHistory";
+                    
+                    // Faculty variables
+                    var isFacultyDashboard = currentController == "Faculty" && currentAction == "Dashboard";
+                    var isFacultyClasses = currentController == "Faculty" && currentAction == "Classes";
+                    var isFacultyAttendance = currentController == "Faculty" && currentAction == "Attendance";
+                    var isFacultyReports = currentController == "Faculty" && currentAction == "Reports";
                 }
                 
-                <a href="/Student/Dashboard" class="flex items-center px-6 py-3 @(isDashboard ? "text-gray-700 bg-blue-50 border-r-4 border-blue-600" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900") transition-colors duration-200">
-                    <i class="fas fa-home w-5 h-5 mr-3"></i>
-                    <span class="@(isDashboard ? "font-medium" : "")">Dashboard</span>
-                </a>
-                
-                <a href="/Student/Courses" class="flex items-center px-6 py-3 @(isCourses ? "text-gray-700 bg-blue-50 border-r-4 border-blue-600" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900") transition-colors duration-200">
-                    <i class="fas fa-book-open w-5 h-5 mr-3"></i>
-                    <span class="@(isCourses ? "font-medium" : "")">Courses</span>
-                </a>
-                
-                <a href="/Student/AttendanceHistory" class="flex items-center px-6 py-3 @(isAttendanceHistory ? "text-gray-700 bg-blue-50 border-r-4 border-blue-600" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900") transition-colors duration-200">
-                    <i class="fas fa-clipboard-list w-5 h-5 mr-3"></i>
-                    <span class="@(isAttendanceHistory ? "font-medium" : "")">Attendance History</span>
-                </a>
+                @if (isStudent)
+                {
+                    <!-- Student Navigation Links -->
+                    <a href="/Student/Dashboard" class="flex items-center px-6 py-3 @(isStudentDashboard ? "text-gray-700 bg-blue-50 border-r-4 border-blue-600" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900") transition-colors duration-200">
+                        <i class="fas fa-home w-5 h-5 mr-3"></i>
+                        <span class="@(isStudentDashboard ? "font-medium" : "")">Dashboard</span>
+                    </a>
+                    
+                    <a href="/Student/Courses" class="flex items-center px-6 py-3 @(isStudentCourses ? "text-gray-700 bg-blue-50 border-r-4 border-blue-600" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900") transition-colors duration-200">
+                        <i class="fas fa-book-open w-5 h-5 mr-3"></i>
+                        <span class="@(isStudentCourses ? "font-medium" : "")">Courses</span>
+                    </a>
+                    
+                    <a href="/Student/AttendanceHistory" class="flex items-center px-6 py-3 @(isStudentAttendanceHistory ? "text-gray-700 bg-blue-50 border-r-4 border-blue-600" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900") transition-colors duration-200">
+                        <i class="fas fa-clipboard-list w-5 h-5 mr-3"></i>
+                        <span class="@(isStudentAttendanceHistory ? "font-medium" : "")">Attendance History</span>
+                    </a>
+                }
+                else if (isFaculty)
+                {
+                    <!-- Faculty Navigation Links -->
+                    <a href="/Faculty/Dashboard" class="flex items-center px-6 py-3 @(isFacultyDashboard ? "text-gray-700 bg-blue-50 border-r-4 border-blue-600" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900") transition-colors duration-200">
+                        <i class="fas fa-home w-5 h-5 mr-3"></i>
+                        <span class="@(isFacultyDashboard ? "font-medium" : "")">Dashboard</span>
+                    </a>
+                    
+                    <a href="/Faculty/Classes" class="flex items-center px-6 py-3 @(isFacultyClasses ? "text-gray-700 bg-blue-50 border-r-4 border-blue-600" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900") transition-colors duration-200">
+                        <i class="fas fa-chalkboard-teacher w-5 h-5 mr-3"></i>
+                        <span class="@(isFacultyClasses ? "font-medium" : "")">Manage Classes</span>
+                    </a>
+                    
+                    <a href="/Faculty/Attendance" class="flex items-center px-6 py-3 @(isFacultyAttendance ? "text-gray-700 bg-blue-50 border-r-4 border-blue-600" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900") transition-colors duration-200">
+                         <i class="fas fa-clipboard-list w-5 h-5 mr-3"></i>
+                        <span class="@(isFacultyAttendance ? "font-medium" : "")">Attendance History</span>
+                    </a>
+                    
+                }
                 
                 <div class="border-t border-gray-200 mt-6 pt-6">
                     <button type="button" onclick="showLayoutLogoutConfirmation()" class="flex items-center w-full px-6 py-3 text-gray-600 hover:bg-red-50 hover:text-red-700 transition-colors duration-200">
@@ -309,6 +343,9 @@
                         <button class="text-gray-500 hover:text-gray-700 lg:hidden" id="mobile-menu-button">
                             <i class="fas fa-bars w-6 h-6"></i>
                         </button>
+                        <span class="ml-3 text-lg font-semibold text-gray-700">
+                            @(isFaculty ? "Faculty Portal" : "Student Portal")
+                        </span>
                     </div>
                     
                     <div class="flex items-center space-x-4">
@@ -357,20 +394,47 @@
                     <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Menu</h3>
                 </div>
                 
-                <a href="/Student/Dashboard" class="flex items-center px-6 py-3 @(isDashboard ? "text-gray-700 bg-blue-50 border-r-4 border-blue-600" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900") transition-colors duration-200">
-                    <i class="fas fa-home w-5 h-5 mr-3"></i>
-                    <span class="@(isDashboard ? "font-medium" : "")">Dashboard</span>
-                </a>
-                
-                <a href="/Student/Courses" class="flex items-center px-6 py-3 @(isCourses ? "text-gray-700 bg-blue-50 border-r-4 border-blue-600" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900") transition-colors duration-200">
-                    <i class="fas fa-book-open w-5 h-5 mr-3"></i>
-                    <span class="@(isCourses ? "font-medium" : "")">Courses</span>
-                </a>
-                
-                <a href="/Student/AttendanceHistory" class="flex items-center px-6 py-3 @(isAttendanceHistory ? "text-gray-700 bg-blue-50 border-r-4 border-blue-600" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900") transition-colors duration-200">
-                    <i class="fas fa-clipboard-list w-5 h-5 mr-3"></i>
-                    <span class="@(isAttendanceHistory ? "font-medium" : "")">Attendance History</span>
-                </a>
+                @if (isStudent)
+                {
+                    <!-- Student Mobile Navigation Links -->
+                    <a href="/Student/Dashboard" class="flex items-center px-6 py-3 @(isStudentDashboard ? "text-gray-700 bg-blue-50 border-r-4 border-blue-600" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900") transition-colors duration-200">
+                        <i class="fas fa-home w-5 h-5 mr-3"></i>
+                        <span class="@(isStudentDashboard ? "font-medium" : "")">Dashboard</span>
+                    </a>
+                    
+                    <a href="/Student/Courses" class="flex items-center px-6 py-3 @(isStudentCourses ? "text-gray-700 bg-blue-50 border-r-4 border-blue-600" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900") transition-colors duration-200">
+                        <i class="fas fa-book-open w-5 h-5 mr-3"></i>
+                        <span class="@(isStudentCourses ? "font-medium" : "")">Courses</span>
+                    </a>
+                    
+                    <a href="/Student/AttendanceHistory" class="flex items-center px-6 py-3 @(isStudentAttendanceHistory ? "text-gray-700 bg-blue-50 border-r-4 border-blue-600" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900") transition-colors duration-200">
+                        <i class="fas fa-clipboard-list w-5 h-5 mr-3"></i>
+                        <span class="@(isStudentAttendanceHistory ? "font-medium" : "")">Attendance History</span>
+                    </a>
+                }
+                else if (isFaculty)
+                {
+                    <!-- Faculty Mobile Navigation Links -->
+                    <a href="/Faculty/Dashboard" class="flex items-center px-6 py-3 @(isFacultyDashboard ? "text-gray-700 bg-blue-50 border-r-4 border-blue-600" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900") transition-colors duration-200">
+                        <i class="fas fa-home w-5 h-5 mr-3"></i>
+                        <span class="@(isFacultyDashboard ? "font-medium" : "")">Dashboard</span>
+                    </a>
+                    
+                    <a href="/Faculty/Classes" class="flex items-center px-6 py-3 @(isFacultyClasses ? "text-gray-700 bg-blue-50 border-r-4 border-blue-600" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900") transition-colors duration-200">
+                        <i class="fas fa-chalkboard-teacher w-5 h-5 mr-3"></i>
+                        <span class="@(isFacultyClasses ? "font-medium" : "")">Manage Classes</span>
+                    </a>
+                    
+                    <a href="/Faculty/Attendance" class="flex items-center px-6 py-3 @(isFacultyAttendance ? "text-gray-700 bg-blue-50 border-r-4 border-blue-600" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900") transition-colors duration-200">
+                        <i class="fas fa-user-check w-5 h-5 mr-3"></i>
+                        <span class="@(isFacultyAttendance ? "font-medium" : "")">Record Attendance</span>
+                    </a>
+                    
+                    <a href="/Faculty/Reports" class="flex items-center px-6 py-3 @(isFacultyReports ? "text-gray-700 bg-blue-50 border-r-4 border-blue-600" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900") transition-colors duration-200">
+                        <i class="fas fa-chart-bar w-5 h-5 mr-3"></i>
+                        <span class="@(isFacultyReports ? "font-medium" : "")">Reports & Analytics</span>
+                    </a>
+                }
                 
                 <div class="border-t border-gray-200 mt-6 pt-6">
                     <button type="button" onclick="showLayoutLogoutConfirmation()" class="flex items-center w-full px-6 py-3 text-gray-600 hover:bg-red-50 hover:text-red-700 transition-colors duration-200">
