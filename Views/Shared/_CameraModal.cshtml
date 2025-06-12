@@ -76,7 +76,8 @@ window.cameraModal = {
         this.canvas.height = this.video.videoHeight;
         
         context.drawImage(this.video, 0, 0);
-        const dataURL = this.canvas.toDataURL('image/jpeg', 0.8);
+        // Changed from 'image/jpeg' to 'image/png' - PNG is lossless format
+        const dataURL = this.canvas.toDataURL('image/png');
         
         if (this.callback) {
             this.callback(dataURL);
