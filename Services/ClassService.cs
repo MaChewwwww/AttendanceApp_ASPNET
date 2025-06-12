@@ -17,13 +17,14 @@ namespace AttendanceApp_ASPNET.Services
         {
             try
             {
-                Console.WriteLine("=== API CALL DEBUG ===");
-                Console.WriteLine("Calling /faculty/courses endpoint");
+                LogDebug("Fetching faculty courses", new
+                {
+                    Endpoint = "/faculty/courses",
+                    TokenPresent = !string.IsNullOrEmpty(jwtToken)
+                });
                 
                 var response = await _apiService.GetAuthenticatedDataAsync("/faculty/courses", jwtToken);
                 
-                Console.WriteLine($"Raw API Response: {response}");
-
                 var options = new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true,
@@ -36,22 +37,19 @@ namespace AttendanceApp_ASPNET.Services
                     throw new Exception("Failed to deserialize faculty courses response");
                 }
 
-                Console.WriteLine($"Deserialized Response - Success: {coursesResponse.Success}");
-                Console.WriteLine($"Current Courses Count: {coursesResponse.CurrentCourses?.Count ?? 0}");
-                Console.WriteLine($"Message: {coursesResponse.Message}");
-                Console.WriteLine("====================");
+                LogDebug("Faculty courses retrieved", new
+                {
+                    Success = coursesResponse.Success,
+                    CurrentCoursesCount = coursesResponse.CurrentCourses?.Count ?? 0,
+                    PreviousCoursesCount = coursesResponse.PreviousCourses?.Count ?? 0,
+                    Message = coursesResponse.Message
+                });
 
                 return coursesResponse;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"=== API ERROR DEBUG ===");
-                Console.WriteLine($"Error Type: {ex.GetType().Name}");
-                Console.WriteLine($"Error Message: {ex.Message}");
-                Console.WriteLine($"Stack Trace: {ex.StackTrace}");
-                Console.WriteLine("=====================");
-
-                // Return a valid response object with error information
+                LogError("Failed to fetch faculty courses", ex);
                 return new FacultyCoursesResponse
                 {
                     Success = false,
@@ -106,6 +104,21 @@ namespace AttendanceApp_ASPNET.Services
             {
                 throw new Exception($"Error deleting course: {ex.Message}", ex);
             }
+        }
+
+        private void LogDebug(string message, object data)
+        {
+            var json = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
+            Console.WriteLine($"\n=== {message.ToUpper()} ===\n{json}\n====================\n");
+        }
+
+        private void LogError(string message, Exception ex)
+        {
+            Console.WriteLine($"\n=== ERROR: {message.ToUpper()} ===");
+            Console.WriteLine($"Type: {ex.GetType().Name}");
+            Console.WriteLine($"Message: {ex.Message}");
+            Console.WriteLine($"Stack Trace:\n{ex.StackTrace}");
+            Console.WriteLine("====================\n");
         }
     }
 }
