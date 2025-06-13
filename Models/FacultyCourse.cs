@@ -52,6 +52,12 @@ namespace AttendanceApp_ASPNET.Models
         [JsonPropertyName("pending_count")]
         public int PendingCount { get; set; }
 
+        [JsonPropertyName("passed_count")]
+        public int PassedCount { get; set; }
+
+        [JsonPropertyName("failed_count")]
+        public int FailedCount { get; set; }
+
         [JsonPropertyName("total_students")]
         public int TotalStudents { get; set; }
 
