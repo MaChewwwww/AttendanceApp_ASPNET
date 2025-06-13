@@ -267,15 +267,18 @@ function generateMockStudentsData() {
 
 function updateCourseDetailsSummaryCards() {
     const totalStudents = courseDetailsStudentsData.length;
-    const enrolledStudents = courseDetailsStudentsData.filter(s => s.status === 'Enrolled').length;
     const pendingStudents = courseDetailsStudentsData.filter(s => s.status === 'Pending').length;
-    const avgAttendance = totalStudents > 0 ? 
-        Math.round(courseDetailsStudentsData.reduce((sum, s) => sum + s.attendanceRate, 0) / totalStudents) : 0;
+    const enrolledStudents = courseDetailsStudentsData.filter(s => s.status === 'Enrolled').length;
+    const passedStudents = courseDetailsStudentsData.filter(s => s.status === 'Passed').length;
+    const rejectedStudents = courseDetailsStudentsData.filter(s => s.status === 'Rejected').length;
+    const failedStudents = courseDetailsStudentsData.filter(s => s.status === 'Failed').length;
     
     document.getElementById('courseDetailsStudentCount').textContent = totalStudents;
-    document.getElementById('courseDetailsEnrolledCount').textContent = enrolledStudents;
     document.getElementById('courseDetailsPendingCount').textContent = pendingStudents;
-    document.getElementById('courseDetailsAvgAttendance').textContent = `${avgAttendance}%`;
+    document.getElementById('courseDetailsEnrolledCount').textContent = enrolledStudents;
+    document.getElementById('courseDetailsPassedCount').textContent = passedStudents;
+    document.getElementById('courseDetailsRejectedCount').textContent = rejectedStudents;
+    document.getElementById('courseDetailsFailedCount').textContent = failedStudents;
 }
 
 function renderCourseDetailsStudentsTable() {
