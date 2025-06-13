@@ -17,7 +17,7 @@ namespace AttendanceApp_ASPNET.Models
         public string CourseCode { get; set; } = string.Empty;
 
         [JsonPropertyName("course_description")]
-        public string CourseDescription { get; set; } = string.Empty;
+        public string? CourseDescription { get; set; }
 
         [JsonPropertyName("section_id")]
         public int SectionId { get; set; }
@@ -40,8 +40,11 @@ namespace AttendanceApp_ASPNET.Models
         [JsonPropertyName("semester")]
         public string Semester { get; set; } = string.Empty;
 
+        [JsonPropertyName("semester_order")]
+        public int? SemesterOrder { get; set; }
+
         [JsonPropertyName("room")]
-        public string Room { get; set; } = string.Empty;
+        public string? Room { get; set; }
 
         [JsonPropertyName("enrollment_count")]
         public int EnrollmentCount { get; set; }
@@ -53,10 +56,10 @@ namespace AttendanceApp_ASPNET.Models
         public int TotalStudents { get; set; }
 
         [JsonPropertyName("created_at")]
-        public string CreatedAt { get; set; } = string.Empty;
+        public string? CreatedAt { get; set; }
 
         [JsonPropertyName("updated_at")]
-        public string UpdatedAt { get; set; } = string.Empty;
+        public string? UpdatedAt { get; set; }
     }
 
     public class FacultyCoursesResponse

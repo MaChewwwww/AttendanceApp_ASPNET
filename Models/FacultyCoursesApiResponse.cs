@@ -21,5 +21,9 @@ namespace AttendanceApp_ASPNET.Models
 
         [JsonPropertyName("total_previous")]
         public int TotalPrevious { get; set; }
+
+        [JsonPropertyName("semester_summary")]
+        public Dictionary<string, Dictionary<string, object>>? SemesterSummary { get; set; }
     }
 }
+   

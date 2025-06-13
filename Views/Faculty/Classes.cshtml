@@ -35,6 +35,12 @@
                     Current Courses
                     <span class="ml-2 text-sm text-gray-500">(@(Model?.TotalCurrent ?? 0) courses)</span>
                 </h2>
+                @if (Model?.CurrentCourses?.Any() == true)
+                {
+                    <div class="text-sm text-gray-500">
+                        Sorted by: Latest Academic Year → Summer → 3rd → 2nd → 1st Semester
+                    </div>
+                }
             </div>
         </div>
 
@@ -76,7 +82,7 @@
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                                        @course.TotalStudents students
+                                        @course.EnrollmentCount/@course.TotalStudents enrolled
                                     </span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
@@ -116,6 +122,12 @@
                     Previous Courses
                     <span class="ml-2 text-sm text-gray-500">(@(Model?.TotalPrevious ?? 0) courses)</span>
                 </h2>
+                @if (Model?.PreviousCourses?.Any() == true)
+                {
+                    <div class="text-sm text-gray-500">
+                        Sorted by: Latest Academic Year → Summer → 3rd → 2nd → 1st Semester
+                    </div>
+                }
             </div>
         </div>
 
@@ -157,7 +169,7 @@
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
-                                        @course.TotalStudents students
+                                        @course.TotalStudents enrolled
                                     </span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
