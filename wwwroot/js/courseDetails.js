@@ -197,26 +197,43 @@ function updateStudentStatus(studentId, newStatus) {
 function showStatusUpdateNotification(studentId, newStatus) {
     const student = courseDetailsStudentsData.find(s => s.id === studentId);
     if (student) {
-        // Create a temporary notification
+        // Find the notification area
+        const notificationArea = document.getElementById('courseDetailsNotificationArea');
+        if (!notificationArea) return;
+        
+        // Remove any existing notification
+        notificationArea.innerHTML = '';
+        
+        // Create a notification inside the modal
         const notification = document.createElement('div');
-        notification.className = 'fixed top-4 right-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg shadow-lg z-[10100] transition-all duration-300';
+        notification.className = 'bg-green-100 border border-green-400 text-green-700 px-3 py-2 rounded-lg shadow-lg transition-all duration-300 transform translate-x-0 opacity-100 text-sm min-w-[250px]';
         notification.innerHTML = `
-            <div class="flex items-center">
-                <i class="fas fa-check-circle mr-2"></i>
-                <span>Updated ${student.name}'s status to <strong>${newStatus}</strong></span>
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <i class="fas fa-check-circle mr-2 text-green-600"></i>
+                    <span><strong>${student.name}</strong> status updated to <strong>${newStatus}</strong></span>
+                </div>
+                <button onclick="this.parentElement.parentElement.remove()" class="ml-2 text-green-500 hover:text-green-700 transition-colors">
+                    <i class="fas fa-times text-xs"></i>
+                </button>
             </div>
         `;
         
-        document.body.appendChild(notification);
+        // Add notification to the notification area
+        notificationArea.appendChild(notification);
         
-        // Remove notification after 3 seconds
+        // Auto-remove notification after 4 seconds
         setTimeout(() => {
-            notification.style.opacity = '0';
-            notification.style.transform = 'translateY(-20px)';
-            setTimeout(() => {
-                document.body.removeChild(notification);
-            }, 300);
-        }, 3000);
+            if (notification && notification.parentElement) {
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateX(20px)';
+                setTimeout(() => {
+                    if (notification && notification.parentElement) {
+                        notification.remove();
+                    }
+                }, 300);
+            }
+        }, 4000);
     }
 }
 
@@ -426,8 +443,7 @@ document.addEventListener('keydown', function(e) {
 document.addEventListener('DOMContentLoaded', function() {
     const courseDetailsModal = document.getElementById('courseDetailsModal');
     if (courseDetailsModal) {
-        courseDetailsModal.addEventListener('click', function(e) {
-            if (e.target === this) {
+        courseDetailsModal.addEventListener('click', function(e) {            if (e.target === this) {
                 closeCourseDetailsModal();
             }
         });
