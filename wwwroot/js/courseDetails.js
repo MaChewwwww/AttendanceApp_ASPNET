@@ -130,6 +130,27 @@ function processCourseDetailsData(data) {
         });
     }
 
+    // Process passed students
+    if (data.passed_students) {
+        data.passed_students.forEach(student => {
+            courseDetailsStudentsData.push(processStudentData(student, 'Passed'));
+        });
+    }
+
+    // Process failed students
+    if (data.failed_students) {
+        data.failed_students.forEach(student => {
+            courseDetailsStudentsData.push(processStudentData(student, 'Failed'));
+        });
+    }
+
+    // Process attending students (students with attendance but no formal enrollment status)
+    if (data.attending_students) {
+        data.attending_students.forEach(student => {
+            courseDetailsStudentsData.push(processStudentData(student, 'Attending'));
+        });
+    }
+
     // Set filtered data
     filteredCourseDetailsStudents = [...courseDetailsStudentsData];
     
@@ -222,6 +243,7 @@ function renderCourseDetailsStudentsTable() {
                     <option value="Passed" ${student.status === 'Passed' ? 'selected' : ''}>Passed</option>
                     <option value="Rejected" ${student.status === 'Rejected' ? 'selected' : ''}>Rejected</option>
                     <option value="Failed" ${student.status === 'Failed' ? 'selected' : ''}>Failed</option>
+                    <option value="Attending" ${student.status === 'Attending' ? 'selected' : ''}>Attending</option>
                 </select>
             </td>
         </tr>
@@ -249,6 +271,8 @@ function getStatusClasses(status) {
             return 'bg-red-100 text-red-800 border-red-200';
         case 'Failed':
             return 'bg-gray-100 text-gray-800 border-gray-200';
+        case 'Attending':
+            return 'bg-indigo-100 text-indigo-800 border-indigo-200';
         default:
             return 'bg-gray-100 text-gray-800 border-gray-200';
     }
@@ -400,6 +424,9 @@ function courseDetailsQuickFilter(filterType) {
             break;
         case 'failed':
             filteredCourseDetailsStudents = courseDetailsStudentsData.filter(s => s.status === 'Failed');
+            break;
+        case 'attending':
+            filteredCourseDetailsStudents = courseDetailsStudentsData.filter(s => s.status === 'Attending');
             break;
         case 'high-attendance':
             filteredCourseDetailsStudents = courseDetailsStudentsData.filter(s => s.attendanceRate >= 80);
