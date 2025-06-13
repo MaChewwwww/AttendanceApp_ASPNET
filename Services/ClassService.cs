@@ -1,6 +1,5 @@
-using System.Text.Json;
-using System.Text.Json.Serialization;  // Add this for JsonNumberHandling
 using AttendanceApp_ASPNET.Models;
+using System.Text.Json;
 
 namespace AttendanceApp_ASPNET.Services
 {
@@ -17,49 +16,53 @@ namespace AttendanceApp_ASPNET.Services
         {
             try
             {
-                LogDebug("Fetching faculty courses", new
-                {
-                    Endpoint = "/faculty/courses",
-                    TokenPresent = !string.IsNullOrEmpty(jwtToken)
-                });
+                var responseJson = await _apiService.GetAuthenticatedDataAsync("/faculty/courses", jwtToken);
                 
-                var response = await _apiService.GetAuthenticatedDataAsync("/faculty/courses", jwtToken);
-                
-                var options = new JsonSerializerOptions
+                if (string.IsNullOrEmpty(responseJson))
                 {
-                    PropertyNameCaseInsensitive = true,
-                    NumberHandling = JsonNumberHandling.AllowReadingFromString
-                };
-
-                var coursesResponse = JsonSerializer.Deserialize<FacultyCoursesResponse>(response, options);
-                if (coursesResponse == null)
-                {
-                    throw new Exception("Failed to deserialize faculty courses response");
+                    return new FacultyCoursesResponse
+                    {
+                        Success = false,
+                        Message = "Empty response from API",
+                        CurrentCourses = new List<FacultyCourse>(),
+                        PreviousCourses = new List<FacultyCourse>()
+                    };
                 }
 
-                LogDebug("Faculty courses retrieved", new
+                var apiResponse = JsonSerializer.Deserialize<FacultyCoursesApiResponse>(responseJson, new JsonSerializerOptions
                 {
-                    Success = coursesResponse.Success,
-                    CurrentCoursesCount = coursesResponse.CurrentCourses?.Count ?? 0,
-                    PreviousCoursesCount = coursesResponse.PreviousCourses?.Count ?? 0,
-                    Message = coursesResponse.Message
+                    PropertyNameCaseInsensitive = true
                 });
 
-                return coursesResponse;
+                if (apiResponse?.Success != true)
+                {
+                    return new FacultyCoursesResponse
+                    {
+                        Success = false,
+                        Message = apiResponse?.Message ?? "Unknown error occurred",
+                        CurrentCourses = new List<FacultyCourse>(),
+                        PreviousCourses = new List<FacultyCourse>()
+                    };
+                }
+
+                return new FacultyCoursesResponse
+                {
+                    Success = true,
+                    Message = apiResponse.Message,
+                    CurrentCourses = apiResponse.CurrentCourses ?? new List<FacultyCourse>(),
+                    PreviousCourses = apiResponse.PreviousCourses ?? new List<FacultyCourse>(),
+                    TotalCurrent = apiResponse.CurrentCourses?.Count ?? 0,
+                    TotalPrevious = apiResponse.PreviousCourses?.Count ?? 0
+                };
             }
             catch (Exception ex)
             {
-                LogError("Failed to fetch faculty courses", ex);
                 return new FacultyCoursesResponse
                 {
                     Success = false,
-                    Message = $"Unable to fetch faculty courses: {ex.Message}",
+                    Message = $"Error fetching courses: {ex.Message}",
                     CurrentCourses = new List<FacultyCourse>(),
-                    PreviousCourses = new List<FacultyCourse>(),
-                    FacultyInfo = new Dictionary<string, object>(),
-                    TotalCurrent = 0,
-                    TotalPrevious = 0,
-                    SemesterSummary = new Dictionary<string, SemesterSummary>()  // Changed to use SemesterSummary type
+                    PreviousCourses = new List<FacultyCourse>()
                 };
             }
         }
@@ -68,7 +71,7 @@ namespace AttendanceApp_ASPNET.Services
         {
             try
             {
-                var responseJson = await _apiService.GetAuthenticatedDataAsync($"/faculty/courses/{assignedCourseId}/details", jwtToken);
+                var responseJson = await _apiService.GetFacultyCourseDetailsAsync(assignedCourseId, jwtToken);
                 
                 if (string.IsNullOrEmpty(responseJson))
                 {

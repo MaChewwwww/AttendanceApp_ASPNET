@@ -26,7 +26,7 @@ builder.Services.Configure<ApiSettings>(builder.Configuration.GetSection("ApiSet
 // Register HttpClient and ApiService
 builder.Services.AddHttpClient<IApiService, ApiService>();
 
-// Register API service
+// Register services
 builder.Services.AddScoped<IApiService, ApiService>();
 builder.Services.AddScoped<IClassService, ClassService>();
 

@@ -15,8 +15,8 @@ function openCourseDetailsModal(courseData) {
     // Reset states
     showCourseDetailsLoading();
     
-    // Load course details
-    loadCourseDetails(courseData);
+    // Load course details from API
+    loadCourseDetailsFromAPI(courseData.AssignedCourseId);
 }
 
 function closeCourseDetailsModal() {
@@ -46,55 +46,133 @@ function showCourseDetailsContent() {
     document.getElementById('courseDetailsContentState').classList.remove('hidden');
 }
 
-function loadCourseDetails(courseData) {
+async function loadCourseDetailsFromAPI(assignedCourseId) {
     try {
-        // Update modal header
-        updateCourseDetailsHeader(courseData);
+        console.log(`Loading course details for assigned course ID: ${assignedCourseId}`);
         
-        // Simulate loading delay for better UX
-        setTimeout(() => {
-            // Load students data for this course
-            loadCourseDetailsStudents(courseData.AssignedCourseId);
-            
-            // Show content
-            showCourseDetailsContent();
-        }, 800);
+        // Make API call to get course details
+        const response = await fetch(`/Faculty/GetCourseDetails?assignedCourseId=${assignedCourseId}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('Course details API response:', data);
+
+        if (!data.success) {
+            showCourseDetailsError(data.message || 'Failed to load course details');
+            return;
+        }
+
+        // Update modal header with course info
+        updateCourseDetailsHeader(data);
+        
+        // Process students data
+        processCourseDetailsData(data);
+        
+        // Show content
+        showCourseDetailsContent();
         
     } catch (error) {
-        console.error('Error loading course details:', error);
-        showCourseDetailsError('Failed to load course details. Please try again.');
+        console.error('Error loading course details from API:', error);
+        showCourseDetailsError('Failed to load course details. Please try again later.');
     }
 }
 
-function updateCourseDetailsHeader(courseData) {
+function updateCourseDetailsHeader(data) {
     const titleElement = document.getElementById('modalCourseDetailsTitle');
     const subHeaderElement = document.getElementById('modalCourseDetailsSubHeader');
     const descriptionElement = document.getElementById('modalCourseDescription');
     
-    if (titleElement && subHeaderElement && descriptionElement) {
-        titleElement.textContent = `${courseData.CourseCode} - ${courseData.CourseName}`;
-        subHeaderElement.textContent = `${courseData.ProgramAcronym} - ${courseData.SectionName} - ${courseData.Room}`;
-        descriptionElement.textContent = courseData.Description || 'No course description available.';
+    if (titleElement && subHeaderElement && descriptionElement && data.course_info) {
+        const courseInfo = data.course_info;
+        titleElement.textContent = `${courseInfo.course_code} - ${courseInfo.course_name}`;
+        
+        // Build sub header with available info
+        let subHeaderParts = [];
+        if (data.section_info?.section_name) subHeaderParts.push(data.section_info.section_name);
+        if (courseInfo.room) subHeaderParts.push(courseInfo.room);
+        subHeaderElement.textContent = subHeaderParts.join(' - ') || 'Course Information';
+        
+        descriptionElement.textContent = courseInfo.course_description || 'No course description available.';
     }
 }
 
-function loadCourseDetailsStudents(assignedCourseId) {
-    // Simulate API call to get course students
-    // In real implementation, this would be an API call
-    setTimeout(() => {
-        // Mock students data
-        courseDetailsStudentsData = generateMockStudentsData();
-        filteredCourseDetailsStudents = [...courseDetailsStudentsData];
-        
-        // Update summary cards
-        updateCourseDetailsSummaryCards();
-        
-        // Render students table
-        renderCourseDetailsStudentsTable();
-        
-        // Setup event listeners
-        setupCourseDetailsEventListeners();
-    }, 500);
+function processCourseDetailsData(data) {
+    // Combine all students from different status arrays
+    courseDetailsStudentsData = [];
+    
+    // Process enrolled students
+    if (data.enrolled_students) {
+        data.enrolled_students.forEach(student => {
+            courseDetailsStudentsData.push(processStudentData(student, 'Enrolled'));
+        });
+    }
+    
+    // Process pending students
+    if (data.pending_students) {
+        data.pending_students.forEach(student => {
+            courseDetailsStudentsData.push(processStudentData(student, 'Pending'));
+        });
+    }
+    
+    // Process rejected students
+    if (data.rejected_students) {
+        data.rejected_students.forEach(student => {
+            courseDetailsStudentsData.push(processStudentData(student, 'Rejected'));
+        });
+    }
+
+    // Set filtered data
+    filteredCourseDetailsStudents = [...courseDetailsStudentsData];
+    
+    // Update summary cards
+    updateCourseDetailsSummaryCards();
+    
+    // Render students table
+    renderCourseDetailsStudentsTable();
+    
+    // Setup event listeners
+    setupCourseDetailsEventListeners();
+}
+
+function processStudentData(student, defaultStatus) {
+    return {
+        id: student.student_id || student.id,
+        name: student.name || `${student.first_name || ''} ${student.last_name || ''}`.trim(),
+        studentNumber: student.student_number || '',
+        email: student.email || '',
+        status: student.enrollment_status || defaultStatus,
+        present: student.present_count || 0,
+        late: student.late_count || 0,
+        absent: student.absent_count || 0,
+        failed: student.failed_count || 0,
+        attendanceRate: student.attendance_percentage || 0,
+        latestAttendance: student.latest_attendance_date ? new Date(student.latest_attendance_date).toLocaleDateString() : 'N/A'
+    };
+}
+
+function updateCourseDetailsSummaryCards() {
+    const totalStudents = courseDetailsStudentsData.length;
+    const pendingStudents = courseDetailsStudentsData.filter(s => s.status === 'Pending').length;
+    const enrolledStudents = courseDetailsStudentsData.filter(s => s.status === 'Enrolled').length;
+    const passedStudents = courseDetailsStudentsData.filter(s => s.status === 'Passed').length;
+    const rejectedStudents = courseDetailsStudentsData.filter(s => s.status === 'Rejected').length;
+    const failedStudents = courseDetailsStudentsData.filter(s => s.status === 'Failed').length;
+    
+    document.getElementById('courseDetailsStudentCount').textContent = totalStudents;
+    document.getElementById('courseDetailsPendingCount').textContent = pendingStudents;
+    document.getElementById('courseDetailsEnrolledCount').textContent = enrolledStudents;
+    document.getElementById('courseDetailsPassedCount').textContent = passedStudents;
+    document.getElementById('courseDetailsRejectedCount').textContent = rejectedStudents;
+    document.getElementById('courseDetailsFailedCount').textContent = failedStudents;
 }
 
 function renderCourseDetailsStudentsTable() {
@@ -116,7 +194,7 @@ function renderCourseDetailsStudentsTable() {
             <td class="px-4 py-4 whitespace-nowrap">
                 <div class="flex items-center">
                     <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                        <span class="text-blue-600 font-medium text-sm">${student.name.charAt(8)}${student.name.charAt(9)}</span>
+                        <span class="text-blue-600 font-medium text-sm">${getStudentInitials(student.name)}</span>
                     </div>
                     <div>
                         <div class="text-sm font-medium text-gray-900">${student.name}</div>
@@ -148,6 +226,15 @@ function renderCourseDetailsStudentsTable() {
             </td>
         </tr>
     `).join('');
+}
+
+function getStudentInitials(name) {
+    if (!name) return '??';
+    const parts = name.split(' ');
+    if (parts.length >= 2) {
+        return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
 }
 
 function getStatusClasses(status) {
@@ -189,7 +276,7 @@ function updateStudentStatus(studentId, newStatus) {
         // Show success notification
         showStatusUpdateNotification(studentId, newStatus);
         
-        // Here you would typically make an API call to update the status on the server
+        // TODO: Make API call to update status on server
         // updateStudentStatusOnServer(studentId, newStatus);
     }
 }
@@ -237,120 +324,32 @@ function showStatusUpdateNotification(studentId, newStatus) {
     }
 }
 
-function generateMockStudentsData() {
-    const statuses = ['Enrolled', 'Pending', 'Enrolled', 'Enrolled', 'Pending', 'Passed', 'Rejected', 'Failed'];
-    const students = [];
-    
-    for (let i = 1; i <= 15; i++) {
-        const present = Math.floor(Math.random() * 20) + 5;
-        const late = Math.floor(Math.random() * 5);
-        const absent = Math.floor(Math.random() * 8);
-        const total = present + late + absent;
-        const attendanceRate = total > 0 ? Math.round((present / total) * 100) : 0;
-        
-        students.push({
-            id: i,
-            name: `Student ${i.toString().padStart(2, '0')}`,
-            studentNumber: `2024-${(1000 + i).toString()}`,
-            email: `student${i}@email.com`,
-            status: statuses[Math.floor(Math.random() * statuses.length)],
-            present: present,
-            late: late,
-            absent: absent,
-            attendanceRate: attendanceRate,
-            latestAttendance: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toLocaleDateString()
-        });
-    }
-    
-    return students;
-}
-
-function updateCourseDetailsSummaryCards() {
-    const totalStudents = courseDetailsStudentsData.length;
-    const pendingStudents = courseDetailsStudentsData.filter(s => s.status === 'Pending').length;
-    const enrolledStudents = courseDetailsStudentsData.filter(s => s.status === 'Enrolled').length;
-    const passedStudents = courseDetailsStudentsData.filter(s => s.status === 'Passed').length;
-    const rejectedStudents = courseDetailsStudentsData.filter(s => s.status === 'Rejected').length;
-    const failedStudents = courseDetailsStudentsData.filter(s => s.status === 'Failed').length;
-    
-    document.getElementById('courseDetailsStudentCount').textContent = totalStudents;
-    document.getElementById('courseDetailsPendingCount').textContent = pendingStudents;
-    document.getElementById('courseDetailsEnrolledCount').textContent = enrolledStudents;
-    document.getElementById('courseDetailsPassedCount').textContent = passedStudents;
-    document.getElementById('courseDetailsRejectedCount').textContent = rejectedStudents;
-    document.getElementById('courseDetailsFailedCount').textContent = failedStudents;
-}
-
-function renderCourseDetailsStudentsTable() {
-    const tableBody = document.getElementById('courseDetailsStudentsTableBody');
-    const table = document.getElementById('courseDetailsStudentsTable');
-    const emptyState = document.getElementById('courseDetailsEmptyStudentsState');
-    
-    if (filteredCourseDetailsStudents.length === 0) {
-        table.classList.add('hidden');
-        emptyState.classList.remove('hidden');
-        return;
-    }
-    
-    table.classList.remove('hidden');
-    emptyState.classList.add('hidden');
-    
-    tableBody.innerHTML = filteredCourseDetailsStudents.map(student => `
-        <tr class="hover:bg-gray-50 transition-colors duration-150">
-            <td class="px-4 py-4 whitespace-nowrap">
-                <div class="flex items-center">
-                    <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
-                        <span class="text-blue-600 font-medium text-sm">${student.name.charAt(8)}${student.name.charAt(9)}</span>
-                    </div>
-                    <div>
-                        <div class="text-sm font-medium text-gray-900">${student.name}</div>
-                        <div class="text-sm text-gray-500">${student.studentNumber}</div>
-                    </div>
-                </div>
-            </td>
-            <td class="px-4 py-4 whitespace-nowrap">
-                <span class="text-sm font-medium text-green-600">${student.present}</span>
-            </td>
-            <td class="px-4 py-4 whitespace-nowrap">
-                <span class="text-sm font-medium text-yellow-600">${student.late}</span>
-            </td>
-            <td class="px-4 py-4 whitespace-nowrap">
-                <span class="text-sm font-medium text-red-600">${student.absent}</span>
-            </td>
-            <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
-                ${student.latestAttendance}
-            </td>
-            <td class="px-4 py-4 whitespace-nowrap">
-                <select onchange="updateStudentStatus(${student.id}, this.value)" 
-                        class="text-xs font-semibold rounded-full border-0 px-3 py-1.5 focus:ring-2 focus:ring-blue-500 transition-all duration-150 ${getStatusClasses(student.status)}">
-                    <option value="Pending" ${student.status === 'Pending' ? 'selected' : ''}>Pending</option>
-                    <option value="Enrolled" ${student.status === 'Enrolled' ? 'selected' : ''}>Enrolled</option>
-                    <option value="Passed" ${student.status === 'Passed' ? 'selected' : ''}>Passed</option>
-                    <option value="Rejected" ${student.status === 'Rejected' ? 'selected' : ''}>Rejected</option>
-                    <option value="Failed" ${student.status === 'Failed' ? 'selected' : ''}>Failed</option>
-                </select>
-            </td>
-        </tr>
-    `).join('');
-}
-
 function setupCourseDetailsEventListeners() {
     // Search functionality
     const searchInput = document.getElementById('courseDetailsStudentSearchInput');
-    searchInput.addEventListener('input', function() {
-        applyCourseDetailsFilters();
-    });
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            applyCourseDetailsFilters();
+        });
+    }
     
     // Sort functionality
     const sortSelect = document.getElementById('courseDetailsSortSelect');
-    sortSelect.addEventListener('change', function() {
-        applyCourseDetailsFilters();
-    });
+    if (sortSelect) {
+        sortSelect.addEventListener('change', function() {
+            applyCourseDetailsFilters();
+        });
+    }
 }
 
 function applyCourseDetailsFilters() {
-    const searchTerm = document.getElementById('courseDetailsStudentSearchInput').value.toLowerCase();
-    const sortBy = document.getElementById('courseDetailsSortSelect').value;
+    const searchInput = document.getElementById('courseDetailsStudentSearchInput');
+    const sortSelect = document.getElementById('courseDetailsSortSelect');
+    
+    if (!searchInput || !sortSelect) return;
+    
+    const searchTerm = searchInput.value.toLowerCase();
+    const sortBy = sortSelect.value;
     
     // Apply search filter
     filteredCourseDetailsStudents = courseDetailsStudentsData.filter(student => 
@@ -377,7 +376,10 @@ function applyCourseDetailsFilters() {
 
 function courseDetailsQuickFilter(filterType) {
     // Reset search
-    document.getElementById('courseDetailsStudentSearchInput').value = '';
+    const searchInput = document.getElementById('courseDetailsStudentSearchInput');
+    if (searchInput) {
+        searchInput.value = '';
+    }
     
     // Apply filter
     switch(filterType) {
@@ -423,15 +425,19 @@ function courseDetailsQuickFilter(filterType) {
 }
 
 function clearCourseDetailsFilters() {
-    document.getElementById('courseDetailsStudentSearchInput').value = '';
-    document.getElementById('courseDetailsSortSelect').value = 'name-asc';
+    const searchInput = document.getElementById('courseDetailsStudentSearchInput');
+    const sortSelect = document.getElementById('courseDetailsSortSelect');
+    
+    if (searchInput) searchInput.value = '';
+    if (sortSelect) sortSelect.value = 'name-asc';
+    
     courseDetailsQuickFilter('all');
 }
 
 function reloadCourseDetails() {
-    if (currentCourseDetailsData) {
+    if (currentCourseDetailsData && currentCourseDetailsData.AssignedCourseId) {
         showCourseDetailsLoading();
-        loadCourseDetails(currentCourseDetailsData);
+        loadCourseDetailsFromAPI(currentCourseDetailsData.AssignedCourseId);
     }
 }
 
@@ -446,7 +452,8 @@ document.addEventListener('keydown', function(e) {
 document.addEventListener('DOMContentLoaded', function() {
     const courseDetailsModal = document.getElementById('courseDetailsModal');
     if (courseDetailsModal) {
-        courseDetailsModal.addEventListener('click', function(e) {            if (e.target === this) {
+        courseDetailsModal.addEventListener('click', function(e) {
+            if (e.target === this) {
                 closeCourseDetailsModal();
             }
         });
