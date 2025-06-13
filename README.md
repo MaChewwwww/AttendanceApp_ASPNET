@@ -92,7 +92,7 @@ Create or update `appsettings.json`:
 {
   "ApiSettings": {
     "ApiKey": "your-api-key-here",
-    "ApiBaseUrl": "http://localhost:8000"
+    "ApiBaseUrl": "http://localhost:6000"
   },
   "Logging": {
     "LogLevel": {
