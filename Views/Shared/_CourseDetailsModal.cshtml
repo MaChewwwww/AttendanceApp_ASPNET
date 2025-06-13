@@ -1,0 +1,188 @@
+<!-- Course Details Modal - Outside main layout to avoid blur effects -->
+<div id="courseDetailsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-[9998] flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-white rounded-lg shadow-xl max-w-7xl w-full max-h-[90vh] overflow-hidden transform transition-all duration-150 ease-out scale-95 opacity-0" id="courseDetailsModalContent">
+        <!-- Modal Header -->
+        <div class="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 id="modalCourseDetailsTitle" class="text-2xl font-bold text-gray-900">Course Details</h2>
+                    <p id="modalCourseDetailsSubHeader" class="text-gray-600 mt-1">Loading course information...</p>
+                    <p id="modalCourseDescription" class="text-gray-500 mt-2 text-sm italic">Loading description...</p>
+                </div>
+                <button onclick="closeCourseDetailsModal()" class="text-gray-400 hover:text-gray-600 transition-colors duration-150">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Modal Content -->
+        <div class="flex-1 overflow-y-auto" style="max-height: calc(90vh - 140px);">
+            <!-- Loading State -->
+            <div id="courseDetailsLoadingState" class="p-8 text-center">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p class="text-gray-600">Loading course details...</p>
+            </div>
+
+            <!-- Error State -->
+            <div id="courseDetailsErrorState" class="p-8 text-center hidden">
+                <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-exclamation-triangle text-red-500 text-xl"></i>
+                </div>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">Unable to Load Course Details</h3>
+                <p id="courseDetailsErrorMessage" class="text-gray-600 mb-4">There was an error loading the course details.</p>
+                <button onclick="reloadCourseDetails()" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors duration-150">
+                    <i class="fas fa-refresh mr-2"></i>Retry
+                </button>
+            </div>
+
+            <!-- Content State -->
+            <div id="courseDetailsContentState" class="hidden">
+                <!-- Course Overview Cards -->
+                <div class="p-6 bg-gray-50 border-b">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div class="bg-white rounded-lg p-4 shadow-sm transform transition-all duration-200 hover:scale-105">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                                    <i class="fas fa-users text-blue-600 text-sm"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-600">Total Students</p>
+                                    <p id="courseDetailsStudentCount" class="text-xl font-bold text-gray-900">0</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-lg p-4 shadow-sm transform transition-all duration-200 hover:scale-105">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                                    <i class="fas fa-check text-green-600 text-sm"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-600">Enrolled</p>
+                                    <p id="courseDetailsEnrolledCount" class="text-xl font-bold text-green-600">0</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-lg p-4 shadow-sm transform transition-all duration-200 hover:scale-105">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center mr-3">
+                                    <i class="fas fa-clock text-yellow-600 text-sm"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-600">Pending</p>
+                                    <p id="courseDetailsPendingCount" class="text-xl font-bold text-yellow-600">0</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-lg p-4 shadow-sm transform transition-all duration-200 hover:scale-105">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mr-3">
+                                    <i class="fas fa-percentage text-purple-600 text-sm"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-gray-600">Avg. Attendance</p>
+                                    <p id="courseDetailsAvgAttendance" class="text-xl font-bold text-purple-600">0%</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Enhanced Filter and Search Section -->
+                <div class="p-6 bg-white border-b border-gray-200">
+                    <div class="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+                        <!-- Left side: Search, Sort, Clear in compact row -->
+                        <div class="flex flex-wrap items-center gap-3 flex-1">
+                            <!-- Compact Search -->
+                            <div class="relative group">
+                                <input type="text" id="courseDetailsStudentSearchInput" placeholder="Search students..." 
+                                       class="pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-80 transition-all duration-200 bg-gray-50 focus:bg-white text-sm">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-search text-gray-400 group-focus-within:text-blue-500 transition-colors duration-200"></i>
+                                </div>
+                            </div>
+                            
+                            <!-- Compact Sort -->
+                            <div class="relative">
+                                <select id="courseDetailsSortSelect" class="pl-4 pr-10 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-gray-50 focus:bg-white text-sm font-medium appearance-none min-w-[160px]">
+                                    <option value="name-asc">👤 Name A→Z</option>
+                                    <option value="name-desc">👤 Name Z→A</option>
+                                    <option value="attendance-desc">📈 Attendance ↓</option>
+                                    <option value="attendance-asc">📉 Attendance ↑</option>
+                                    <option value="present-desc">✅ Present ↓</option>
+                                    <option value="status-asc">📋 Status</option>
+                                    <option value="latest-desc">🕒 Recent Activity</option>
+                                </select>
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-sort text-gray-400 text-xs"></i>
+                                </div>
+                            </div>
+                            
+                            <!-- Dynamic Clear Button -->
+                            <button id="courseDetailsClearFiltersBtn" onclick="clearCourseDetailsFilters()" class="clear-btn px-3 py-2.5 text-gray-400 hover:text-gray-600 transition-all duration-200 text-sm font-medium rounded-xl opacity-50 hover:opacity-100">
+                                <i class="fas fa-times mr-1"></i>Clear
+                            </button>
+                        </div> 
+                    </div>
+                    
+                    <!-- Quick Filter Pills (below main controls) -->
+                    <div class="mt-4 flex flex-wrap gap-2">
+                        <button onclick="courseDetailsQuickFilter('all')" id="courseDetailsQuickFilter-all" class="quick-filter-pill active px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 bg-blue-100 text-blue-700 border border-blue-200">
+                            All Students
+                        </button>
+                        <button onclick="courseDetailsQuickFilter('approved')" id="courseDetailsQuickFilter-approved" class="quick-filter-pill px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 bg-gray-100 text-gray-600 border border-gray-200 hover:bg-green-100 hover:text-green-700 hover:border-green-200">
+                            ✅ Enrolled
+                        </button>
+                        <button onclick="courseDetailsQuickFilter('pending')" id="courseDetailsQuickFilter-pending" class="quick-filter-pill px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 bg-gray-100 text-gray-600 border border-gray-200 hover:bg-yellow-100 hover:text-yellow-700 hover:border-yellow-200">
+                            ⏳ Pending
+                        </button>
+                        <button onclick="courseDetailsQuickFilter('passed')" id="courseDetailsQuickFilter-passed" class="quick-filter-pill px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 bg-gray-100 text-gray-600 border border-gray-200 hover:bg-blue-100 hover:text
+                            📈 High Attendance (80%+)
+                        </button>
+                        <button onclick="courseDetailsQuickFilter('low-attendance')" id="courseDetailsQuickFilter-low-attendance" class="quick-filter-pill px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 bg-gray-100 text-gray-600 border border-gray-200 hover:bg-red-100 hover:text-red-700 hover:border-red-200">
+                            📉 Low Attendance (<60%)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Students Table -->
+                <div class="p-6">
+                    <div class="overflow-x-auto">
+                        <table id="courseDetailsStudentsTable" class="min-w-full bg-white border border-gray-200 rounded-lg hidden">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Present</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Late</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Absent</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Latest Attendance</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="courseDetailsStudentsTableBody" class="bg-white divide-y divide-gray-200">
+                                <!-- Students will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Empty State -->
+                    <div id="courseDetailsEmptyStudentsState" class="text-center py-12 hidden">
+                        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-user-graduate text-gray-400 text-xl"></i>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">No Students Found</h3>
+                        <p class="text-gray-600">No students match your current filters.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="p-6 border-t border-gray-200 bg-gray-50">
+            <div class="flex justify-end space-x-3">
+                <button onclick="closeCourseDetailsModal()" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition-colors duration-150">
+                    <i class="fas fa-times mr-2"></i>Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

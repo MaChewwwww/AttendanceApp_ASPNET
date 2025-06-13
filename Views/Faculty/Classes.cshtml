@@ -35,11 +35,6 @@
                     Current Courses
                     <span class="ml-2 text-sm text-gray-500">(@(Model?.TotalCurrent ?? 0) courses)</span>
                 </h2>
-                <div class="flex space-x-2">
-                    <button class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition flex items-center">
-                        <i class="fas fa-filter mr-2"></i>Filter
-                    </button>
-                </div>
             </div>
         </div>
 
@@ -88,7 +83,24 @@
                                     @(string.IsNullOrEmpty(course.Room) ? "TBA" : course.Room)
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                                    <button class="text-blue-600 hover:text-blue-900" title="View Details">
+                                    <button onclick="openCourseDetailsModal({
+                                        CourseCode: '@course.CourseCode',
+                                        CourseName: '@course.CourseName',
+                                        ProgramAcronym: '@course.ProgramAcronym',
+                                        SectionName: '@course.SectionName',
+                                        Semester: '@course.Semester',
+                                        AcademicYear: '@course.AcademicYear',
+                                        EnrollmentCount: @course.EnrollmentCount,
+                                        TotalStudents: @course.TotalStudents,
+                                        Room: '@(course.Room ?? "TBA")',
+                                        AssignedCourseId: @course.AssignedCourseId,
+                                        Status: 'Active',
+                                        Credits: '3',
+                                        CourseType: 'Regular',
+                                        Description: 'Course description not available',
+                                        AttendanceRate: 0,
+                                        TotalSessions: 0
+                                    })" class="text-blue-600 hover:text-blue-900" title="View Details">
                                         <i class="fas fa-eye"></i>
                                     </button>
                                     <button class="text-indigo-600 hover:text-indigo-900" title="Manage Attendance">
@@ -169,7 +181,24 @@
                                     @(string.IsNullOrEmpty(course.Room) ? "TBA" : course.Room)
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                                    <button class="text-blue-600 hover:text-blue-900" title="View Details">
+                                    <button onclick="openCourseDetailsModal({
+                                        CourseCode: '@course.CourseCode',
+                                        CourseName: '@course.CourseName',
+                                        ProgramAcronym: '@course.ProgramAcronym',
+                                        SectionName: '@course.SectionName',
+                                        Semester: '@course.Semester',
+                                        AcademicYear: '@course.AcademicYear',
+                                        EnrollmentCount: @course.EnrollmentCount,
+                                        TotalStudents: @course.TotalStudents,
+                                        Room: '@(course.Room ?? "TBA")',
+                                        AssignedCourseId: @course.AssignedCourseId,
+                                        Status: 'Completed',
+                                        Credits: '3',
+                                        CourseType: 'Regular',
+                                        Description: 'Course description not available',
+                                        AttendanceRate: 0,
+                                        TotalSessions: 0
+                                    })" class="text-blue-600 hover:text-blue-900" title="View Details">
                                         <i class="fas fa-eye"></i>
                                     </button>
                                     <button class="text-gray-600 hover:text-gray-900" title="View Reports">
@@ -194,3 +223,7 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script src="~/js/courseDetails.js"></script>
+}
