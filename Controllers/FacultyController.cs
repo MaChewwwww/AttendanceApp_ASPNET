@@ -132,7 +132,7 @@ namespace AttendanceApp_ASPNET.Controllers
             }
         }
 
-        public IActionResult Attendance()
+        public async Task<IActionResult> Attendance()
         {
             // Call base class authorization checks
             var faculty = GetCurrentFacultyInfo();
@@ -146,6 +146,36 @@ namespace AttendanceApp_ASPNET.Controllers
             ExtendSession();
             
             return View();
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetCourseDetails(int assignedCourseId)
+        {
+            try
+            {
+                var faculty = GetCurrentFacultyInfo();
+                var jwtToken = HttpContext.Session.GetString("AuthToken");
+                
+                if (string.IsNullOrEmpty(jwtToken))
+                {
+                    return Json(new { success = false, message = "Authentication required" });
+                }
+
+                // Extend session before making API call
+                ExtendSession();
+
+                var courseDetailsResponse = await _classService.GetFacultyCourseDetailsAsync(assignedCourseId, jwtToken);
+                return Json(courseDetailsResponse);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting course details: {ex.Message}");
+                return Json(new { 
+                    success = false, 
+                    message = "Failed to load course details. Please try again later.",
+                    error = ex.Message 
+                });
+            }
         }
     }
 }

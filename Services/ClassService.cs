@@ -64,17 +64,75 @@ namespace AttendanceApp_ASPNET.Services
             }
         }
 
-        public async Task<FacultyCourse> GetCourseDetailsAsync(int assignedCourseId, string jwtToken)
+        public async Task<object> GetFacultyCourseDetailsAsync(int assignedCourseId, string jwtToken)
         {
             try
             {
-                var response = await _apiService.GetAuthenticatedDataAsync($"/faculty/courses/{assignedCourseId}", jwtToken);
-                return JsonSerializer.Deserialize<FacultyCourse>(response) ?? 
-                    throw new Exception("Failed to deserialize course details");
+                var responseJson = await _apiService.GetAuthenticatedDataAsync($"/faculty/courses/{assignedCourseId}/details", jwtToken);
+                
+                if (string.IsNullOrEmpty(responseJson))
+                {
+                    return new { 
+                        success = false, 
+                        message = "Empty response from API",
+                        course_info = (object)null,
+                        enrolled_students = new object[0],
+                        pending_students = new object[0],
+                        rejected_students = new object[0],
+                        enrollment_summary = new { enrolled = 0, pending = 0, rejected = 0, total = 0 },
+                        attendance_summary = new { total_records = 0, total_sessions = 0, present_count = 0, late_count = 0, absent_count = 0, overall_attendance_rate = 0.0 }
+                    };
+                }
+
+                // Parse the JSON response
+                var apiResponse = JsonSerializer.Deserialize<JsonElement>(responseJson, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
+                // Check if the response indicates success
+                if (apiResponse.TryGetProperty("success", out var successElement) && 
+                    successElement.ValueKind == JsonValueKind.True)
+                {
+                    // Return the parsed response as a dynamic object
+                    return JsonSerializer.Deserialize<object>(responseJson, new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+                }
+                else
+                {
+                    // Handle error response
+                    var errorMessage = "Unknown error occurred";
+                    if (apiResponse.TryGetProperty("message", out var messageElement))
+                    {
+                        errorMessage = messageElement.GetString() ?? errorMessage;
+                    }
+
+                    return new { 
+                        success = false, 
+                        message = errorMessage,
+                        course_info = (object)null,
+                        enrolled_students = new object[0],
+                        pending_students = new object[0],
+                        rejected_students = new object[0],
+                        enrollment_summary = new { enrolled = 0, pending = 0, rejected = 0, total = 0 },
+                        attendance_summary = new { total_records = 0, total_sessions = 0, present_count = 0, late_count = 0, absent_count = 0, overall_attendance_rate = 0.0 }
+                    };
+                }
             }
             catch (Exception ex)
             {
-                throw new Exception($"Error fetching course details: {ex.Message}", ex);
+                return new { 
+                    success = false, 
+                    message = $"Error fetching course details: {ex.Message}",
+                    course_info = (object)null,
+                    enrolled_students = new object[0],
+                    pending_students = new object[0],
+                    rejected_students = new object[0],
+                    enrollment_summary = new { enrolled = 0, pending = 0, rejected = 0, total = 0 },
+                    attendance_summary = new { total_records = 0, total_sessions = 0, present_count = 0, late_count = 0, absent_count = 0, overall_attendance_rate = 0.0 }
+                };
             }
         }
 

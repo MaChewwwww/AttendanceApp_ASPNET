@@ -28,6 +28,7 @@ builder.Services.AddHttpClient<IApiService, ApiService>();
 
 // Register API service
 builder.Services.AddScoped<IApiService, ApiService>();
+builder.Services.AddScoped<IClassService, ClassService>();
 
 // Register HTTP clients
 builder.Services.AddHttpClient<IEnvironmentService, EnvironmentService>();

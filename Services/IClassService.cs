@@ -8,5 +8,6 @@ namespace AttendanceApp_ASPNET.Services
         Task<FacultyCourse> GetCourseDetailsAsync(int assignedCourseId, string jwtToken);
         Task<bool> UpdateCourseDetailsAsync(int assignedCourseId, object updateData, string jwtToken);
         Task<bool> DeleteCourseAsync(int assignedCourseId, string jwtToken);
+        Task<object> GetFacultyCourseDetailsAsync(int assignedCourseId, string jwtToken);
     }
 }

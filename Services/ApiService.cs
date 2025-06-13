@@ -32,6 +32,7 @@ namespace AttendanceApp_ASPNET.Services
         Task<string> GetStudentCoursesAsync(string jwtToken);
         Task<string> GetCourseDetailsAsync(int courseId, string jwtToken);
         Task<string> GetCourseStudentsAsync(int assignedCourseId, string jwtToken);
+        Task<string> GetFacultyCourseDetailsAsync(int assignedCourseId, string jwtToken);
         
         // Attendance data methods
         Task<string> GetStudentAttendanceAsync(string jwtToken);
@@ -209,6 +210,28 @@ namespace AttendanceApp_ASPNET.Services
                 total_students = 0,
                 enrollment_summary = new { },
                 attendance_summary = new { }
+            });
+        }
+
+        public async Task<string> GetFacultyCourseDetailsAsync(int assignedCourseId, string jwtToken)
+        {
+            return await GetApiRequestWithStructuredErrorAsync($"/faculty/courses/{assignedCourseId}/details", jwtToken, "Failed to fetch faculty course details", new
+            {
+                success = false,
+                message = "",
+                course_info = (object)null,
+                section_info = (object)null,
+                faculty_info = (object)null,
+                enrolled_students = new object[0],
+                pending_students = new object[0],
+                rejected_students = new object[0],
+                enrollment_summary = new { enrolled = 0, pending = 0, rejected = 0, total = 0 },
+                attendance_summary = new { total_records = 0, total_sessions = 0, present_count = 0, late_count = 0, absent_count = 0, overall_attendance_rate = 0.0 },
+                recent_attendance = new object[0],
+                academic_year = "",
+                semester = "",
+                total_students = 0,
+                total_sessions = 0
             });
         }
 
