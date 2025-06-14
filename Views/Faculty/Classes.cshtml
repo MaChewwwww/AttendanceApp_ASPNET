@@ -92,7 +92,7 @@
                                     <button onclick="openCourseDetailsModal({AssignedCourseId: @course.AssignedCourseId})" class="text-blue-600 hover:text-blue-900" title="View Details">
                                         <i class="fas fa-eye"></i>
                                     </button>
-                                    <button class="text-indigo-600 hover:text-indigo-900" title="Manage Attendance">
+                                    <button onclick="openAttendanceModal({AssignedCourseId: @course.AssignedCourseId, CourseName: '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(course.CourseName))'}, true)" class="text-green-600 hover:text-green-900" title="Manage Attendance">
                                         <i class="fas fa-clipboard-check"></i>
                                     </button>
                                 </td>
@@ -179,7 +179,7 @@
                                     <button onclick="openCourseDetailsModal({AssignedCourseId: @course.AssignedCourseId})" class="text-blue-600 hover:text-blue-900" title="View Details">
                                         <i class="fas fa-eye"></i>
                                     </button>
-                                    <button class="text-gray-600 hover:text-gray-900" title="View Reports">
+                                    <button onclick="openAttendanceModal({AssignedCourseId: @course.AssignedCourseId, CourseName: '@Html.Raw(System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(course.CourseName))'}, false)" class="text-gray-600 hover:text-gray-900" title="View Attendance History">
                                         <i class="fas fa-chart-bar"></i>
                                     </button>
                                 </td>
@@ -204,4 +204,5 @@
 
 @section Scripts {
     <script src="~/js/courseDetails.js"></script>
+    <script src="~/js/attendance.js"></script>
 }
