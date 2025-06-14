@@ -1,3 +1,4 @@
+@using AttendanceApp_ASPNET.Services
 @model AttendanceApp_ASPNET.Services.CourseDataResult
 @{
     ViewData["Title"] = "My Courses";
@@ -601,6 +602,33 @@
             box-shadow: 0 0 0 5px rgba(239, 68, 68, 0.1);
         }
     }
+
+    /* Non-enrolled course styling */
+    .non-enrolled-course {
+        opacity: 0.7;
+        cursor: not-allowed !important;
+    }
+    
+    .non-enrolled-course:hover {
+        transform: none !important;
+        box-shadow: none !important;
+    }
+    
+    .non-enrolled-course::after {
+        content: '🔒';
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        font-size: 14px;
+        opacity: 0.6;
+    }
+
+    /* Shake animation for denied access */
+    @@keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-5px); }
+        75% { transform: translateX(5px); }
+    }
 </style>
 
 <script>
@@ -637,6 +665,12 @@
 
     // Course Students Modal Functions
     function openCourseStudents(assignedCourseId, courseName) {
+        // Check if student is enrolled in this course before opening modal
+        if (!isStudentEnrolledInCourse(assignedCourseId)) {
+            showEnrollmentError(courseName);
+            return;
+        }
+
         currentAssignedCourseId = assignedCourseId;
         
         // Add modal class to body for backdrop effects
@@ -665,6 +699,68 @@
         
         // Load course students
         loadCourseStudents(assignedCourseId);
+    }
+
+    function isStudentEnrolledInCourse(assignedCourseId) {
+        // Check in current courses
+        const currentCourses = @Html.Raw(Json.Serialize(Model?.CurrentCourses ?? new List<AttendanceApp_ASPNET.Services.CourseInfo>()));
+        const currentEnrolled = currentCourses.some(course => 
+            course.assignedCourseId === assignedCourseId && 
+            (course.enrollmentStatus === 'approved' || 
+             course.enrollmentStatus === 'enrolled' || 
+             course.enrollmentStatus === 'passed')
+        );
+
+        if (currentEnrolled) return true;
+
+        // Check in previous courses (only if passed)
+        const previousCourses = @Html.Raw(Json.Serialize(Model?.PreviousCourses ?? new List<AttendanceApp_ASPNET.Services.CourseInfo>()));
+        const previousPassed = previousCourses.some(course => 
+            course.assignedCourseId === assignedCourseId && 
+            (course.enrollmentStatus === 'approved' || 
+             course.enrollmentStatus === 'enrolled' || 
+             course.enrollmentStatus === 'passed')
+        );
+
+        return previousPassed;
+    }
+
+    function showEnrollmentError(courseName) {
+        // Create error notification
+        const errorNotification = document.createElement('div');
+        errorNotification.className = 'fixed top-4 right-4 bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-lg shadow-lg z-50 max-w-sm';
+        errorNotification.innerHTML = `
+            <div class="flex items-start">
+                <i class="fas fa-exclamation-triangle mr-3 mt-1 text-red-600"></i>
+                <div>
+                    <h4 class="font-medium text-red-800">Access Denied</h4>
+                    <p class="text-sm mt-1">You are not enrolled in "${courseName}". Only enrolled students can view course details.</p>
+                </div>
+                <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-red-600 hover:text-red-800">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+        
+        document.body.appendChild(errorNotification);
+        
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+            if (errorNotification.parentNode) {
+                errorNotification.parentNode.removeChild(errorNotification);
+            }
+        }, 5000);
+
+        // Add shake animation to the course card
+        const courseCards = document.querySelectorAll('.course-card');
+        courseCards.forEach(card => {
+            if (card.onclick && card.onclick.toString().includes(courseName)) {
+                card.style.animation = 'shake 0.5s ease-in-out';
+                setTimeout(() => {
+                    card.style.animation = '';
+                }, 500);
+            }
+        });
     }
 
     function closeCourseStudentsModal() {
@@ -956,23 +1052,56 @@
             });
         }
         
-        // Make course cards focusable for accessibility
+        // Make course cards focusable for accessibility and add enrollment check
         const courseCards = document.querySelectorAll('.course-card');
         courseCards.forEach(card => {
             card.setAttribute('tabindex', '0');
             card.setAttribute('role', 'button');
             card.setAttribute('aria-label', 'View course students');
+            
+            // Add visual indicator for enrollment status
+            const enrollmentStatus = getCardEnrollmentStatus(card);
+            if (!isEnrolledStatus(enrollmentStatus)) {
+                card.classList.add('non-enrolled-course');
+                card.setAttribute('aria-label', 'Course details unavailable - not enrolled');
+            }
         });
         
         console.log('Courses page loaded successfully!');
     });
 
-    // Add keyboard navigation support
+    function getCardEnrollmentStatus(card) {
+        const statusBadge = card.querySelector('span[class*="bg-"]');
+        return statusBadge ? statusBadge.textContent.trim() : '';
+    }
+
+    function isEnrolledStatus(status) {
+        const enrolledStatuses = ['Enrolled', 'Passed'];
+        return enrolledStatuses.includes(status);
+    }
+
+    // Add keyboard navigation support with enrollment check
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Enter' || e.key === ' ') {
             const focusedElement = document.activeElement;
             if (focusedElement.classList.contains('course-card')) {
                 e.preventDefault();
+                
+                // Extract course info from the card's onclick
+                const onclickStr = focusedElement.getAttribute('onclick');
+                if (onclickStr) {
+                    const matches = onclickStr.match(/openCourseStudents\((\d+),\s*'([^']+)'\)/);
+                    if (matches) {
+                        const assignedCourseId = parseInt(matches[1]);
+                        const courseName = matches[2];
+                        
+                        if (!isStudentEnrolledInCourse(assignedCourseId)) {
+                            showEnrollmentError(courseName);
+                            return;
+                        }
+                    }
+                }
+                
                 focusedElement.click();
             }
         }
