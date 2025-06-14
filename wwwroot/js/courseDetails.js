@@ -239,8 +239,6 @@ function normalizeStatusForDisplay(status) {
             return 'Failed';
         case 'passed':
             return 'Passed';
-        case 'attending':
-            return 'Attending';
         default:
             console.log('normalizeStatusForDisplay - Unknown status, defaulting to Pending:', status);
             return 'Pending';
@@ -249,11 +247,46 @@ function normalizeStatusForDisplay(status) {
 
 function updateCourseDetailsSummaryCards() {
     const totalStudents = courseDetailsStudentsData.length;
-    const pendingStudents = courseDetailsStudentsData.filter(s => s.status === 'Pending').length;
-    const enrolledStudents = courseDetailsStudentsData.filter(s => s.status === 'Enrolled').length;
-    const passedStudents = courseDetailsStudentsData.filter(s => s.status === 'Passed').length;
-    const rejectedStudents = courseDetailsStudentsData.filter(s => s.status === 'Rejected').length;
-    const failedStudents = courseDetailsStudentsData.filter(s => s.status === 'Failed').length;
+    
+    // Use normalized status for counting to ensure consistency
+    const pendingStudents = courseDetailsStudentsData.filter(s => {
+        const normalizedStatus = normalizeStatusForDisplay(s.status);
+        return normalizedStatus === 'Pending';
+    }).length;
+    
+    const enrolledStudents = courseDetailsStudentsData.filter(s => {
+        const normalizedStatus = normalizeStatusForDisplay(s.status);
+        return normalizedStatus === 'Enrolled';
+    }).length;
+    
+    const passedStudents = courseDetailsStudentsData.filter(s => {
+        const normalizedStatus = normalizeStatusForDisplay(s.status);
+        return normalizedStatus === 'Passed';
+    }).length;
+    
+    const rejectedStudents = courseDetailsStudentsData.filter(s => {
+        const normalizedStatus = normalizeStatusForDisplay(s.status);
+        return normalizedStatus === 'Rejected';
+    }).length;
+    
+    const failedStudents = courseDetailsStudentsData.filter(s => {
+        const normalizedStatus = normalizeStatusForDisplay(s.status);
+        return normalizedStatus === 'Failed';
+    }).length;
+    
+    console.log('updateCourseDetailsSummaryCards - Status counts:');
+    console.log(`  Total: ${totalStudents}`);
+    console.log(`  Pending: ${pendingStudents}`);
+    console.log(`  Enrolled: ${enrolledStudents}`);
+    console.log(`  Passed: ${passedStudents}`);
+    console.log(`  Rejected: ${rejectedStudents}`);
+    console.log(`  Failed: ${failedStudents}`);
+    
+    // Log individual student statuses for debugging
+    courseDetailsStudentsData.forEach(student => {
+        const normalized = normalizeStatusForDisplay(student.status);
+        console.log(`  Student ${student.name}: raw="${student.status}" -> normalized="${normalized}"`);
+    });
     
     document.getElementById('courseDetailsStudentCount').textContent = totalStudents;
     document.getElementById('courseDetailsPendingCount').textContent = pendingStudents;
@@ -321,7 +354,6 @@ function renderCourseDetailsStudentsTable() {
                         <option value="Passed" ${normalizedStatus === 'Passed' ? 'selected' : ''}>Passed</option>
                         <option value="Rejected" ${normalizedStatus === 'Rejected' ? 'selected' : ''}>Rejected</option>
                         <option value="Failed" ${normalizedStatus === 'Failed' ? 'selected' : ''}>Failed</option>
-                        <option value="Attending" ${normalizedStatus === 'Attending' ? 'selected' : ''}>Attending</option>
                     </select>
                 </td>
             </tr>
@@ -350,8 +382,6 @@ function getStatusClasses(status) {
             return 'bg-red-100 text-red-800 border-red-200';
         case 'Failed':
             return 'bg-gray-100 text-gray-800 border-gray-200';
-        case 'Attending':
-            return 'bg-indigo-100 text-indigo-800 border-indigo-200';
         default:
             return 'bg-gray-100 text-gray-800 border-gray-200';
     }
@@ -679,9 +709,6 @@ function courseDetailsQuickFilter(filterType) {
             break;
         case 'failed':
             filteredCourseDetailsStudents = courseDetailsStudentsData.filter(s => s.status === 'Failed');
-            break;
-        case 'attending':
-            filteredCourseDetailsStudents = courseDetailsStudentsData.filter(s => s.status === 'Attending');
             break;
         case 'high-attendance':
             filteredCourseDetailsStudents = courseDetailsStudentsData.filter(s => s.attendanceRate >= 80);
