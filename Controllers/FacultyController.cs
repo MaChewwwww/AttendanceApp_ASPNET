@@ -177,6 +177,43 @@ namespace AttendanceApp_ASPNET.Controllers
                 });
             }
         }
+
+        [HttpPut]
+        public async Task<IActionResult> UpdateStudentStatus(int assignedCourseId, int studentId, [FromBody] UpdateStudentStatusRequest request)
+        {
+            try
+            {
+                var faculty = GetCurrentFacultyInfo();
+                var jwtToken = HttpContext.Session.GetString("AuthToken");
+                
+                if (string.IsNullOrEmpty(jwtToken))
+                {
+                    return Json(new { success = false, message = "Authentication required" });
+                }
+
+                // Extend session before making API call
+                ExtendSession();
+
+                // Send the request object directly to match the API expectation
+                var updateResult = await _classService.UpdateStudentStatusAsync(assignedCourseId, studentId, request.Status, request.RejectionReason ?? "", jwtToken);
+                return Json(updateResult);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error updating student status: {ex.Message}");
+                return Json(new { 
+                    success = false, 
+                    message = "Failed to update student status. Please try again later.",
+                    error = ex.Message 
+                });
+            }
+        }
+    }
+
+    public class UpdateStudentStatusRequest
+    {
+        public string Status { get; set; } = string.Empty;
+        public string RejectionReason { get; set; } = string.Empty;
     }
 }
 

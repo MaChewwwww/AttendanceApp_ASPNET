@@ -167,6 +167,71 @@ namespace AttendanceApp_ASPNET.Services
             }
         }
 
+        public async Task<object> UpdateStudentStatusAsync(int assignedCourseId, int studentId, string status, string rejectionReason, string jwtToken)
+        {
+            try
+            {
+                var requestData = new
+                {
+                    status = status,
+                    rejection_reason = rejectionReason
+                };
+
+                var responseJson = await _apiService.UpdateStudentStatusAsync(assignedCourseId, studentId, requestData, jwtToken);
+                
+                if (string.IsNullOrEmpty(responseJson))
+                {
+                    return new { 
+                        success = false, 
+                        message = "Empty response from API"
+                    };
+                }
+
+                Console.WriteLine($"UpdateStudentStatus API Response: {responseJson}");
+
+                // Parse the JSON response
+                var apiResponse = JsonSerializer.Deserialize<JsonElement>(responseJson, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
+                // Check if the response indicates success
+                if (apiResponse.TryGetProperty("success", out var successElement) && 
+                    successElement.ValueKind == JsonValueKind.True)
+                {
+                    var result = JsonSerializer.Deserialize<object>(responseJson, new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+                    
+                    Console.WriteLine($"Student status update successful for student {studentId} to status {status}");
+                    return result;
+                }
+                else
+                {
+                    var errorMessage = "Unknown error occurred";
+                    if (apiResponse.TryGetProperty("message", out var messageElement))
+                    {
+                        errorMessage = messageElement.GetString() ?? errorMessage;
+                    }
+
+                    Console.WriteLine($"Student status update failed: {errorMessage}");
+                    return new { 
+                        success = false, 
+                        message = errorMessage
+                    };
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Exception in UpdateStudentStatusAsync: {ex.Message}");
+                return new { 
+                    success = false, 
+                    message = $"Error updating student status: {ex.Message}"
+                };
+            }
+        }
+
         private void LogDebug(string message, object data)
         {
             var json = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });

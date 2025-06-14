@@ -216,6 +216,16 @@
             z-index: 10050 !important;
         }
         
+        /* Course Details Modal specific z-index */
+        #courseDetailsModal {
+            z-index: 9998 !important;
+        }
+        
+        /* Status Update Confirmation Modal should be above Course Details */
+        .status-update-modal {
+            z-index: 10002 !important;
+        }
+        
         .modal-blur-background #dashboardSidebar,
         .modal-blur-background #dashboardNavbar,
         .modal-blur-background #dashboardMain,
@@ -227,7 +237,7 @@
         }
         
         /* Ensure modal content is never blurred */
-        .page-modal {
+        .page-modal, .status-update-modal {
             filter: none !important;
             pointer-events: auto !important;
         }

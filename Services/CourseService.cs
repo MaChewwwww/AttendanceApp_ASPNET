@@ -331,11 +331,29 @@ namespace AttendanceApp_ASPNET.Services
         {
             try
             {
-                return new CourseInfo
+                var enrollmentStatus = "";
+                if (courseElement.TryGetProperty("enrollment_status", out var enrollmentStatusProp))
+                {
+                    enrollmentStatus = enrollmentStatusProp.GetString() ?? "";
+                    Console.WriteLine($"ParseSingleCourse - Raw enrollment_status from API: '{enrollmentStatus}' (Length: {enrollmentStatus.Length})");
+                }
+                else
+                {
+                    Console.WriteLine("ParseSingleCourse - No enrollment_status property found in JSON");
+                }
+
+                // Get course name for debugging
+                var courseName = "";
+                if (courseElement.TryGetProperty("course_name", out var courseNameProp))
+                {
+                    courseName = courseNameProp.GetString() ?? "";
+                }
+
+                var courseInfo = new CourseInfo
                 {
                     AssignedCourseId = courseElement.TryGetProperty("assigned_course_id", out var assignedCourseIdProp) ? assignedCourseIdProp.GetInt32() : 0,
                     CourseId = courseElement.TryGetProperty("course_id", out var courseIdProp) ? courseIdProp.GetInt32() : 0,
-                    CourseName = courseElement.TryGetProperty("course_name", out var courseNameProp) ? courseNameProp.GetString() ?? "" : "",
+                    CourseName = courseName,
                     CourseCode = courseElement.TryGetProperty("course_code", out var courseCodeProp) ? courseCodeProp.GetString() ?? "" : "",
                     CourseDescription = courseElement.TryGetProperty("course_description", out var courseDescProp) ? courseDescProp.GetString() ?? "" : "",
                     FacultyId = courseElement.TryGetProperty("faculty_id", out var facultyIdProp) ? facultyIdProp.GetInt32() : 0,
@@ -349,15 +367,26 @@ namespace AttendanceApp_ASPNET.Services
                     AcademicYear = courseElement.TryGetProperty("academic_year", out var academicYearProp) ? academicYearProp.GetString() ?? "" : "",
                     Semester = courseElement.TryGetProperty("semester", out var semesterProp) ? semesterProp.GetString() ?? "" : "",
                     Room = courseElement.TryGetProperty("room", out var roomProp) ? roomProp.GetString() ?? "" : "",
-                    EnrollmentStatus = courseElement.TryGetProperty("enrollment_status", out var enrollmentStatusProp) ? enrollmentStatusProp.GetString() ?? "" : "",
+                    EnrollmentStatus = enrollmentStatus,
                     RejectionReason = courseElement.TryGetProperty("rejection_reason", out var rejectionReasonProp) && rejectionReasonProp.ValueKind != JsonValueKind.Null ? rejectionReasonProp.GetString() : null,
                     CourseType = courseElement.TryGetProperty("course_type", out var courseTypeProp) ? courseTypeProp.GetString() ?? "" : "",
                     CreatedAt = courseElement.TryGetProperty("created_at", out var createdAtProp) && createdAtProp.ValueKind != JsonValueKind.Null ? createdAtProp.GetString() : null,
                     UpdatedAt = courseElement.TryGetProperty("updated_at", out var updatedAtProp) && updatedAtProp.ValueKind != JsonValueKind.Null ? updatedAtProp.GetString() : null
                 };
+
+                Console.WriteLine($"ParseSingleCourse - Course: {courseInfo.CourseName}");
+                Console.WriteLine($"  - Final EnrollmentStatus: '{courseInfo.EnrollmentStatus}'");
+                Console.WriteLine($"  - Status Length: {courseInfo.EnrollmentStatus?.Length}");
+                Console.WriteLine($"  - Status Type: {courseInfo.EnrollmentStatus?.GetType().Name}");
+                
+                // Debug the entire JSON element for this course
+                Console.WriteLine($"  - Raw JSON for this course: {courseElement.GetRawText()}");
+                
+                return courseInfo;
             }
-            catch
+            catch (Exception ex)
             {
+                Console.WriteLine($"ParseSingleCourse - Error parsing course: {ex.Message}");
                 return null;
             }
         }

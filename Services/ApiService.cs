@@ -33,6 +33,7 @@ namespace AttendanceApp_ASPNET.Services
         Task<string> GetCourseDetailsAsync(int courseId, string jwtToken);
         Task<string> GetCourseStudentsAsync(int assignedCourseId, string jwtToken);
         Task<string> GetFacultyCourseDetailsAsync(int assignedCourseId, string jwtToken);
+        Task<string> UpdateStudentStatusAsync(int assignedCourseId, int studentId, object requestData, string jwtToken);
         
         // Attendance data methods
         Task<string> GetStudentAttendanceAsync(string jwtToken);
@@ -235,6 +236,18 @@ namespace AttendanceApp_ASPNET.Services
                 semester = "",
                 total_students = 0,
                 total_sessions = 0
+            });
+        }
+
+        public async Task<string> UpdateStudentStatusAsync(int assignedCourseId, int studentId, object requestData, string jwtToken)
+        {
+            return await PutApiRequestWithStructuredErrorAsync($"/faculty/courses/{assignedCourseId}/students/{studentId}/status", requestData, jwtToken, "Failed to update student status", new
+            {
+                success = false,
+                message = "",
+                student_info = (object)null,
+                updated_status = "",
+                updated_at = ""
             });
         }
 
@@ -495,6 +508,34 @@ namespace AttendanceApp_ASPNET.Services
                 }
                 
                 return responseContent;
+            }
+            catch (Exception ex)
+            {
+                var errorResponse = JsonSerializer.Serialize(errorTemplate);
+                return errorResponse.Replace("\"message\": \"\"", $"\"message\": \"{errorMessage}: {ex.Message}\"");
+            }
+        }
+
+        private async Task<string> PutApiRequestWithStructuredErrorAsync(string endpoint, object data, string jwtToken, string errorMessage, object errorTemplate)
+        {
+            try
+            {
+                var apiUrl = $"{_apiBaseUrl}{endpoint}";
+                var json = JsonSerializer.Serialize(data);
+                var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+                
+                SetupRequestHeaders(jwtToken);
+                
+                var response = await _httpClient.PutAsync(apiUrl, content);
+                var responseContent = await response.Content.ReadAsStringAsync();
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorResponse = JsonSerializer.Serialize(errorTemplate);
+                    return errorResponse.Replace("\"message\": \"\"", $"\"message\": \"API returned {response.StatusCode}: {responseContent}\"");
+                }
+                
+                return responseContent ?? string.Empty;
             }
             catch (Exception ex)
             {

@@ -394,7 +394,20 @@
 @functions {
     private string GetStatusBadgeClass(string status)
     {
-        return status switch
+        // Add more detailed debugging
+        Console.WriteLine($"GetStatusBadgeClass called with status: '{status}' (Type: {status?.GetType().Name}, Length: {status?.Length})");
+        
+        // Check for null or empty first
+        if (string.IsNullOrEmpty(status))
+        {
+            Console.WriteLine("Status is null or empty, returning default gray classes");
+            return "bg-gray-100 text-gray-800";
+        }
+        
+        var lowerStatus = status.ToLower().Trim();
+        Console.WriteLine($"Converted to lowercase/trimmed: '{lowerStatus}'");
+        
+        var result = lowerStatus switch
         {
             "approved" or "enrolled" => "bg-green-100 text-green-800",
             "pending" => "bg-yellow-100 text-yellow-800",
@@ -405,11 +418,27 @@
             "attended_without_enrollment" => "bg-blue-100 text-blue-800",
             _ => "bg-gray-100 text-gray-800"
         };
+        
+        Console.WriteLine($"Returning badge class: '{result}' for status '{lowerStatus}'");
+        return result;
     }
 
     private string GetStatusDisplayText(string status)
     {
-        return status switch
+        // Add more detailed debugging
+        Console.WriteLine($"GetStatusDisplayText called with status: '{status}' (Type: {status?.GetType().Name}, Length: {status?.Length})");
+        
+        // Check for null or empty first
+        if (string.IsNullOrEmpty(status))
+        {
+            Console.WriteLine("Status is null or empty, returning 'Unknown'");
+            return "Unknown";
+        }
+        
+        var lowerStatus = status.ToLower().Trim();
+        Console.WriteLine($"Converted to lowercase/trimmed: '{lowerStatus}'");
+        
+        var result = lowerStatus switch
         {
             "approved" => "Enrolled",
             "enrolled" => "Enrolled",
@@ -421,6 +450,9 @@
             "attended_without_enrollment" => "Attended",
             _ => FormatStatusText(status)
         };
+        
+        Console.WriteLine($"Returning display text: '{result}' for status '{lowerStatus}'");
+        return result;
     }
 
     private string FormatStatusText(string status)
@@ -713,16 +745,16 @@
 
         if (currentEnrolled) return true;
 
-        // Check in previous courses (only if passed)
+        // Check in previous courses (only if passed or enrolled)
         const previousCourses = @Html.Raw(Json.Serialize(Model?.PreviousCourses ?? new List<AttendanceApp_ASPNET.Services.CourseInfo>()));
-        const previousPassed = previousCourses.some(course => 
+        const previousAllowed = previousCourses.some(course => 
             course.assignedCourseId === assignedCourseId && 
             (course.enrollmentStatus === 'approved' || 
              course.enrollmentStatus === 'enrolled' || 
              course.enrollmentStatus === 'passed')
         );
 
-        return previousPassed;
+        return previousAllowed;
     }
 
     function showEnrollmentError(courseName) {
@@ -1247,4 +1279,44 @@
         filterPreviousCourses();
     }
 
+    // Add debugging to see what status values we're getting
+    document.addEventListener('DOMContentLoaded', function() {
+        // Debug the course data
+        const currentCourses = @Html.Raw(Json.Serialize(Model?.CurrentCourses ?? new List<AttendanceApp_ASPNET.Services.CourseInfo>()));
+        const previousCourses = @Html.Raw(Json.Serialize(Model?.PreviousCourses ?? new List<AttendanceApp_ASPNET.Services.CourseInfo>()));
+        
+        console.log('=== COURSE STATUS DEBUG ===');
+        console.log('Current Courses:', currentCourses);
+        console.log('Previous Courses:', previousCourses);
+        
+        // Check each course's enrollment status
+        currentCourses.forEach((course, index) => {
+            console.log(`Current Course ${index}:`);
+            console.log(`  - Name: ${course.courseName}`);
+            console.log(`  - EnrollmentStatus: "${course.enrollmentStatus}"`);
+            console.log(`  - Type: ${typeof course.enrollmentStatus}`);
+            console.log(`  - Raw object:`, course);
+        });
+        
+        previousCourses.forEach((course, index) => {
+            console.log(`Previous Course ${index}:`);
+            console.log(`  - Name: ${course.courseName}`);
+            console.log(`  - EnrollmentStatus: "${course.enrollmentStatus}"`);
+            console.log(`  - Type: ${typeof course.enrollmentStatus}`);
+            console.log(`  - Raw object:`, course);
+        });
+        console.log('========================');
+        
+        // Debug what the functions are returning
+        console.log('=== FUNCTION DEBUG ===');
+        currentCourses.forEach((course, index) => {
+            const badgeClass = '@GetStatusBadgeClass("test")';
+            const displayText = '@GetStatusDisplayText("test")';
+            console.log(`Course ${index} Processing:`);
+            console.log(`  - Raw Status: "${course.enrollmentStatus}"`);
+            console.log(`  - Will get badge class for: "${course.enrollmentStatus}"`);
+            console.log(`  - Will get display text for: "${course.enrollmentStatus}"`);
+        });
+        console.log('=====================');
+    });
 </script>
