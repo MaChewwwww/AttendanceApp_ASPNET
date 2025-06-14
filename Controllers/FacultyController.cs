@@ -208,6 +208,36 @@ namespace AttendanceApp_ASPNET.Controllers
                 });
             }
         }
+
+        [HttpGet]
+        public async Task<IActionResult> GetCourseAttendance(int assignedCourseId, int? month = null, int? day = null)
+        {
+            try
+            {
+                var faculty = GetCurrentFacultyInfo();
+                var jwtToken = HttpContext.Session.GetString("AuthToken");
+                
+                if (string.IsNullOrEmpty(jwtToken))
+                {
+                    return Json(new { success = false, message = "Authentication required" });
+                }
+
+                // Extend session before making API call
+                ExtendSession();
+
+                var attendanceResponse = await _classService.GetCourseAttendanceAsync(assignedCourseId, null, month, day, jwtToken);
+                return Json(attendanceResponse);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting course attendance: {ex.Message}");
+                return Json(new { 
+                    success = false, 
+                    message = "Failed to load course attendance. Please try again later.",
+                    error = ex.Message 
+                });
+            }
+        }
     }
 
     public class UpdateStudentStatusRequest

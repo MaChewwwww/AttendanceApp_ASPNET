@@ -49,7 +49,8 @@ namespace AttendanceApp_ASPNET.Services
         
         // Faculty attendance data methods
         Task<string> GetFacultyAttendanceAsync(string jwtToken);
-        
+        Task<string> GetCourseAttendanceAsync(int assignedCourseId, string academicYear, int? month, int? day, string jwtToken);
+
         // Configuration access
         string GetApiKey();
         string GetApiBaseUrl();
@@ -367,6 +368,34 @@ namespace AttendanceApp_ASPNET.Services
             });
         }
 
+        public async Task<string> GetCourseAttendanceAsync(int assignedCourseId, string academicYear, int? month, int? day, string jwtToken)
+        {
+            var queryParams = new List<string>();
+            if (month.HasValue)
+                queryParams.Add($"month={month.Value}");
+            if (day.HasValue)
+                queryParams.Add($"day={day.Value}");
+            
+            var queryString = queryParams.Count > 0 ? "?" + string.Join("&", queryParams) : "";
+            var endpoint = $"/faculty/courses/{assignedCourseId}/attendance{queryString}";
+            
+            return await GetApiRequestWithStructuredErrorAsync(endpoint, jwtToken, "Failed to fetch course attendance", new
+            {
+                success = false,
+                message = "",
+                course_info = new { },
+                section_info = new { },
+                faculty_info = new { },
+                attendance_records = new object[0],
+                total_records = 0,
+                attendance_summary = new { },
+                academic_year = (object)null,
+                semester = (object)null,
+                is_current_course = false,
+                available_filters = new { years = new object[0], months = new object[0], days = new object[0] }
+            });
+        }
+
         // ENCAPSULATION: Private helper methods hide complex HTTP setup logic
         private async Task<string> PostApiRequestAsync(string endpoint, object data, string errorMessage)
         {
@@ -553,7 +582,7 @@ namespace AttendanceApp_ASPNET.Services
             if (!string.IsNullOrEmpty(jwtToken))
             {
                 _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {jwtToken}");
-            }
         }
     }
+}
 }

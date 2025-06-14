@@ -136,16 +136,17 @@ function processAttendanceData(data) {
 }
 
 function updateAttendanceSummaryCards() {
-    const totalSessions = attendanceRecordsData.length;
-    const presentCount = attendanceRecordsData.filter(r => r.status.toLowerCase() === 'present').length;
-    const lateCount = attendanceRecordsData.filter(r => r.status.toLowerCase() === 'late').length;
-    const absentCount = attendanceRecordsData.filter(r => r.status.toLowerCase() === 'absent').length;
+    // Use filtered data instead of raw data for dynamic updates
+    const totalSessions = filteredAttendanceRecords.length;
+    const presentCount = filteredAttendanceRecords.filter(r => r.status.toLowerCase() === 'present').length;
+    const lateCount = filteredAttendanceRecords.filter(r => r.status.toLowerCase() === 'late').length;
+    const absentCount = filteredAttendanceRecords.filter(r => r.status.toLowerCase() === 'absent').length;
     const attendanceRate = totalSessions > 0 ? Math.round(((presentCount + lateCount) / totalSessions) * 100) : 0;
     
-    // Get unique students count
-    const uniqueStudents = new Set(attendanceRecordsData.map(r => r.student_id)).size;
+    // Get unique students count from filtered data
+    const uniqueStudents = new Set(filteredAttendanceRecords.map(r => r.student_id)).size;
     
-    console.log('updateAttendanceSummaryCards - Attendance counts:');
+    console.log('updateAttendanceSummaryCards - Filtered attendance counts:');
     console.log(`  Total Sessions: ${totalSessions}`);
     console.log(`  Present: ${presentCount}`);
     console.log(`  Late: ${lateCount}`);
@@ -385,11 +386,15 @@ async function confirmAttendanceUpdate(attendanceId, newStatus) {
         // Show success notification
         showAttendanceUpdateNotification(attendanceId, newStatus);
         
-        // Update local data and refresh table
+        // Update local data and refresh table and summary
         const record = attendanceRecordsData.find(r => r.attendance_id === attendanceId);
         if (record) {
             record.status = newStatus;
-            updateAttendanceSummaryCards();
+            
+            // Re-apply current filters to update filtered data
+            applyAttendanceFilters();
+            
+            // This will update both summary cards and table
             renderAttendanceRecordsTable();
         }
         
@@ -520,15 +525,8 @@ function setupAttendanceEventListeners() {
     }
     
     // Date filters
-    const yearFilter = document.getElementById('attendanceAcademicYearFilter');
     const monthFilter = document.getElementById('attendanceMonthFilter');
     const dayFilter = document.getElementById('attendanceDayFilter');
-    
-    if (yearFilter) {
-        yearFilter.addEventListener('change', function() {
-            applyAttendanceFilters();
-        });
-    }
     
     if (monthFilter) {
         monthFilter.addEventListener('change', function() {
@@ -546,7 +544,6 @@ function setupAttendanceEventListeners() {
 function applyAttendanceFilters() {
     const searchInput = document.getElementById('attendanceStudentSearchInput');
     const sortSelect = document.getElementById('attendanceSortSelect');
-    const yearFilter = document.getElementById('attendanceAcademicYearFilter');
     const monthFilter = document.getElementById('attendanceMonthFilter');
     const dayFilter = document.getElementById('attendanceDayFilter');
     
@@ -554,7 +551,6 @@ function applyAttendanceFilters() {
     
     const searchTerm = searchInput.value.toLowerCase();
     const sortBy = sortSelect.value;
-    const selectedYear = yearFilter ? yearFilter.value : '';
     const selectedMonth = monthFilter ? monthFilter.value : '';
     const selectedDay = dayFilter ? dayFilter.value : '';
     
@@ -564,11 +560,10 @@ function applyAttendanceFilters() {
                              record.student_number.toLowerCase().includes(searchTerm);
         
         const recordDate = new Date(record.attendance_date);
-        const matchesYear = !selectedYear || record.academic_year === selectedYear;
         const matchesMonth = !selectedMonth || (recordDate.getMonth() + 1) == selectedMonth;
         const matchesDay = !selectedDay || recordDate.getDate() == selectedDay;
         
-        return matchesSearch && matchesYear && matchesMonth && matchesDay;
+        return matchesSearch && matchesMonth && matchesDay;
     });
     
     // Apply sorting
@@ -592,6 +587,9 @@ function applyAttendanceFilters() {
                 return 0;
         }
     });
+    
+    // Update summary cards with filtered data
+    updateAttendanceSummaryCards();
     
     renderAttendanceRecordsTable();
 }
@@ -639,11 +637,13 @@ function attendanceQuickFilter(filterType) {
             break;
     }
     
+    // Update summary cards with filtered data
+    updateAttendanceSummaryCards();
+    
     renderAttendanceRecordsTable();
 }
 
 function clearAttendanceFilters() {
-    document.getElementById('attendanceAcademicYearFilter').value = '';
     document.getElementById('attendanceMonthFilter').value = '';
     document.getElementById('attendanceDayFilter').value = '';
     applyAttendanceFilters();
@@ -766,6 +766,17 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
+// Handle backdrop click for attendance modal
+document.addEventListener('DOMContentLoaded', function() {
+    const attendanceModal = document.getElementById('attendanceModal');
+    if (attendanceModal) {
+        attendanceModal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeAttendanceModal();
+            }
+        });
+    }
+});
 // Handle backdrop click for attendance modal
 document.addEventListener('DOMContentLoaded', function() {
     const attendanceModal = document.getElementById('attendanceModal');
