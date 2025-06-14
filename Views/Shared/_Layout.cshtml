@@ -221,6 +221,16 @@
             z-index: 9998 !important;
         }
         
+        /* Attendance Modal specific z-index */
+        #attendanceModal {
+            z-index: 9997 !important;
+        }
+        
+        /* Attendance Update Confirmation Modal should be above Attendance Modal */
+        .attendance-update-modal {
+            z-index: 10005 !important;
+        }
+        
         /* Status Update Confirmation Modal should be above Course Details */
         .status-update-modal {
             z-index: 10002 !important;
@@ -237,7 +247,7 @@
         }
         
         /* Ensure modal content is never blurred */
-        .page-modal, .status-update-modal {
+        .page-modal, .status-update-modal, .attendance-update-modal {
             filter: none !important;
             pointer-events: auto !important;
         }
