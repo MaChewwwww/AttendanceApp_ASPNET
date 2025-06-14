@@ -45,6 +45,9 @@ namespace AttendanceApp_ASPNET.Services
         // Dashboard data methods
         Task<string> GetStudentDashboardAsync(string jwtToken);
         
+        // Faculty attendance data methods
+        Task<string> GetFacultyAttendanceAsync(string jwtToken);
+        
         // Configuration access
         string GetApiKey();
         string GetApiBaseUrl();
@@ -299,6 +302,31 @@ namespace AttendanceApp_ASPNET.Services
                     current_class = (object)null,
                     next_class = (object)null,
                     current_day = ""
+                }
+            });
+        }
+
+        public async Task<string> GetFacultyAttendanceAsync(string jwtToken)
+        {
+            return await GetApiRequestWithStructuredErrorAsync("/faculty/attendance", jwtToken, "Failed to fetch faculty attendance", new
+            {
+                success = false,
+                message = "",
+                faculty_info = new { },
+                attendance_records = new object[0],
+                total_records = 0,
+                course_summary = new { },
+                student_summary = new { },
+                academic_year_summary = new { },
+                attendance_statistics = new
+                {
+                    total_students = 0,
+                    total_classes = 0,
+                    present_count = 0,
+                    late_count = 0,
+                    absent_count = 0,
+                    excused_count = 0,
+                    attendance_rate = 0.0
                 }
             });
         }
