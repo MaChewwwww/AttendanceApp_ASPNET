@@ -395,9 +395,11 @@
     {
         return status switch
         {
-            "approved" => "bg-green-100 text-green-800",
+            "approved" or "enrolled" => "bg-green-100 text-green-800",
             "pending" => "bg-yellow-100 text-yellow-800",
             "rejected" => "bg-red-100 text-red-800",
+            "failed" => "bg-red-100 text-red-800",
+            "passed" => "bg-green-100 text-green-800",
             "not_enrolled" => "bg-gray-100 text-gray-800",
             "attended_without_enrollment" => "bg-blue-100 text-blue-800",
             _ => "bg-gray-100 text-gray-800"
@@ -409,8 +411,11 @@
         return status switch
         {
             "approved" => "Enrolled",
+            "enrolled" => "Enrolled",
             "pending" => "Pending",
             "rejected" => "Rejected",
+            "failed" => "Failed",
+            "passed" => "Passed",
             "not_enrolled" => "Not Enrolled",
             "attended_without_enrollment" => "Attended",
             _ => FormatStatusText(status)
@@ -781,8 +786,8 @@
                 case 'present-desc':
                     return b.presentCount - a.presentCount;
                 case 'status-asc':
-                    const statusOrder = { 'approved': 1, 'pending': 2, 'rejected': 3 };
-                    return (statusOrder[a.enrollmentStatus] || 4) - (statusOrder[b.enrollmentStatus] || 4);
+                    const statusOrder = { 'enrolled': 1, 'approved': 1, 'passed': 2, 'pending': 3, 'failed': 4, 'rejected': 5 };
+                    return (statusOrder[a.enrollmentStatus] || 6) - (statusOrder[b.enrollmentStatus] || 6);
                 case 'latest-desc':
                     if (!a.latestAttendanceDate && !b.latestAttendanceDate) return 0;
                     if (!a.latestAttendanceDate) return 1;
@@ -815,12 +820,21 @@
                 // No additional filtering
                 break;
             case 'approved':
-                filtered = filtered.filter(student => student.enrollmentStatus === 'approved');
+            case 'enrolled':
+                filtered = filtered.filter(student => 
+                    student.enrollmentStatus === 'approved' || student.enrollmentStatus === 'enrolled');
                 break;
             case 'pending':
                 filtered = filtered.filter(student => student.enrollmentStatus === 'pending');
                 break;
+            case 'failed':
+                filtered = filtered.filter(student => student.enrollmentStatus === 'failed');
+                break;
+            case 'passed':
+                filtered = filtered.filter(student => student.enrollmentStatus === 'passed');
+                break;
             case 'high-attendance':
+                filtered = filtered.filter(student => student.attendancePercentage >= 80);
                 filtered = filtered.filter(student => student.attendancePercentage >= 80);
                 break;
             case 'low-attendance':
@@ -1061,8 +1075,11 @@
     function getStudentStatusBadge(status) {
         const badges = {
             'approved': '<span class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">Enrolled</span>',
+            'enrolled': '<span class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">Enrolled</span>',
             'pending': '<span class="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded-full">Pending</span>',
             'rejected': '<span class="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded-full">Rejected</span>',
+            'failed': '<span class="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded-full">Failed</span>',
+            'passed': '<span class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">Passed</span>',
         };
         return badges[status] || '<span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded-full">Unknown</span>';
     }
