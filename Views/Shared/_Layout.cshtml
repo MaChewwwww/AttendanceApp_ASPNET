@@ -272,6 +272,12 @@
     <!-- Sort Modal - OUTSIDE dashboard container to avoid blur effects -->
     @await Html.PartialAsync("_SortModal")
     
+    <!-- Faculty Filter Modal - OUTSIDE dashboard container to avoid blur effects -->
+    @await Html.PartialAsync("_FacultyFilterModal")
+    
+    <!-- Faculty Sort Modal - OUTSIDE dashboard container to avoid blur effects -->
+    @await Html.PartialAsync("_FacultySortModal")
+    
     <div id="dashboardContainer" class="flex h-screen dashboard-entrance">
         <!-- Sidebar - Hidden on mobile by default -->
         <div id="dashboardSidebar" class="w-64 bg-white shadow-lg flex-shrink-0 sidebar-slide-in dashboard-sidebar hidden lg:block">
@@ -621,6 +627,27 @@
         window.closeSortModal = function() {
             console.log('Global closeSortModal called');
             return ModalManager.closeModal('sortModal');
+        };
+        
+        // Faculty modal functions
+        window.openFacultyFilterModal = function() {
+            console.log('Global openFacultyFilterModal called');
+            return ModalManager.openModal('facultyFilterModal');
+        };
+        
+        window.closeFacultyFilterModal = function() {
+            console.log('Global closeFacultyFilterModal called');
+            return ModalManager.closeModal('facultyFilterModal');
+        };
+        
+        window.openFacultySortModal = function() {
+            console.log('Global openFacultySortModal called');
+            return ModalManager.openModal('facultySortModal');
+        };
+        
+        window.closeFacultySortModal = function() {
+            console.log('Global closeFacultySortModal called');
+            return ModalManager.closeModal('facultySortModal');
         };
         
         // Enhanced mobile menu functionality

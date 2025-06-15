@@ -332,14 +332,14 @@
                 </div>
 
                 <!-- Filter Button -->
-                <button onclick="openFilterModal()" class="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                <button onclick="openFacultyFilterModal()" class="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
                     <i class="fas fa-filter mr-2"></i>
                     <span>Filter</span>
                     <span id="filterCount" class="ml-2 bg-blue-800 text-white text-xs rounded-full px-2 py-1 hidden">0</span>
                 </button>
 
                 <!-- Sort Button -->
-                <button onclick="openSortModal()" class="flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200">
+                <button onclick="openFacultySortModal()" class="flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200">
                     <i class="fas fa-sort mr-2"></i>
                     <span>Sort</span>
                 </button>
@@ -410,143 +410,6 @@
     </div>
 </div>
 
-<!-- Filter Modal -->
-<div id="filterModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 overflow-y-auto h-full w-full hidden flex items-center justify-center backdrop-blur-sm">
-    <div id="filterModalContent" class="modal-content relative mx-auto p-6 border w-full max-w-lg shadow-2xl rounded-xl bg-white transform transition-all duration-300 scale-95 opacity-0 m-4">
-        <!-- Modal Header -->
-        <div class="flex items-center justify-between mb-6">
-            <h3 class="text-lg font-bold text-gray-800">
-                <i class="fas fa-filter mr-2 text-blue-600"></i>
-                Filter Attendance Records
-            </h3>
-            <button onclick="closeFilterModal()" class="text-gray-400 hover:text-gray-600">
-                <i class="fas fa-times text-xl"></i>
-            </button>
-        </div>
-
-        <!-- Filter Options -->
-        <div class="space-y-6">
-            <!-- Date Range Filter -->
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-xs text-gray-500 mb-1">From</label>
-                        <input type="date" id="dateFrom" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
-                    </div>
-                    <div>
-                        <label class="block text-xs text-gray-500 mb-1">To</label>
-                        <input type="date" id="dateTo" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
-                    </div>
-                </div>
-            </div>
-
-            <!-- Course Filter -->
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Course</label>
-                <select id="courseFilter" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
-                    <option value="">All Courses</option>
-                </select>
-            </div>
-
-            <!-- Section Filter -->
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Section</label>
-                <select id="sectionFilter" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
-                    <option value="">All Sections</option>
-                </select>
-            </div>
-
-            <!-- Status Filter -->
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
-                <select id="statusFilter" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
-                    <option value="">All Statuses</option>
-                    <option value="present">Present</option>
-                    <option value="late">Late</option>
-                    <option value="absent">Absent</option>
-                    <option value="excused">Excused</option>
-                </select>
-            </div>
-
-            <!-- Academic Year Filter -->
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Academic Year</label>
-                <select id="academicYearFilter" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
-                    <option value="">All Academic Years</option>
-                </select>
-            </div>
-        </div>
-
-        <!-- Modal Buttons -->
-        <div class="flex justify-end space-x-3 mt-8">
-            <button onclick="clearFilters()" class="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors">
-                Clear Filters
-            </button>
-            <button onclick="applyFilters()" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
-                Apply Filters
-            </button>
-        </div>
-    </div>
-</div>
-
-<!-- Sort Modal -->
-<div id="sortModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 overflow-y-auto h-full w-full hidden flex items-center justify-center backdrop-blur-sm">
-    <div id="sortModalContent" class="modal-content relative mx-auto p-6 border w-full max-w-md shadow-2xl rounded-xl bg-white transform transition-all duration-300 scale-95 opacity-0 m-4">
-        <!-- Modal Header -->
-        <div class="flex items-center justify-between mb-6">
-            <h3 class="text-lg font-bold text-gray-800">
-                <i class="fas fa-sort mr-2 text-gray-600"></i>
-                Sort Records
-            </h3>
-            <button onclick="closeSortModal()" class="text-gray-400 hover:text-gray-600">
-                <i class="fas fa-times text-xl"></i>
-            </button>
-        </div>
-
-        <!-- Sort Options -->
-        <div class="space-y-4">
-            <!-- Sort By -->
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
-                <select id="sortBy" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
-                    <option value="date">Date</option>
-                    <option value="time">Time</option>
-                    <option value="courseCode">Course Code</option>
-                    <option value="course">Course</option>
-                    <option value="section">Section</option>
-                    <option value="status">Status</option>
-                </select>
-            </div>
-
-            <!-- Sort Direction -->
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Direction</label>
-                <div class="space-y-2">
-                    <label class="flex items-center">
-                        <input type="radio" name="sortDirection" value="asc" class="mr-2">
-                        <span class="text-sm">Ascending (A-Z, Oldest first)</span>
-                    </label>
-                    <label class="flex items-center">
-                        <input type="radio" name="sortDirection" value="desc" class="mr-2" checked>
-                        <span class="text-sm">Descending (Z-A, Newest first)</span>
-                    </label>
-                </div>
-            </div>
-        </div>
-
-        <!-- Modal Buttons -->
-        <div class="flex justify-end space-x-3 mt-8">
-            <button onclick="closeSortModal()" class="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors">
-                Cancel
-            </button>
-            <button onclick="applySort()" class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors">
-                Apply Sort
-            </button>
-        </div>
-    </div>
-</div>
-
 @section Scripts {
 <script>
     // Faculty personal attendance management variables
@@ -556,7 +419,8 @@
         course: '',
         section: '',
         status: '',
-        academicYear: ''
+        academicYear: '',
+        room: ''
     };
     let currentSort = {
         column: 'date',
@@ -655,7 +519,7 @@
         console.log('Populating filter options with records:', allRecords.length);
         
         // Populate course filter - use snake_case property names from API
-        const courseFilter = document.getElementById('courseFilter');
+        const courseFilter = document.getElementById('facultyCourseFilter');
         const courses = [...new Set(allRecords.map(r => r.course_name))].filter(Boolean).sort();
         
         courseFilter.innerHTML = '<option value="">All Courses</option>';
@@ -668,7 +532,7 @@
         console.log('Courses populated:', courses);
 
         // Populate section filter
-        const sectionFilter = document.getElementById('sectionFilter');
+        const sectionFilter = document.getElementById('facultySectionFilter');
         const sections = [...new Set(allRecords.map(r => r.section_name))].filter(Boolean).sort();
         
         sectionFilter.innerHTML = '<option value="">All Sections</option>';
@@ -681,7 +545,7 @@
         console.log('Sections populated:', sections);
 
         // Populate academic year filter
-        const academicYearFilter = document.getElementById('academicYearFilter');
+        const academicYearFilter = document.getElementById('facultyAcademicYearFilter');
         const academicYears = [...new Set(allRecords.map(r => r.academic_year))].filter(Boolean).sort();
         
         academicYearFilter.innerHTML = '<option value="">All Academic Years</option>';
@@ -692,16 +556,30 @@
             academicYearFilter.appendChild(option);
         });
         console.log('Academic years populated:', academicYears);
+
+        // Populate room filter
+        const roomFilter = document.getElementById('facultyRoomFilter');
+        const rooms = [...new Set(allRecords.map(r => r.room))].filter(Boolean).sort();
+        
+        roomFilter.innerHTML = '<option value="">All Rooms</option>';
+        rooms.forEach(room => {
+            const option = document.createElement('option');
+            option.value = room;
+            option.textContent = room;
+            roomFilter.appendChild(option);
+        });
+        console.log('Rooms populated:', rooms);
     }
 
-    function applyFilters() {
+    function applyFacultyFilters() {
         // Get filter values from the modal
-        currentFilters.dateFrom = document.getElementById('dateFrom').value;
-        currentFilters.dateTo = document.getElementById('dateTo').value;
-        currentFilters.course = document.getElementById('courseFilter').value;
-        currentFilters.section = document.getElementById('sectionFilter').value;
-        currentFilters.status = document.getElementById('statusFilter').value;
-        currentFilters.academicYear = document.getElementById('academicYearFilter').value;
+        currentFilters.dateFrom = document.getElementById('facultyDateFrom').value;
+        currentFilters.dateTo = document.getElementById('facultyDateTo').value;
+        currentFilters.course = document.getElementById('facultyCourseFilter').value;
+        currentFilters.section = document.getElementById('facultySectionFilter').value;
+        currentFilters.status = document.getElementById('facultyStatusFilter').value;
+        currentFilters.academicYear = document.getElementById('facultyAcademicYearFilter').value;
+        currentFilters.room = document.getElementById('facultyRoomFilter').value;
 
         // Apply filters and update display
         applyFiltersAndSort();
@@ -710,12 +588,12 @@
         updateFilterCount();
         
         // Close the modal
-        window.closeFilterModal();
+        window.closeFacultyFilterModal();
     }
 
-    function applySort() {
-        const sortBy = document.getElementById('sortBy').value;
-        const sortDirection = document.querySelector('input[name="sortDirection"]:checked').value;
+    function applyFacultySort() {
+        const sortBy = document.getElementById('facultySortBy').value;
+        const sortDirection = document.querySelector('input[name="facultySortDirection"]:checked').value;
         
         currentSort = { column: sortBy, direction: sortDirection };
         
@@ -723,7 +601,7 @@
         showAllFilteredRecords();
         
         // Close the modal
-        window.closeSortModal();
+        window.closeFacultySortModal();
     }
 
     function applyFiltersAndSort() {
@@ -749,6 +627,9 @@
 
             // Academic year filter
             if (currentFilters.academicYear && record.academic_year !== currentFilters.academicYear) return false;
+
+            // Room filter
+            if (currentFilters.room && record.room !== currentFilters.room) return false;
 
             // Status filter
             if (currentFilters.status) {
@@ -792,6 +673,10 @@
                 case 'section':
                     aValue = a.section_name?.toLowerCase() || '';
                     bValue = b.section_name?.toLowerCase() || '';
+                    break;
+                case 'room':
+                    aValue = a.room?.toLowerCase() || '';
+                    bValue = b.room?.toLowerCase() || '';
                     break;
                 case 'status':
                     aValue = a.status?.toLowerCase() || '';
@@ -957,24 +842,26 @@
         document.getElementById('totalRecordsCount').textContent = filteredRecords.length;
     }
 
-    function clearFilters() {
-        document.getElementById('dateFrom').value = '';
-        document.getElementById('dateTo').value = '';
-        document.getElementById('courseFilter').value = '';
-        document.getElementById('sectionFilter').value = '';
-        document.getElementById('statusFilter').value = '';
-        document.getElementById('academicYearFilter').value = '';
+    function clearFacultyFilters() {
+        document.getElementById('facultyDateFrom').value = '';
+        document.getElementById('facultyDateTo').value = '';
+        document.getElementById('facultyCourseFilter').value = '';
+        document.getElementById('facultySectionFilter').value = '';
+        document.getElementById('facultyStatusFilter').value = '';
+        document.getElementById('facultyAcademicYearFilter').value = '';
+        document.getElementById('facultyRoomFilter').value = '';
     }
 
     function clearAllFilters() {
-        clearFilters();
+        clearFacultyFilters();
         currentFilters = {
             dateFrom: '',
             dateTo: '',
             course: '',
             section: '',
             status: '',
-            academicYear: ''
+            academicYear: '',
+            room: ''
         };
         applyFiltersAndSort();
         showAllFilteredRecords();
@@ -1012,6 +899,7 @@
                     case 'section': displayText = `Section: ${value}`; break;
                     case 'status': displayText = `Status: ${value}`; break;
                     case 'academicYear': displayText = `Year: ${value}`; break;
+                    case 'room': displayText = `Room: ${value}`; break;
                 }
                 
                 badge.innerHTML = `${displayText} <button onclick="removeFilter('${key}')" class="ml-1 text-blue-600 hover:text-blue-800"><i class="fas fa-times"></i></button>`;
@@ -1024,12 +912,13 @@
         currentFilters[filterKey] = '';
         
         const fieldMap = {
-            'dateFrom': 'dateFrom',
-            'dateTo': 'dateTo',
-            'course': 'courseFilter',
-            'section': 'sectionFilter',
-            'status': 'statusFilter',
-            'academicYear': 'academicYearFilter'
+            'dateFrom': 'facultyDateFrom',
+            'dateTo': 'facultyDateTo',
+            'course': 'facultyCourseFilter',
+            'section': 'facultySectionFilter',
+            'status': 'facultyStatusFilter',
+            'academicYear': 'facultyAcademicYearFilter',
+            'room': 'facultyRoomFilter'
         };
         
         const fieldId = fieldMap[filterKey];
@@ -1127,18 +1016,18 @@
 
     // Modal event listeners
     document.addEventListener('DOMContentLoaded', function() {
-        const filterModal = document.getElementById('filterModal');
-        const sortModal = document.getElementById('sortModal');
+        const facultyFilterModal = document.getElementById('facultyFilterModal');
+        const facultySortModal = document.getElementById('facultySortModal');
         
-        if (filterModal) {
-            filterModal.addEventListener('click', function(e) {
-                if (e.target === this) window.closeFilterModal();
+        if (facultyFilterModal) {
+            facultyFilterModal.addEventListener('click', function(e) {
+                if (e.target === this) window.closeFacultyFilterModal();
             });
         }
 
-        if (sortModal) {
-            sortModal.addEventListener('click', function(e) {
-                if (e.target === this) window.closeSortModal();
+        if (facultySortModal) {
+            facultySortModal.addEventListener('click', function(e) {
+                if (e.target === this) window.closeFacultySortModal();
             });
         }
     });
