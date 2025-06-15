@@ -217,20 +217,61 @@ namespace AttendanceApp_ASPNET.Controllers
                 var faculty = GetCurrentFacultyInfo();
                 var jwtToken = HttpContext.Session.GetString("AuthToken");
                 
+                Console.WriteLine($"=== FACULTY CONTROLLER GET COURSE ATTENDANCE ===");
+                Console.WriteLine($"Request Parameters:");
+                Console.WriteLine($"  - assignedCourseId: {assignedCourseId}");
+                Console.WriteLine($"  - month: {month?.ToString() ?? "null"}");
+                Console.WriteLine($"  - day: {day?.ToString() ?? "null"}");
+                Console.WriteLine($"Faculty: {faculty.FullName} ({faculty.Email})");
+                Console.WriteLine($"JWT Token present: {!string.IsNullOrEmpty(jwtToken)}");
+                Console.WriteLine("===============================================");
+                
                 if (string.IsNullOrEmpty(jwtToken))
                 {
+                    Console.WriteLine("ERROR: No JWT token available");
                     return Json(new { success = false, message = "Authentication required" });
+                }
+
+                if (assignedCourseId <= 0)
+                {
+                    Console.WriteLine($"ERROR: Invalid assignedCourseId: {assignedCourseId}");
+                    return Json(new { success = false, message = "Invalid course ID" });
                 }
 
                 // Extend session before making API call
                 ExtendSession();
 
                 var attendanceResponse = await _classService.GetCourseAttendanceAsync(assignedCourseId, null, month, day, jwtToken);
+                
+                Console.WriteLine($"=== CONTROLLER RESPONSE SUMMARY ===");
+                Console.WriteLine($"Response Success: {attendanceResponse.Success}");
+                Console.WriteLine($"Response Message: {attendanceResponse.Message}");
+                Console.WriteLine($"Records Count: {attendanceResponse.AttendanceRecords?.Count ?? 0}");
+                Console.WriteLine($"Total Records: {attendanceResponse.TotalRecords}");
+                Console.WriteLine($"Is Current Course: {attendanceResponse.IsCurrentCourse}");
+                
+                if (attendanceResponse.AttendanceRecords?.Any() == true)
+                {
+                    var recordsWithValidIds = attendanceResponse.AttendanceRecords.Where(r => r.AttendanceId > 0).Count();
+                    var recordsWithInvalidIds = attendanceResponse.AttendanceRecords.Where(r => r.AttendanceId <= 0).Count();
+                    Console.WriteLine($"Records with valid IDs: {recordsWithValidIds}");
+                    Console.WriteLine($"Records with invalid IDs: {recordsWithInvalidIds}");
+                    
+                    // Log first few records for debugging
+                    Console.WriteLine("First 3 records:");
+                    foreach (var record in attendanceResponse.AttendanceRecords.Take(3))
+                    {
+                        Console.WriteLine($"  - ID: {record.AttendanceId}, Student: {record.StudentName}, Status: {record.Status}");
+                    }
+                }
+                Console.WriteLine("==================================");
+                
                 return Json(attendanceResponse);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error getting course attendance: {ex.Message}");
+                Console.WriteLine($"ERROR in GetCourseAttendance: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
                 return Json(new { 
                     success = false, 
                     message = "Failed to load course attendance. Please try again later.",
@@ -238,12 +279,127 @@ namespace AttendanceApp_ASPNET.Controllers
                 });
             }
         }
+
+        [HttpPut("UpdateAttendanceStatus/{attendanceId:int}")]
+        public async Task<IActionResult> UpdateAttendanceStatus(int attendanceId, [FromBody] UpdateAttendanceStatusRequest request)
+        {
+            try
+            {
+                var faculty = GetCurrentFacultyInfo();
+                var jwtToken = HttpContext.Session.GetString("AuthToken");
+                
+                Console.WriteLine($"=== UPDATE ATTENDANCE STATUS REQUEST ===");
+                Console.WriteLine($"URL Parameter - Attendance ID: {attendanceId} (type: {attendanceId.GetType()})");
+                Console.WriteLine($"Route Values: {string.Join(", ", RouteData.Values.Select(kv => $"{kv.Key}={kv.Value}"))}");
+                Console.WriteLine($"Request Path: {Request.Path}");
+                Console.WriteLine($"Request Body - Status: {request.Status}");
+                Console.WriteLine($"Request Body - AssignedCourseId: {request.AssignedCourseId}");
+                Console.WriteLine($"Request Body - StudentId: {request.StudentId}");
+                Console.WriteLine($"Request Body - StudentName: {request.StudentName}");
+                Console.WriteLine($"Request Body - AttendanceDate: {request.AttendanceDate}");
+                Console.WriteLine($"Request Body - AttendanceTime: {request.AttendanceTime}");
+                Console.WriteLine($"Faculty: {faculty.FullName} ({faculty.Email})");
+                Console.WriteLine($"JWT Token present: {!string.IsNullOrEmpty(jwtToken)}");
+                Console.WriteLine("==========================================");
+                
+                if (string.IsNullOrEmpty(jwtToken))
+                {
+                    return Json(new { success = false, message = "Authentication required" });
+                }
+
+                // Validate attendance ID from URL parameter
+                if (attendanceId <= 0)
+                {
+                    Console.WriteLine($"Invalid attendance ID from URL: {attendanceId}");
+                    return Json(new { 
+                        success = false, 
+                        message = $"Invalid attendance ID: {attendanceId}" 
+                    });
+                }
+
+                // Validate status value
+                var validStatuses = new[] { "present", "absent", "late" };
+                if (!validStatuses.Contains(request.Status.ToLower()))
+                {
+                    return Json(new { 
+                        success = false, 
+                        message = $"Invalid status. Must be one of: {string.Join(", ", validStatuses)}" 
+                    });
+                }
+
+                // Validate assigned course ID (required for the new API)
+                if (request.AssignedCourseId <= 0)
+                {
+                    return Json(new { 
+                        success = false, 
+                        message = "Assigned course ID is required" 
+                    });
+                }
+
+                // Extend session before making API call
+                ExtendSession();
+
+                // Use the new API endpoint through ClassService
+                var updateResult = await _classService.UpdateAttendanceStatusAsync(request.AssignedCourseId, attendanceId, request.Status.ToLower(), jwtToken);
+                
+                Console.WriteLine($"Update result - Success: {updateResult.Success}, Message: {updateResult.Message}");
+                
+                // Transform the response to match frontend expectations
+                var response = new
+                {
+                    success = updateResult.Success,
+                    message = updateResult.Message,
+                    updated_record = updateResult.UpdatedRecord != null ? new
+                    {
+                        attendance_id = updateResult.UpdatedRecord.AttendanceId,
+                        status = updateResult.UpdatedRecord.Status,
+                        student_id = updateResult.UpdatedRecord.StudentId,
+                        student_name = updateResult.UpdatedRecord.StudentName,
+                        attendance_date = request.AttendanceDate, // Preserve from request since API doesn't return this
+                        attendance_time = request.AttendanceTime, // Preserve from request since API doesn't return this
+                        updated_at = updateResult.UpdatedRecord.UpdatedAt
+                    } : null
+                };
+                
+                return Json(response);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error updating attendance status: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                return Json(new
+                {
+                    success = false,
+                    message = "Failed to update attendance status. Please try again later.",
+                    error = ex.Message
+                });
+            }
+        }
+
+        // Alternative method if the explicit route doesn't work
+        [HttpPut]
+        [Route("Faculty/UpdateAttendanceStatus/{attendanceId}")]
+        public async Task<IActionResult> UpdateAttendanceStatusAlternative(int attendanceId, [FromBody] UpdateAttendanceStatusRequest request)
+        {
+            // Same implementation as above
+            return await UpdateAttendanceStatus(attendanceId, request);
+        }
     }
 
     public class UpdateStudentStatusRequest
     {
         public string Status { get; set; } = string.Empty;
         public string RejectionReason { get; set; } = string.Empty;
+    }
+
+    public class UpdateAttendanceStatusRequest
+    {
+        public int AssignedCourseId { get; set; }
+        public int StudentId { get; set; }
+        public string StudentName { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+        public string AttendanceDate { get; set; } = string.Empty;
+        public string AttendanceTime { get; set; } = string.Empty;
     }
 }
 

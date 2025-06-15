@@ -4,6 +4,78 @@ let attendanceRecordsData = [];
 let filteredAttendanceRecords = [];
 let isCurrentCourse = false; // Flag to determine if the course is current (editable) or previous (read-only)
 
+// Enhanced global variables for attendance update with better initialization
+window.attendanceUpdateGlobals = {
+    attendanceId: null,
+    status: null,
+    record: null,
+    selectElement: null,
+    
+    // Helper methods
+    set: function(attendanceId, status, record, selectElement) {
+        console.log('=== SETTING GLOBAL ATTENDANCE UPDATE DATA ===');
+        console.log('Setting attendanceId:', attendanceId, typeof attendanceId);
+        console.log('Setting status:', status);
+        console.log('Setting record:', record);
+        console.log('Setting selectElement:', selectElement);
+        
+        this.attendanceId = attendanceId;
+        this.status = status;
+        this.record = record;
+        this.selectElement = selectElement;
+        
+        console.log('Global data set successfully');
+        console.log('===========================================');
+    },
+    
+    get: function() {
+        console.log('=== GETTING GLOBAL ATTENDANCE UPDATE DATA ===');
+        console.log('attendanceId:', this.attendanceId, typeof this.attendanceId);
+        console.log('status:', this.status);
+        console.log('record:', this.record);
+        console.log('selectElement:', this.selectElement);
+        console.log('============================================');
+        
+        return {
+            attendanceId: this.attendanceId,
+            status: this.status,
+            record: this.record,
+            selectElement: this.selectElement
+        };
+    },
+    
+    clear: function() {
+        console.log('Clearing global attendance update data');
+        this.attendanceId = null;
+        this.status = null;
+        this.record = null;
+        this.selectElement = null;
+    },
+    
+    isValid: function() {
+        const valid = this.attendanceId && 
+                     this.attendanceId > 0 && 
+                     this.status && 
+                     this.record;
+        
+        console.log('Global data validation:', valid);
+        if (!valid) {
+            console.log('Validation failed:');
+            console.log('  attendanceId valid:', this.attendanceId && this.attendanceId > 0);
+            console.log('  status valid:', !!this.status);
+            console.log('  record valid:', !!this.record);
+        }
+        
+        return valid;
+    }
+};
+
+// Global variables for attendance update
+let currentAttendanceUpdateId = null;
+let currentAttendanceUpdateStatus = null;
+let currentAttendanceUpdateRecord = null;
+let currentAttendanceUpdateSelectElement = null;
+
 function openAttendanceModal(courseData, isCurrent = true) {
     console.log('Opening attendance modal with data:', courseData);
     console.log('Is current course:', isCurrent);
@@ -55,10 +127,14 @@ function showAttendanceContent() {
 
 async function loadAttendanceFromAPI(assignedCourseId) {
     try {
-        console.log(`Loading attendance for assigned course ID: ${assignedCourseId}`);
+        console.log(`=== LOADING ATTENDANCE FROM API ===`);
+        console.log(`Assigned Course ID: ${assignedCourseId} (type: ${typeof assignedCourseId})`);
+        
+        const url = `/Faculty/GetCourseAttendance?assignedCourseId=${assignedCourseId}`;
+        console.log(`Request URL: ${url}`);
         
         // Make API call to get attendance records
-        const response = await fetch(`/Faculty/GetCourseAttendance?assignedCourseId=${assignedCourseId}`, {
+        const response = await fetch(url, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -66,12 +142,43 @@ async function loadAttendanceFromAPI(assignedCourseId) {
             }
         });
 
+        console.log(`HTTP Response Status: ${response.status} ${response.statusText}`);
+        console.log(`Response Headers:`, response.headers);
+
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
         const data = await response.json();
-        console.log('Attendance API response:', data);
+        console.log('=== RAW API RESPONSE ===');
+        console.log('Full response object:', data);
+        console.log('Response success:', data.success);
+        console.log('Response message:', data.message);
+        console.log('Attendance records:', data.attendance_records);
+        console.log('Records count:', data.attendance_records?.length);
+        
+        if (data.attendance_records?.length > 0) {
+            console.log('=== ATTENDANCE RECORDS ANALYSIS ===');
+            console.log('First record:', data.attendance_records[0]);
+            console.log('First record attendance_id:', data.attendance_records[0]?.attendance_id, typeof data.attendance_records[0]?.attendance_id);
+            
+            const recordsWithIds = data.attendance_records.filter(r => r.attendance_id && r.attendance_id > 0);
+            const recordsWithoutIds = data.attendance_records.filter(r => !r.attendance_id || r.attendance_id <= 0);
+            
+            console.log(`Records with valid attendance_id: ${recordsWithIds.length}`);
+            console.log(`Records with invalid attendance_id: ${recordsWithoutIds.length}`);
+            
+            if (recordsWithoutIds.length > 0) {
+                console.warn('Records with invalid IDs:', recordsWithoutIds);
+            }
+            
+            // Check all unique attendance IDs
+            const allIds = data.attendance_records.map(r => r.attendance_id);
+            const uniqueIds = [...new Set(allIds)];
+            console.log('All attendance IDs:', allIds);
+            console.log('Unique attendance IDs:', uniqueIds);
+        }
+        console.log('===========================');
 
         if (!data.success) {
             showAttendanceError(data.message || 'Failed to load attendance records');
@@ -89,6 +196,7 @@ async function loadAttendanceFromAPI(assignedCourseId) {
         
     } catch (error) {
         console.error('Error loading attendance from API:', error);
+        console.error('Error stack:', error.stack);
         showAttendanceError('Failed to load attendance records. Please try again later.');
     }
 }
@@ -115,12 +223,31 @@ function updateAttendanceHeader(data) {
 }
 
 function processAttendanceData(data) {
-    console.log('processAttendanceData - Full API response:', data);
+    console.log('=== PROCESSING ATTENDANCE DATA ===');
+    console.log('Input data:', data);
     
     // Process attendance records
     attendanceRecordsData = data.attendance_records || [];
     
-    console.log('Final processed attendance data:', attendanceRecordsData);
+    console.log('Processed attendance records count:', attendanceRecordsData.length);
+    console.log('First processed record:', attendanceRecordsData[0]);
+    
+    if (attendanceRecordsData.length > 0) {
+        // Validate all records have proper attendance_id
+        const invalidRecords = attendanceRecordsData.filter(record => 
+            !record.attendance_id || record.attendance_id <= 0 || typeof record.attendance_id !== 'number'
+        );
+        
+        if (invalidRecords.length > 0) {
+            console.error(`Found ${invalidRecords.length} records with invalid attendance_id:`, invalidRecords);
+        }
+        
+        // Log attendance ID distribution
+        const attendanceIds = attendanceRecordsData.map(r => r.attendance_id);
+        console.log('Attendance IDs in processed data:', attendanceIds);
+    }
+    
+    console.log('================================');
 
     // Set filtered data
     filteredAttendanceRecords = [...attendanceRecordsData];
@@ -238,10 +365,33 @@ function getAttendanceStatusDropdown(record) {
     const currentStatus = record.status.toLowerCase();
     const statusClasses = getAttendanceStatusClasses(currentStatus);
     
+    // Ensure we have a valid attendance ID and convert to number
+    let attendanceId = record.attendance_id;
+    
+    // Handle both string and number types
+    if (typeof attendanceId === 'string') {
+        attendanceId = parseInt(attendanceId, 10);
+    }
+    
+    console.log(`Creating dropdown for ${record.student_name}:`);
+    console.log(`  - attendance_id: ${attendanceId} (type: ${typeof attendanceId})`);
+    console.log(`  - original record.attendance_id: ${record.attendance_id} (type: ${typeof record.attendance_id})`);
+    console.log(`  - record keys:`, Object.keys(record));
+    
+    if (!attendanceId || isNaN(attendanceId) || attendanceId <= 0) {
+        console.error('Invalid attendance ID for record:', record);
+        return '<span class="text-red-500 text-xs">Invalid ID</span>';
+    }
+    
+    // Store the record data as JSON with the validated attendance ID
+    const recordWithValidId = { ...record, attendance_id: attendanceId };
+    const recordDataJson = JSON.stringify(recordWithValidId).replace(/"/g, '&quot;');
+    
     return `
-        <select onchange="updateAttendanceStatus(${record.attendance_id}, this.value)" 
-                data-attendance-id="${record.attendance_id}"
+        <select onchange="updateAttendanceStatus(this)" 
+                data-attendance-id="${attendanceId}"
                 data-current-status="${currentStatus}"
+                data-record='${recordDataJson}'
                 class="text-xs font-semibold rounded-full border-0 px-3 py-1.5 focus:ring-2 focus:ring-green-500 transition-all duration-150 ${statusClasses}">
             <option value="present" ${currentStatus === 'present' ? 'selected' : ''}>Present</option>
             <option value="late" ${currentStatus === 'late' ? 'selected' : ''}>Late</option>
@@ -272,37 +422,134 @@ function getStudentInitials(name) {
     return name.substring(0, 2).toUpperCase();
 }
 
-function updateAttendanceStatus(attendanceId, newStatus) {
-    // Find the dropdown that triggered this
-    const dropdown = document.querySelector(`select[data-attendance-id="${attendanceId}"]`);
-    const currentStatus = dropdown ? dropdown.getAttribute('data-current-status') : null;
+function updateAttendanceStatus(selectElement) {
+    const newStatus = selectElement.value;
+    const currentStatus = selectElement.getAttribute('data-current-status');
+    const attendanceIdStr = selectElement.getAttribute('data-attendance-id');
     
-    // If status hasn't actually changed, do nothing
-    if (currentStatus === newStatus) {
+    console.log('=== UPDATE ATTENDANCE STATUS DEBUG ===');
+    console.log('Select element:', selectElement);
+    console.log('data-attendance-id attribute:', attendanceIdStr);
+    console.log('New status:', newStatus);
+    console.log('Current status:', currentStatus);
+    console.log('Select element value at time of call:', selectElement.value);
+    console.log('Select element selectedIndex:', selectElement.selectedIndex);
+    console.log('Select element options:', Array.from(selectElement.options).map(o => ({value: o.value, text: o.text, selected: o.selected})));
+    
+    // Additional debugging - check all data attributes
+    console.log('All data attributes on select element:');
+    for (let i = 0; i < selectElement.attributes.length; i++) {
+        const attr = selectElement.attributes[i];
+        if (attr.name.startsWith('data-')) {
+            console.log(`  ${attr.name}: ${attr.value}`);
+        }
+    }
+    console.log('======================================');
+    
+    // Convert to number and validate
+    const attendanceId = parseInt(attendanceIdStr, 10);
+    
+    if (!attendanceId || isNaN(attendanceId) || attendanceId === 0) {
+        console.error('Invalid attendance ID:', attendanceIdStr, 'parsed as:', attendanceId);
+        console.error('Resetting dropdown to current status:', currentStatus);
+        selectElement.value = currentStatus || 'present';
+        alert('Error: Invalid attendance record ID. Please refresh and try again.');
         return;
     }
     
-    const record = attendanceRecordsData.find(r => r.attendance_id === attendanceId);
-    if (!record) {
-        console.error('Attendance record not found');
-        // Reset dropdown to original value
-        if (dropdown) {
-            dropdown.value = currentStatus || 'present';
+    // If status hasn't actually changed, do nothing
+    if (currentStatus === newStatus) {
+        console.log('Status unchanged, ignoring');
+        return;
+    }
+    
+    // Temporarily disable the dropdown to prevent multiple rapid changes
+    selectElement.disabled = true;
+    console.log('Dropdown disabled during processing');
+    
+    // Get the record data from the data attribute
+    let record;
+    try {
+        const recordDataJson = selectElement.getAttribute('data-record');
+        console.log('Raw record data JSON:', recordDataJson);
+        
+        record = JSON.parse(recordDataJson.replace(/&quot;/g, '"'));
+        console.log('Parsed record:', record);
+        
+        // Ensure the record has the correct attendance_id
+        if (record.attendance_id !== attendanceId) {
+            console.warn(`Record attendance_id (${record.attendance_id}) doesn't match dropdown (${attendanceId})`);
+            record.attendance_id = attendanceId;
         }
+    } catch (error) {
+        console.error('Error parsing record data:', error);
+        // Fallback: try to find the record in our data array
+        record = attendanceRecordsData.find(r => r.attendance_id === attendanceId);
+        console.log('Fallback record found:', record);
+    }
+    
+    if (!record) {
+        console.error('Attendance record not found for ID:', attendanceId);
+        // Reset dropdown to original value and re-enable
+        selectElement.value = currentStatus || 'present';
+        selectElement.disabled = false;
+        alert('Error: Attendance record not found. Please refresh and try again.');
         return;
     }
 
     console.log(`Updating attendance status for ${record.student_name} from ${currentStatus} to ${newStatus}`);
+    console.log('Full record data being passed to confirmation:', record);
     
-    // Show confirmation dialog
-    showAttendanceUpdateConfirmation(record, newStatus);
+    // Store in enhanced global variables
+    window.attendanceUpdateGlobals.set(attendanceId, newStatus, record, selectElement);
+    
+    // Show confirmation dialog with the complete record data
+    showAttendanceUpdateConfirmation(record, newStatus, selectElement);
 }
 
-function showAttendanceUpdateConfirmation(record, newStatus) {
+function showAttendanceUpdateConfirmation(record, newStatus, selectElement) {
+    console.log('=== ATTENDANCE UPDATE CONFIRMATION ===');
+    console.log('Record data being passed:', record);
+    console.log('Record attendance_id:', record.attendance_id, typeof record.attendance_id);
+    console.log('New status:', newStatus);
+    console.log('Select element details:');
+    console.log('  - disabled:', selectElement.disabled);
+    console.log('  - current value:', selectElement.value);
+    console.log('  - attendance_id attr:', selectElement.getAttribute('data-attendance-id'));
+    console.log('=======================================');
+    
+    // Validate attendance ID one more time
+    if (!record.attendance_id || record.attendance_id === 0) {
+        console.error('Invalid attendance ID in record:', record);
+        // Re-enable dropdown and reset
+        selectElement.disabled = false;
+        selectElement.value = selectElement.getAttribute('data-current-status') || 'present';
+        alert('Error: Invalid attendance record. Please refresh and try again.');
+        return;
+    }
+    
+    // Ensure attendance_id is a number and get the final value to use
+    let attendanceId = record.attendance_id;
+    if (typeof attendanceId === 'string') {
+        attendanceId = parseInt(attendanceId, 10);
+    }
+    
+    if (isNaN(attendanceId) || attendanceId <= 0) {
+        console.error('Invalid attendance ID after parsing:', attendanceId);
+        // Re-enable dropdown and reset
+        selectElement.disabled = false;
+        selectElement.value = selectElement.getAttribute('data-current-status') || 'present';
+        alert('Error: Invalid attendance record ID. Please refresh and try again.');
+        return;
+    }
+    
+    console.log(`Creating confirmation modal for attendance ID: ${attendanceId} (${typeof attendanceId})`);
+    
     // Create confirmation modal
     const modal = document.createElement('div');
     modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 attendance-update-modal';
     modal.style.zIndex = '10003'; // Higher than course details modal
+    
     modal.innerHTML = `
         <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6 transform transition-all duration-300 scale-95 opacity-0" id="attendanceConfirmationContent">
             <div class="text-center mb-6">
@@ -314,15 +561,24 @@ function showAttendanceUpdateConfirmation(record, newStatus) {
                     Update <strong>${record.student_name}</strong>'s attendance to <strong>${newStatus}</strong>?
                 </p>
                 <div class="mt-3 text-sm text-gray-500">
-                    Date: ${new Date(record.attendance_date).toLocaleDateString()}
+                    <div>Student ID: ${record.student_number}</div>
+                    <div>Date: ${new Date(record.attendance_date).toLocaleDateString()}</div>
+                    <div>Time: ${record.attendance_time || 'N/A'}</div>
+                    <div>Attendance ID: ${attendanceId}</div>
+                    <div class="mt-2 p-2 bg-blue-50 rounded text-xs">
+                        <strong>Debug Info:</strong><br>
+                        Dropdown Value: ${selectElement.value}<br>
+                        Current Status: ${selectElement.getAttribute('data-current-status')}<br>
+                        Attendance ID: ${attendanceId}
+                    </div>
                 </div>
             </div>
             <div class="flex justify-center space-x-3">
-                <button onclick="cancelAttendanceUpdate()" 
+                <button onclick="cancelAttendanceUpdateEnhanced()" 
                         class="bg-gray-600 text-white py-2 px-4 rounded-md text-sm hover:bg-gray-700 transition-colors font-medium">
                     Cancel
                 </button>
-                <button onclick="confirmAttendanceUpdate(${record.attendance_id}, '${newStatus}')" 
+                <button onclick="confirmAttendanceUpdateEnhanced()" 
                         id="confirmAttendanceBtn"
                         class="bg-green-600 text-white py-2 px-4 rounded-md text-sm hover:bg-green-700 transition-colors font-medium">
                     Update Attendance
@@ -347,12 +603,12 @@ function showAttendanceUpdateConfirmation(record, newStatus) {
     // Handle backdrop click
     modal.addEventListener('click', function(e) {
         if (e.target === modal) {
-            cancelAttendanceUpdate();
+            cancelAttendanceUpdateEnhanced();
         }
     });
 }
 
-function cancelAttendanceUpdate() {
+function cancelAttendanceUpdateEnhanced() {
     const modal = window.attendanceUpdateModal;
     if (modal) {
         const content = modal.querySelector('#attendanceConfirmationContent');
@@ -362,95 +618,196 @@ function cancelAttendanceUpdate() {
         setTimeout(() => {
             document.body.removeChild(modal);
             window.attendanceUpdateModal = null;
+            
+            // Re-enable the dropdown and reset its value when canceling
+            const globalData = window.attendanceUpdateGlobals.get();
+            if (globalData.selectElement) {
+                console.log('Re-enabling dropdown and resetting value on cancel');
+                globalData.selectElement.disabled = false;
+                const originalStatus = globalData.selectElement.getAttribute('data-current-status');
+                globalData.selectElement.value = originalStatus || 'present';
+            }
+            
+            // Clear enhanced global variables when canceling
+            window.attendanceUpdateGlobals.clear();
         }, 300);
     }
 }
 
-async function confirmAttendanceUpdate(attendanceId, newStatus) {
-    const confirmBtn = document.getElementById('confirmAttendanceBtn');
+// Enhanced confirmation function
+async function confirmAttendanceUpdateEnhanced() {
+    console.log('=== CONFIRMING ATTENDANCE UPDATE ENHANCED ===');
     
-    // Disable button and show loading
-    confirmBtn.disabled = true;
-    confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Updating...';
+    // Get data from enhanced global variables
+    const globalData = window.attendanceUpdateGlobals.get();
+    
+    // Validate global data
+    if (!window.attendanceUpdateGlobals.isValid()) {
+        console.error('Invalid global data for attendance update');
+        cancelAttendanceUpdateEnhanced();
+        alert('Error: Invalid attendance data. Please refresh and try again.');
+        return;
+    }
+    
+    if (!currentAttendanceData || !currentAttendanceData.AssignedCourseId) {
+        console.error('No currentAttendanceData available:', currentAttendanceData);
+        cancelAttendanceUpdateEnhanced();
+        alert('Error: Course information not available. Please refresh and try again.');
+        return;
+    }
+    
+    console.log('All validations passed, proceeding with API call');
+    console.log('Final data for API call:');
+    console.log('  attendanceId:', globalData.attendanceId);
+    console.log('  status:', globalData.status);
+    console.log('  assignedCourseId:', currentAttendanceData.AssignedCourseId);
+    console.log('============================================');
+    
+    // Get button element and disable it
+    const buttonElement = document.getElementById('confirmAttendanceBtn');
+    if (buttonElement) {
+        buttonElement.disabled = true;
+        buttonElement.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Updating...';
+    }
 
     try {
-        // TODO: Replace with actual API call when backend is ready
-        console.log(`Would update attendance ${attendanceId} to ${newStatus}`);
+        // Make API call to update attendance status
+        const requestBody = {
+            status: globalData.status,
+            assignedCourseId: currentAttendanceData.AssignedCourseId,
+            // Include additional record data for context
+            student_id: globalData.record.student_id || 0,
+            student_name: globalData.record.student_name || '',
+            attendance_date: globalData.record.attendance_date || '',
+            attendance_time: globalData.record.attendance_time || ''
+        };
         
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        const apiUrl = `/Faculty/UpdateAttendanceStatus/${globalData.attendanceId}`;
+        
+        console.log('Making API request:');
+        console.log('  URL:', apiUrl);
+        console.log('  Attendance ID in URL:', globalData.attendanceId);
+        console.log('  Request body:', requestBody);
+        
+        const response = await fetch(apiUrl, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify(requestBody)
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('API response error:', response.status, errorText);
+            throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+        }
+
+        const result = await response.json();
+        console.log('Attendance update API response:', result);
+
+        if (!result.success) {
+            throw new Error(result.message || 'Failed to update attendance status');
+        }
+        
+        // Success! Update the dropdown permanently
+        if (globalData.selectElement) {
+            console.log('Success: Permanently updating dropdown to new status');
+            globalData.selectElement.setAttribute('data-current-status', globalData.status);
+            globalData.selectElement.classList.remove('bg-green-100', 'text-green-800', 'border-green-200', 
+                                           'bg-yellow-100', 'text-yellow-800', 'border-yellow-200',
+                                           'bg-red-100', 'text-red-800', 'border-red-200');
+            globalData.selectElement.classList.add(...getAttendanceStatusClasses(globalData.status).split(' '));
+            globalData.selectElement.disabled = false; // Re-enable dropdown
+        }
         
         // Close confirmation modal
-        cancelAttendanceUpdate();
+        cancelAttendanceUpdateEnhanced();
         
         // Show success notification
-        showAttendanceUpdateNotification(attendanceId, newStatus);
+        showAttendanceUpdateNotification(globalData.record, globalData.status);
         
-        // Update local data and refresh table and summary
-        const record = attendanceRecordsData.find(r => r.attendance_id === attendanceId);
-        if (record) {
-            record.status = newStatus;
+        // Update local data
+        const localRecord = attendanceRecordsData.find(r => r.attendance_id === globalData.attendanceId);
+        if (localRecord) {
+            localRecord.status = globalData.status;
+            
+            // Update the record data in the dropdown as well
+            const updatedRecordJson = JSON.stringify(localRecord).replace(/"/g, '&quot;');
+            globalData.selectElement.setAttribute('data-record', updatedRecordJson);
             
             // Re-apply current filters to update filtered data
             applyAttendanceFilters();
             
             // This will update both summary cards and table
-            renderAttendanceRecordsTable();
+            updateAttendanceSummaryCards();
         }
         
     } catch (error) {
         console.error('Error updating attendance status:', error);
-        showAttendanceUpdateError('Failed to update attendance status. Please try again.');
+        
+        // Reset dropdown to original value and re-enable
+        if (globalData.selectElement) {
+            console.log('Error: Resetting dropdown to original status and re-enabling');
+            const originalStatus = globalData.selectElement.getAttribute('data-current-status');
+            globalData.selectElement.value = originalStatus || 'present';
+            globalData.selectElement.disabled = false;
+        }
+        
+        // Close confirmation modal first
+        cancelAttendanceUpdateEnhanced();
+        
+        // Show error notification
+        showAttendanceUpdateError(error.message || 'Failed to update attendance status. Please try again.');
+        
     } finally {
-        // Re-enable button
-        if (confirmBtn) {
-            confirmBtn.disabled = false;
-            confirmBtn.innerHTML = 'Update Attendance';
+        // Re-enable button (in case modal is still open due to error)
+        if (buttonElement) {
+            buttonElement.disabled = false;
+            buttonElement.innerHTML = 'Update Attendance';
         }
     }
 }
 
-function showAttendanceUpdateNotification(attendanceId, newStatus) {
-    const record = attendanceRecordsData.find(r => r.attendance_id === attendanceId);
-    if (record) {
-        // Find the notification area
-        const notificationArea = document.getElementById('attendanceNotificationArea');
-        if (!notificationArea) return;
-        
-        // Remove any existing notification
-        notificationArea.innerHTML = '';
-        
-        // Create a notification inside the modal
-        const notification = document.createElement('div');
-        notification.className = 'bg-green-100 border border-green-400 text-green-700 px-3 py-2 rounded-lg shadow-lg transition-all duration-300 transform translate-x-0 opacity-100 text-sm min-w-[250px]';
-        notification.innerHTML = `
-            <div class="flex items-center justify-between">
-                <div class="flex items-center">
-                    <i class="fas fa-check-circle mr-2 text-green-600"></i>
-                    <span><strong>${record.student_name}</strong> marked as <strong>${newStatus}</strong></span>
-                </div>
-                <button onclick="this.parentElement.parentElement.remove()" class="ml-2 text-green-500 hover:text-green-700 transition-colors">
-                    <i class="fas fa-times text-xs"></i>
-                </button>
+function showAttendanceUpdateNotification(record, newStatus) {
+    // Find the notification area
+    const notificationArea = document.getElementById('attendanceNotificationArea');
+    if (!notificationArea) return;
+    
+    // Remove any existing notification
+    notificationArea.innerHTML = '';
+    
+    // Create a notification inside the modal
+    const notification = document.createElement('div');
+    notification.className = 'bg-green-100 border border-green-400 text-green-700 px-3 py-2 rounded-lg shadow-lg transition-all duration-300 transform translate-x-0 opacity-100 text-sm min-w-[250px]';
+    notification.innerHTML = `
+        <div class="flex items-center justify-between">
+            <div class="flex items-center">
+                <i class="fas fa-check-circle mr-2 text-green-600"></i>
+                <span><strong>${record.student_name}</strong> marked as <strong>${newStatus}</strong></span>
             </div>
-        `;
-        
-        // Add notification to the notification area
-        notificationArea.appendChild(notification);
-        
-        // Auto-remove notification after 4 seconds
-        setTimeout(() => {
-            if (notification && notification.parentElement) {
-                notification.style.opacity = '0';
-                notification.style.transform = 'translateX(20px)';
-                setTimeout(() => {
-                    if (notification && notification.parentElement) {
-                        notification.remove();
-                    }
-                }, 300);
-            }
-        }, 4000);
-    }
+            <button onclick="this.parentElement.parentElement.remove()" class="ml-2 text-green-500 hover:text-green-700 transition-colors">
+                <i class="fas fa-times text-xs"></i>
+            </button>
+        </div>
+    `;
+    
+    // Add notification to the notification area
+    notificationArea.appendChild(notification);
+    
+    // Auto-remove notification after 4 seconds
+    setTimeout(() => {
+        if (notification && notification.parentElement) {
+            notification.style.opacity = '0';
+            notification.style.transform = 'translateX(20px)';
+            setTimeout(() => {
+                if (notification && notification.parentElement) {
+                    notification.remove();
+                }
+            }, 300);
+        }
+    }, 4000);
 }
 
 function showAttendanceUpdateError(message) {
@@ -766,17 +1123,6 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
-// Handle backdrop click for attendance modal
-document.addEventListener('DOMContentLoaded', function() {
-    const attendanceModal = document.getElementById('attendanceModal');
-    if (attendanceModal) {
-        attendanceModal.addEventListener('click', function(e) {
-            if (e.target === this) {
-                closeAttendanceModal();
-            }
-        });
-    }
-});
 // Handle backdrop click for attendance modal
 document.addEventListener('DOMContentLoaded', function() {
     const attendanceModal = document.getElementById('attendanceModal');

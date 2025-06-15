@@ -42,6 +42,12 @@ namespace AttendanceApp_ASPNET.Models
         
         [JsonPropertyName("updated_at")]
         public string UpdatedAt { get; set; } = string.Empty;
+
+        // Add debugging method to help trace data issues
+        public override string ToString()
+        {
+            return $"AttendanceId: {AttendanceId}, StudentId: {StudentId}, StudentName: {StudentName}, Status: {Status}, Date: {AttendanceDate}";
+        }
     }
 
     public class FacultyCourseAttendanceResponse
@@ -129,5 +135,23 @@ namespace AttendanceApp_ASPNET.Models
         
         [JsonPropertyName("total_sessions")]
         public int TotalSessions { get; set; }
+    }
+
+    public class UpdateAttendanceStatusResponse
+    {
+        [JsonPropertyName("success")]
+        public bool Success { get; set; }
+        
+        [JsonPropertyName("message")]
+        public string Message { get; set; } = string.Empty;
+        
+        [JsonPropertyName("updated_record")]
+        public FacultyCourseAttendanceInfo? UpdatedRecord { get; set; }
+    }
+
+    public class UpdateAttendanceStatusRequest
+    {
+        [JsonPropertyName("status")]
+        public string Status { get; set; } = string.Empty;
     }
 }

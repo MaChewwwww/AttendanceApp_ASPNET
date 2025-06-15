@@ -50,6 +50,7 @@ namespace AttendanceApp_ASPNET.Services
         // Faculty attendance data methods
         Task<string> GetFacultyAttendanceAsync(string jwtToken);
         Task<string> GetCourseAttendanceAsync(int assignedCourseId, string academicYear, int? month, int? day, string jwtToken);
+        Task<string> UpdateAttendanceStatusAsync(int assignedCourseId, int attendanceId, string status, string jwtToken);
 
         // Configuration access
         string GetApiKey();
@@ -371,6 +372,8 @@ namespace AttendanceApp_ASPNET.Services
         public async Task<string> GetCourseAttendanceAsync(int assignedCourseId, string academicYear, int? month, int? day, string jwtToken)
         {
             var queryParams = new List<string>();
+            if (!string.IsNullOrEmpty(academicYear))
+                queryParams.Add($"academic_year={Uri.EscapeDataString(academicYear)}");
             if (month.HasValue)
                 queryParams.Add($"month={month.Value}");
             if (day.HasValue)
@@ -378,6 +381,12 @@ namespace AttendanceApp_ASPNET.Services
             
             var queryString = queryParams.Count > 0 ? "?" + string.Join("&", queryParams) : "";
             var endpoint = $"/faculty/courses/{assignedCourseId}/attendance{queryString}";
+            
+            Console.WriteLine($"=== API SERVICE GET COURSE ATTENDANCE ===");
+            Console.WriteLine($"Full endpoint: {endpoint}");
+            Console.WriteLine($"Base URL: {_apiBaseUrl}");
+            Console.WriteLine($"Complete URL: {_apiBaseUrl}{endpoint}");
+            Console.WriteLine("==========================================");
             
             return await GetApiRequestWithStructuredErrorAsync(endpoint, jwtToken, "Failed to fetch course attendance", new
             {
@@ -393,6 +402,41 @@ namespace AttendanceApp_ASPNET.Services
                 semester = (object)null,
                 is_current_course = false,
                 available_filters = new { years = new object[0], months = new object[0], days = new object[0] }
+            });
+        }
+
+        public async Task<string> UpdateAttendanceStatusAsync(int assignedCourseId, int attendanceId, string status, string jwtToken)
+        {
+            var requestData = new { status = status };
+            var endpoint = $"/faculty/courses/{assignedCourseId}/attendance/{attendanceId}/status";
+            
+            return await PutApiRequestWithStructuredErrorAsync(endpoint, requestData, jwtToken, "Failed to update attendance status", new
+            {
+                success = false,
+                message = "",
+                attendance_id = 0,
+                old_status = "",
+                new_status = "",
+                updated_at = "",
+                student_info = new 
+                {
+                    student_id = 0,
+                    user_id = 0,
+                    student_number = "",
+                    name = "",
+                    email = ""
+                },
+                course_info = new
+                {
+                    assigned_course_id = 0,
+                    course_id = 0,
+                    course_name = "",
+                    course_code = "",
+                    section_name = "",
+                    program_name = "",
+                    academic_year = "",
+                    semester = ""
+                }
             });
         }
 

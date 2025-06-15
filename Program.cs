@@ -72,7 +72,13 @@ app.UseAntiforgery();
 // Default route configuration
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Auth}/{action=Login}/{id?}");
+    pattern: "{controller=Home}/{action=Index}/{id?}");
+
+// Add specific route for attendance update
+app.MapControllerRoute(
+    name: "attendanceUpdate",
+    pattern: "Faculty/UpdateAttendanceStatus/{attendanceId:int}",
+    defaults: new { controller = "Faculty", action = "UpdateAttendanceStatus" });
 
 // Add specific route for student dashboard
 app.MapControllerRoute(
