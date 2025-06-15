@@ -10,15 +10,17 @@ namespace AttendanceApp_ASPNET.Controllers
     {
         private readonly IClassService _classService;
         private readonly IFacultyPersonalAttendanceService _facultyPersonalAttendanceService;
+        private readonly IEnvironmentService _environmentService;
 
-        public FacultyController(IApiService apiService, IClassService classService, IFacultyPersonalAttendanceService facultyPersonalAttendanceService) 
+        public FacultyController(IApiService apiService, IClassService classService, IFacultyPersonalAttendanceService facultyPersonalAttendanceService, IEnvironmentService environmentService) 
             : base(apiService)
         {
             _classService = classService;
             _facultyPersonalAttendanceService = facultyPersonalAttendanceService;
+            _environmentService = environmentService;
         }
 
-        public IActionResult Dashboard()
+        public async Task<IActionResult> Dashboard()
         {
             // Check if user is authenticated
             var isAuthenticated = HttpContext.Session.GetString("IsAuthenticated");
@@ -72,6 +74,16 @@ namespace AttendanceApp_ASPNET.Controllers
             ViewBag.UserRole = userRole;
             ViewBag.UserId = HttpContext.Session.GetString("UserId") ?? "";
             ViewBag.Verified = HttpContext.Session.GetString("Verified") ?? "";
+
+            // Get weather data using EnvironmentService
+            await _environmentService.SetWeatherViewBagAsync(this, HttpContext);
+
+            // Add faculty dashboard data (placeholder)
+            ViewBag.HasDashboardData = true;
+            ViewBag.TotalCourses = 6;
+            ViewBag.TotalStudents = 256;
+            ViewBag.AverageAttendance = 87;
+            ViewBag.PendingReviews = 12;
 
             return View();
         }
@@ -454,5 +466,4 @@ namespace AttendanceApp_ASPNET.Controllers
         public string AttendanceTime { get; set; } = string.Empty;
     }
 }
-
 

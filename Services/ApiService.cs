@@ -53,6 +53,9 @@ namespace AttendanceApp_ASPNET.Services
         Task<string> GetCourseAttendanceAsync(int assignedCourseId, string academicYear, int? month, int? day, string jwtToken);
         Task<string> UpdateAttendanceStatusAsync(int assignedCourseId, int attendanceId, string status, string jwtToken);
 
+        // Faculty dashboard data methods
+        Task<string> GetFacultyDashboardAsync(string jwtToken);
+
         // Configuration access
         string GetApiKey();
         string GetApiBaseUrl();
@@ -491,6 +494,36 @@ namespace AttendanceApp_ASPNET.Services
                     program_name = "",
                     academic_year = "",
                     semester = ""
+                }
+            });
+        }
+
+        public async Task<string> GetFacultyDashboardAsync(string jwtToken)
+        {
+            return await GetApiRequestWithStructuredErrorAsync("/faculty/dashboard", jwtToken, "Failed to fetch faculty dashboard", new
+            {
+                success = false,
+                message = "",
+                faculty_info = new { },
+                current_classes = new object[0],
+                today_schedule = new object[0],
+                all_schedules = new object[0],
+                total_courses = 0,
+                total_students = 0,
+                pending_reviews = 0,
+                schedule_summary = new
+                {
+                    total_classes_today = 0,
+                    total_weekly_schedules = 0,
+                    current_class = (object)null,
+                    next_class = (object)null,
+                    current_day = ""
+                },
+                performance_summary = new
+                {
+                    average_attendance_rate = 0.0,
+                    best_performing_course = (object)null,
+                    courses_needing_attention = new object[0]
                 }
             });
         }

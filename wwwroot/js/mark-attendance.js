@@ -782,4 +782,23 @@ document.addEventListener('DOMContentLoaded', function() {
     if (typeof window.MarkAttendanceModal !== 'undefined') {
         window.MarkAttendanceModal.init();
     }
+    
+    // Initialize mark attendance functionality
+    initializeMarkAttendance();
 });
+
+function initializeMarkAttendance() {
+    const markAttendanceBtn = document.querySelector('[data-action="mark-attendance"]');
+    
+    if (markAttendanceBtn) {
+        markAttendanceBtn.addEventListener('click', function() {
+            // For now, just show an alert - you can implement actual attendance marking later
+            alert('Mark Attendance feature will be implemented here');
+        });
+    }
+}
+
+// Export for external use
+window.markAttendance = {
+    initializeMarkAttendance
+};

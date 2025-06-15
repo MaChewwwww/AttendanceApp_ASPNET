@@ -1,75 +1,426 @@
 @{
     ViewData["Title"] = "Faculty Dashboard";
     Layout = "_Layout";
+    
+    // Declare variables for faculty dashboard data
+    var dashboardData = ViewBag.DashboardData as dynamic;
+    var todaySchedule = dashboardData?.TodaySchedule ?? new List<dynamic>();
+    var allSchedules = dashboardData?.AllSchedules ?? new List<dynamic>();
+    var daysOfWeek = new[] { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" };
 }
 
-<div class="container-fluid">
-    <div class="row">
-        <!-- Header -->
-        <div class="col-12 mb-4">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h1 class="h3 mb-0">Welcome, @ViewBag.FirstName @ViewBag.LastName!</h1>
-                    <p class="text-muted">Employee Number: @ViewBag.EmployeeNumber | Department: @ViewBag.Department</p>
+<!-- Hidden data elements for JavaScript -->
+<script type="application/json" id="dashboard-data">@Html.Raw(Json.Serialize(allSchedules))</script>
+<script type="text/plain" id="has-attendance-data">@(ViewBag.HasAttendanceData?.ToString().ToLower() ?? "false")</script>
+<script type="text/plain" id="has-charts-data">@(ViewBag.HasChartsData?.ToString().ToLower() ?? "false")</script>
+@if (ViewBag.HasChartsData == true && ViewBag.ChartsData != null)
+{
+    <script type="application/json" id="charts-data">@Html.Raw(Json.Serialize(ViewBag.ChartsData))</script>
+}
+
+<!-- Welcome Section -->
+<div class="mb-8">
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <!-- Welcome Card - Full Width -->
+        <div class="col-span-1 lg:col-span-4 bg-gradient-to-r from-indigo-600 to-purple-800 rounded-lg p-6 text-white dashboard-card-entrance">
+            <div class="flex flex-col md:flex-row items-start md:items-center justify-between">
+                <div class="mb-4 md:mb-0">
+                    <h1 class="text-2xl font-bold mb-2">Welcome back, @ViewBag.FirstName!</h1>
+                    <p class="text-indigo-100">
+                        Ready to manage your classes and track student attendance?
+                    </p>
+                </div>
+                <div class="text-right">
+                    <div class="text-indigo-100 text-sm">Employee Number</div>
+                    <div class="text-xl font-semibold">@ViewBag.EmployeeNumber</div>
+                    <div class="text-indigo-100 text-sm mt-1">@ViewBag.Department</div>
                     @if (ViewBag.Verified == "1")
                     {
-                        <span class="badge bg-success">Verified Account</span>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 mt-2">
+                            <i class="fas fa-check-circle mr-1"></i>
+                            Verified
+                        </span>
                     }
                     else
                     {
-                        <span class="badge bg-warning">Pending Verification</span>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 mt-2">
+                            <i class="fas fa-clock mr-1"></i>
+                            Pending Verification
+                        </span>
                     }
                 </div>
-                <div>
-                    <form asp-controller="Faculty" asp-action="Logout" method="post" class="d-inline">
-                        <button type="submit" class="btn btn-outline-danger">Logout</button>
-                    </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Action Cards -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <!-- Current Class & Mark Attendance -->
+    <div class="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow duration-200 dashboard-card-entrance relative">
+        <!-- Mark Attendance Button - Top Right Corner -->
+        <div class="absolute top-4 right-4">
+            <button data-action="mark-attendance" class="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-200 font-semibold flex items-center text-sm">
+                <i class="fas fa-user-check mr-2"></i>Mark Attendance
+            </button>
+        </div>
+        
+        <!-- Mock current class data -->
+        <div class="flex items-center mb-4 pr-40">
+            <div class="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-chalkboard-teacher text-indigo-600 text-xl"></i>
+            </div>
+            <div class="ml-4">
+                <h3 class="text-lg font-semibold text-gray-900">Current Class</h3>
+                <p class="text-gray-500 text-sm">Database Systems</p>
+            </div>
+        </div>
+        <div class="space-y-2">
+            <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-600">Course Code:</span>
+                <span class="text-sm font-medium text-gray-900">CS-301</span>
+            </div>
+            <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-600">Section:</span>
+                <span class="text-sm font-medium text-gray-900">BSCS-A</span>
+            </div>
+            <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-600">Room:</span>
+                <span class="text-sm font-medium text-gray-900">Lab 203</span>
+            </div>
+            <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-600">Time:</span>
+                <span class="text-sm font-medium text-gray-900">2:00 PM - 3:30 PM</span>
+            </div>
+            <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-600">Students:</span>
+                <span class="text-sm font-medium text-gray-900">42 enrolled</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Weather Widget -->
+    <div class="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow duration-200 dashboard-card-entrance">
+        @if (ViewBag.WeatherDataAvailable == true)
+        {
+            <div class="flex items-center mb-4">
+                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    @if (!string.IsNullOrEmpty(ViewBag.WeatherIcon?.ToString()))
+                    {
+                        <img src="https:@ViewBag.WeatherIcon" alt="Weather" class="w-8 h-8" />
+                    }
+                    else
+                    {
+                        <i class="fas fa-cloud-sun text-blue-600 text-xl"></i>
+                    }
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-semibold text-gray-900">Weather</h3>
+                    <p class="text-gray-500 text-sm">@ViewBag.WeatherLocation</p>
+                </div>
+            </div>
+            <div class="space-y-2">
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">Temperature:</span>
+                    <span class="text-sm font-medium text-gray-900">@ViewBag.Temperature°C</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">Wind speed:</span>
+                    <span class="text-sm font-medium text-gray-900">@ViewBag.WindSpeed km/h</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">Condition:</span>
+                    <span class="text-sm font-medium text-gray-900">@ViewBag.WeatherCondition</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">Humidity:</span>
+                    <span class="text-sm font-medium text-gray-900">@ViewBag.Humidity%</span>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="flex items-center mb-4">
+                <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-exclamation-triangle text-gray-400 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <h3 class="text-lg font-semibold text-gray-900">Weather</h3>
+                    <p class="text-gray-500 text-sm">@(ViewBag.WeatherLocation ?? "Location unavailable")</p>
+                </div>
+            </div>
+            <div class="text-center py-2">
+                <p class="text-gray-500 text-sm">Weather data unavailable</p>
+            </div>
+        }
+    </div>
+
+    <!-- Heat Index Summary Card -->
+    @if (ViewBag.WeatherDataAvailable == true)
+    {
+        <div class="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow duration-200 dashboard-card-entrance">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-thermometer-half text-orange-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-lg font-semibold text-gray-900">Temperature Forecast</h3>
+                        <p class="text-gray-500 text-sm">@ViewBag.WeatherLocation</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="text-orange-600 text-sm font-medium">Feels like now</div>
+                    <div class="text-2xl font-bold text-orange-600">@ViewBag.HeatIndex°C</div>
+                </div>
+            </div>
+            <div class="space-y-2">
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">Current:</span>
+                    <span class="text-sm font-medium text-gray-900">@ViewBag.Temperature°C</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">High today:</span>
+                    <span class="text-sm font-medium text-red-600">@ViewBag.MaxTemperature°C</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">Low today:</span>
+                    <span class="text-sm font-medium text-blue-600">@ViewBag.MinTemperature°C</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">Heat level:</span>
+                    <span class="text-sm font-medium text-orange-600">
+                        @{
+                            var heatIndexMain = ViewBag.HeatIndex != null ? (double)ViewBag.HeatIndex : 0;
+                            var heatLevelMain = heatIndexMain >= 35 ? "Extreme" : heatIndexMain >= 30 ? "High" : heatIndexMain >= 25 ? "Moderate" : "Low";
+                        }
+                        @heatLevelMain
+                    </span>
                 </div>
             </div>
         </div>
-        
-        <!-- User Info Card -->
-        <div class="col-lg-4 col-md-6 mb-4">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Faculty Information</h5>
+    }
+    else
+    {
+        <div class="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow duration-200 dashboard-card-entrance">
+            <div class="flex items-center mb-4">
+                <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-exclamation-triangle text-gray-400 text-xl"></i>
                 </div>
-                <div class="card-body">
-                    <p><strong>Email:</strong> @ViewBag.UserEmail</p>
-                    <p><strong>Employee Number:</strong> @ViewBag.EmployeeNumber</p>
-                    <p><strong>Department:</strong> @ViewBag.Department</p>
-                    <p><strong>Role:</strong> @ViewBag.UserRole</p>
-                    <p><strong>User ID:</strong> @ViewBag.UserId</p>
-                    <p><strong>Login Time:</strong> @ViewBag.LoginTime</p>
+                <div class="ml-4">
+                    <h3 class="text-lg font-semibold text-gray-900">Temperature Forecast</h3>
+                    <p class="text-gray-500 text-sm">Location unavailable</p>
+                </div>
+            </div>
+            <div class="text-center py-2">
+                <p class="text-gray-500 text-sm">Weather data unavailable</p>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Statistics Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <!-- Total Courses -->
+    <div class="bg-white rounded-lg shadow-sm p-6 dashboard-card-entrance">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-600">Total Courses</p>
+                <p class="text-2xl font-bold text-gray-900">6</p>
+            </div>
+            <div class="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
+                <i class="fas fa-book-open text-indigo-600"></i>
+            </div>
+        </div>
+        <p class="mt-2 text-sm text-gray-500">Current semester</p>
+    </div>
+
+    <!-- Total Students -->
+    <div class="bg-white rounded-lg shadow-sm p-6 dashboard-card-entrance">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-600">Total Students</p>
+                <p class="text-2xl font-bold text-blue-600">256</p>
+            </div>
+            <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                <i class="fas fa-users text-blue-600"></i>
+            </div>
+        </div>
+        <p class="mt-2 text-sm text-gray-500">All sections</p>
+    </div>
+
+    <!-- Average Attendance -->
+    <div class="bg-white rounded-lg shadow-sm p-6 dashboard-card-entrance">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-600">Avg. Attendance</p>
+                <p class="text-2xl font-bold text-green-600">87%</p>
+            </div>
+            <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                <i class="fas fa-chart-line text-green-600"></i>
+            </div>
+        </div>
+        <p class="mt-2 text-sm text-gray-500">This semester</p>
+    </div>
+
+    <!-- Pending Reviews -->
+    <div class="bg-white rounded-lg shadow-sm p-6 dashboard-card-entrance">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-600">Pending Reviews</p>
+                <p class="text-2xl font-bold text-yellow-600">12</p>
+            </div>
+            <div class="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
+                <i class="fas fa-clock text-yellow-600"></i>
+            </div>
+        </div>
+        <p class="mt-2 text-sm text-gray-500">Student applications</p>
+    </div>
+</div>
+
+<!-- Course Schedule Section -->
+<div class="grid grid-cols-1 gap-8 mb-8">
+    <div class="bg-white rounded-lg shadow-sm dashboard-card-entrance">
+        <div class="p-6 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-gray-900">Teaching Schedule</h3>
+                <div class="flex space-x-2">
+                    <a href="@Url.Action("Classes", "Faculty")" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors">
+                        <i class="fas fa-cog mr-2"></i>Manage Classes
+                    </a>
                 </div>
             </div>
         </div>
-        
-        <!-- Faculty Dashboard Functions -->
-        <div class="col-lg-8 col-md-6 mb-4">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Faculty Dashboard</h5>
+        <div class="p-6">
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                <!-- Calendar Widget -->
+                <div class="lg:col-span-1">
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <h4 class="font-semibold text-gray-900 mb-3">Calendar</h4>
+                        
+                        <!-- Calendar Header -->
+                        <div class="flex items-center justify-between mb-4">
+                            <button id="prevMonth" class="p-1 hover:bg-gray-200 rounded">
+                                <i class="fas fa-chevron-left text-gray-600"></i>
+                            </button>
+                            <h5 id="currentMonth" class="font-medium text-gray-900"></h5>
+                            <button id="nextMonth" class="p-1 hover:bg-gray-200 rounded">
+                                <i class="fas fa-chevron-right text-gray-600"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- Calendar Grid -->
+                        <div class="grid grid-cols-7 gap-1 mb-2">
+                            <div class="text-xs font-medium text-gray-500 text-center py-1">Su</div>
+                            <div class="text-xs font-medium text-gray-500 text-center py-1">Mo</div>
+                            <div class="text-xs font-medium text-gray-500 text-center py-1">Tu</div>
+                            <div class="text-xs font-medium text-gray-500 text-center py-1">We</div>
+                            <div class="text-xs font-medium text-gray-500 text-center py-1">Th</div>
+                            <div class="text-xs font-medium text-gray-500 text-center py-1">Fr</div>
+                            <div class="text-xs font-medium text-gray-500 text-center py-1">Sa</div>
+                        </div>
+                        <div id="calendarDays" class="grid grid-cols-7 gap-1">
+                            <!-- Calendar days will be populated by JavaScript -->
+                        </div>
+                        
+                        <!-- Quick Filters -->
+                        <div class="mt-4 space-y-2">
+                            <button class="w-full text-left px-3 py-2 rounded-md text-sm font-medium bg-indigo-100 text-indigo-700 border border-indigo-200 day-filter active" data-day="today">
+                                <i class="fas fa-calendar-day mr-2"></i>Today
+                                <span class="float-right text-xs text-gray-500">4</span>
+                            </button>
+                            <button class="w-full text-left px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 day-filter" data-day="all">
+                                <i class="fas fa-calendar-week mr-2"></i>All Days
+                                <span class="float-right text-xs text-gray-500">24</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
-                <div class="card-body">
-                    <p>Welcome to your faculty dashboard. Here you can:</p>
-                    <ul>
-                        <li>Manage class attendance records</li>
-                        <li>View student attendance reports</li>
-                        <li>Create and manage class schedules</li>
-                        <li>Generate attendance statistics</li>
-                        <li>Manage enrolled students</li>
-                        <li>Update class information</li>
-                    </ul>
-                    <div class="row mt-4">
-                        <div class="col-md-4">
-                            <a href="@Url.Action("Classes", "Faculty")" class="btn btn-primary btn-block">Manage Classes</a>
+                
+                <!-- Schedule Content -->
+                <div class="lg:col-span-3">
+                    <!-- Today's Schedule -->
+                    <div id="today-schedule" class="schedule-content">
+                        <div class="mb-4">
+                            <h5 class="font-medium text-gray-900">Today's Classes</h5>
+                            <p class="text-sm text-gray-500">@DateTime.Now.ToString("dddd, MMMM d, yyyy")</p>
                         </div>
-                        <div class="col-md-4">
-                            <button class="btn btn-info btn-block">View Reports</button>
+                        <div class="max-h-96 overflow-y-auto space-y-4 pr-2">
+                            <!-- Mock today's classes -->
+                            <div class="flex items-center justify-between p-4 bg-blue-50 border-blue-200 border rounded-lg">
+                                <div>
+                                    <p class="font-medium text-gray-900">Database Systems</p>
+                                    <p class="text-sm text-gray-500">BSCS-A • 42 students</p>
+                                    <p class="text-sm text-gray-500">Room Lab 203</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-medium text-blue-600">2:00 PM - 3:30 PM</p>
+                                    <p class="text-xs text-gray-500 capitalize">Current</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-4 bg-gray-50 border-gray-200 border rounded-lg">
+                                <div>
+                                    <p class="font-medium text-gray-900">Software Engineering</p>
+                                    <p class="text-sm text-gray-500">BSCS-B • 38 students</p>
+                                    <p class="text-sm text-gray-500">Room 301</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-medium text-gray-600">4:00 PM - 5:30 PM</p>
+                                    <p class="text-xs text-gray-500 capitalize">Upcoming</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-4 bg-yellow-50 border-yellow-200 border rounded-lg">
+                                <div>
+                                    <p class="font-medium text-gray-900">Web Development</p>
+                                    <p class="text-sm text-gray-500">BSCS-C • 35 students</p>
+                                    <p class="text-sm text-gray-500">Room Lab 105</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-medium text-yellow-600">6:00 PM - 7:30 PM</p>
+                                    <p class="text-xs text-gray-500 capitalize">Evening</p>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-4">
-                            <button class="btn btn-success btn-block">Student Records</button>
+                    </div>
+                    
+                    <!-- All Schedule (Hidden by default) -->
+                    <div id="all-schedule" class="schedule-content hidden">
+                        <div class="mb-4">
+                            <h5 class="font-medium text-gray-900">All Classes</h5>
+                            <p class="text-sm text-gray-500">Complete weekly schedule</p>
+                        </div>
+                        <div class="max-h-96 overflow-y-auto space-y-6 pr-2">
+                            <!-- Mock weekly schedule grouped by day -->
+                            @foreach (var day in new[] { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday" })
+                            {
+                                <div>
+                                    <h6 class="font-medium text-gray-800 mb-3">@day</h6>
+                                    <div class="space-y-3">
+                                        <div class="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                                            <div>
+                                                <p class="font-medium text-gray-900">Database Systems</p>
+                                                <p class="text-sm text-gray-500">BSCS-A</p>
+                                            </div>
+                                            <div class="text-right">
+                                                <p class="font-medium text-gray-700">2:00 PM - 3:30 PM</p>
+                                                <p class="text-xs text-gray-500">Lab 203</p>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                                            <div>
+                                                <p class="font-medium text-gray-900">Software Engineering</p>
+                                                <p class="text-sm text-gray-500">BSCS-B</p>
+                                            </div>
+                                            <div class="text-right">
+                                                <p class="font-medium text-gray-700">4:00 PM - 5:30 PM</p>
+                                                <p class="text-xs text-gray-500">Room 301</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
                         </div>
                     </div>
                 </div>
@@ -77,3 +428,368 @@
         </div>
     </div>
 </div>
+
+<!-- Analytics and Charts Section -->
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-8">
+    <!-- Course Performance Overview -->
+    <div class="bg-white rounded-lg shadow-sm p-6 dashboard-card-entrance">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-lg font-semibold text-gray-900">Course Performance</h3>
+            <div class="text-sm text-gray-500">Current Semester</div>
+        </div>
+        
+        <!-- Overall Stats -->
+        <div class="bg-gradient-to-r from-indigo-50 to-purple-100 rounded-lg p-4 mb-4 border border-indigo-200">
+            <div class="text-center">
+                <div class="text-3xl font-bold text-indigo-700">87%</div>
+                <div class="text-indigo-600 text-sm font-medium">Average Attendance Rate</div>
+                <div class="text-indigo-500 text-xs mt-1">Across all courses</div>
+            </div>
+        </div>
+        
+        <!-- Course Stats -->
+        <div class="space-y-3 max-h-64 overflow-y-auto pr-2">
+            <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
+                <div>
+                    <div class="font-medium text-gray-900">Database Systems</div>
+                    <div class="text-sm text-gray-500">BSCS-A • 42 students</div>
+                </div>
+                <div class="text-right">
+                    <div class="text-sm font-medium text-green-600">92%</div>
+                    <div class="text-xs text-gray-500">Excellent</div>
+                </div>
+            </div>
+            
+            <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
+                <div>
+                    <div class="font-medium text-gray-900">Software Engineering</div>
+                    <div class="text-sm text-gray-500">BSCS-B • 38 students</div>
+                </div>
+                <div class="text-right">
+                    <div class="text-sm font-medium text-green-600">89%</div>
+                    <div class="text-xs text-gray-500">Good</div>
+                </div>
+            </div>
+            
+            <div class="flex items-center justify-between p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                <div>
+                    <div class="font-medium text-gray-900">Web Development</div>
+                    <div class="text-sm text-gray-500">BSCS-C • 35 students</div>
+                </div>
+                <div class="text-right">
+                    <div class="text-sm font-medium text-yellow-600">78%</div>
+                    <div class="text-xs text-gray-500">Average</div>
+                </div>
+            </div>
+            
+            <div class="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200">
+                <div>
+                    <div class="font-medium text-gray-900">Mobile Programming</div>
+                    <div class="text-sm text-gray-500">BSCS-D • 28 students</div>
+                </div>
+                <div class="text-right">
+                    <div class="text-sm font-medium text-red-600">65%</div>
+                    <div class="text-xs text-gray-500">Needs attention</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Weekly Attendance Trends -->
+    <div class="bg-white rounded-lg shadow-sm p-6 dashboard-card-entrance">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-gray-900">Weekly Attendance Trends</h3>
+            <div class="flex items-center space-x-2">
+                <span class="w-3 h-3 bg-green-500 rounded-full"></span>
+                <span class="text-sm text-gray-500">Present</span>
+                <span class="w-3 h-3 bg-yellow-500 rounded-full ml-3"></span>
+                <span class="text-sm text-gray-500">Late</span>
+                <span class="w-3 h-3 bg-red-500 rounded-full ml-3"></span>
+                <span class="text-sm text-gray-500">Absent</span>
+            </div>
+        </div>
+        <div class="h-64">
+            <canvas id="weeklyTrendChart" class="max-w-full max-h-full"></canvas>
+        </div>
+    </div>
+
+    <!-- Student Management Summary -->
+    <div class="bg-white rounded-lg shadow-sm p-6 dashboard-card-entrance flex flex-col h-full">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-gray-900">Student Management</h3>
+            <i class="fas fa-users text-gray-400"></i>
+        </div>
+        <div class="flex-1 flex flex-col">
+            <div class="space-y-4 flex-1">
+                <!-- Pending Approvals -->
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <h4 class="font-medium text-yellow-800">Pending Approvals</h4>
+                        <span class="bg-yellow-200 text-yellow-800 text-xs font-medium px-2 py-1 rounded-full">12</span>
+                    </div>
+                    <p class="text-sm text-yellow-700">Students waiting for course enrollment approval</p>
+                    <button class="mt-2 text-sm text-yellow-800 hover:text-yellow-900 font-medium">Review Applications →</button>
+                </div>
+                
+                <!-- Recent Activity -->
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <h4 class="font-medium text-blue-800">Recent Activity</h4>
+                        <span class="bg-blue-200 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">8</span>
+                    </div>
+                    <p class="text-sm text-blue-700">New attendance submissions and grade updates</p>
+                    <button class="mt-2 text-sm text-blue-800 hover:text-blue-900 font-medium">View Details →</button>
+                </div>
+                
+                <!-- Grade Reports Due -->
+                <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <h4 class="font-medium text-purple-800">Reports Due</h4>
+                        <span class="bg-purple-200 text-purple-800 text-xs font-medium px-2 py-1 rounded-full">3</span>
+                    </div>
+                    <p class="text-sm text-purple-700">Monthly attendance reports need to be submitted</p>
+                    <button class="mt-2 text-sm text-purple-800 hover:text-purple-900 font-medium">Generate Reports →</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Monthly Performance Analysis -->
+<div class="grid grid-cols-1 gap-8 mb-8">
+    <div class="bg-white rounded-xl shadow-lg p-8 dashboard-card-entrance border border-gray-100">
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h3 class="text-xl font-bold text-gray-900">Monthly Attendance Analysis</h3>
+                <p class="text-sm text-gray-500 mt-1">Track student attendance patterns across all courses</p>
+            </div>
+            <div class="flex items-center space-x-2">
+                <div class="w-3 h-3 bg-indigo-500 rounded-full"></div>
+                <span class="text-sm font-medium text-gray-600">Attendance Rate</span>
+            </div>
+        </div>
+        <div class="h-80 rounded-lg p-4">
+            <canvas id="monthlyAnalysisChart" class="max-w-full max-h-full"></canvas>
+        </div>
+        <div class="mt-4 flex items-center justify-center">
+            <div class="text-xs text-gray-500 bg-gray-50 px-3 py-1 rounded-full">
+                <i class="fas fa-info-circle mr-1"></i>
+                Hover over points for detailed monthly statistics
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/faculty-dashboard.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="~/js/faculty-charts.js"></script>
+    <script src="~/js/mark-attendance.js"></script>
+    
+    <script>
+        // Initialize faculty dashboard after all scripts are loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Faculty Dashboard initializing...');
+            
+            // Ensure Chart.js is loaded before initializing charts
+            if (typeof Chart !== 'undefined') {
+                console.log('Chart.js loaded successfully');
+            } else {
+                console.error('Chart.js not loaded');
+            }
+            
+            // Make sure content is visible immediately
+            const cards = document.querySelectorAll('.dashboard-card-entrance');
+            cards.forEach(card => {
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            });
+            
+            // Initialize dashboard components
+            setTimeout(() => {
+                console.log('Dashboard components initialized');
+            }, 100);
+        });
+    </script>
+    
+    <style>
+        /* Ensure content is visible by default */
+        .dashboard-card-entrance {
+            opacity: 1 !important;
+            transform: translateY(0) !important;
+        }
+        
+        .schedule-content:not(.hidden) {
+            opacity: 1 !important;
+            transform: translateX(0) !important;
+        }
+        
+        /* Calendar specific styles */
+        .calendar-day {
+            transition: all 0.2s ease-in-out;
+            transform: scale(1);
+            cursor: pointer;
+        }
+        
+        .calendar-day:hover {
+            transform: scale(1.05);
+            background-color: #e5e7eb;
+        }
+        
+        .calendar-day.today-date {
+            background-color: #4f46e5 !important;
+            color: white !important;
+        }
+        
+        .calendar-day.selected:not(.today-date) {
+            background-color: #4f46e5 !important;
+            color: white !important;
+            box-shadow: 0 0 0 2px #4f46e5;
+        }
+        
+        /* Day filter styling */
+        .day-filter {
+            transition: all 0.2s ease-in-out;
+            cursor: pointer;
+        }
+        
+        .day-filter:hover {
+            transform: translateX(4px);
+        }
+        
+        .day-filter.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            color: white !important;
+            border-color: #667eea !important;
+        }
+        
+        /* Chart enhancements */
+        .chart-container {
+            position: relative;
+            height: 100%;
+            width: 100%;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        }
+        
+        /* Faculty color scheme */
+        .faculty-primary { color: #667eea; }
+        .faculty-secondary { color: #764ba2; }
+        .faculty-accent { color: #f093fb; }
+        
+        /* Performance indicators */
+        .performance-excellent { border-left: 4px solid #10b981; }
+        .performance-good { border-left: 4px solid #3b82f6; }
+        .performance-average { border-left: 4px solid #f59e0b; }
+        .performance-poor { border-left: 4px solid #ef4444; }
+        
+        /* Responsive adjustments */
+        @@media (max-width: 768px) {
+            .calendar-day {
+                font-size: 0.75rem;
+            }
+            
+            .chart-container {
+                height: 16rem;
+            }
+        }
+    </style>
+}
+        }
+        
+        .dashboard-card-entrance.animate {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        
+        /* pulse animation */
+        .calendar-day.selected {
+            transform: scale(1.05);
+        }
+        
+        /* Chart enhancements */
+        .chart-container {
+            position: relative;
+            height: 100%;
+            width: 100%;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        }
+        
+        /* Faculty color scheme */
+        .faculty-primary { color: #667eea; }
+        .faculty-secondary { color: #764ba2; }
+        .faculty-accent { color: #f093fb; }
+        
+        /* Performance indicators */
+        .performance-excellent { border-left: 4px solid #10b981; }
+        .performance-good { border-left: 4px solid #3b82f6; }
+        .performance-average { border-left: 4px solid #f59e0b; }
+        .performance-poor { border-left: 4px solid #ef4444; }
+        
+        /* Schedule item animation */
+        .schedule-item {
+            opacity: 0;
+            transform: translateY(15px);
+            animation: fadeInUp 0.5s ease-out forwards;
+        }
+        
+        .schedule-item:nth-child(1) { animation-delay: 0.1s; }
+        .schedule-item:nth-child(2) { animation-delay: 0.2s; }
+        .schedule-item:nth-child(3) { animation-delay: 0.3s; }
+        .schedule-item:nth-child(4) { animation-delay: 0.4s; }
+        .schedule-item:nth-child(5) { animation-delay: 0.5s; }
+        
+        /* fadeInUp animation with proper CSS syntax */
+        .schedule-item {
+            animation: fadeInUp 0.5s ease-out forwards;
+        }
+        
+        /* Responsive adjustments */
+        /* Mobile styles */
+        .dashboard-card-entrance {
+            animation-delay: 0s !important;
+        }
+        
+        .faculty-card h3 {
+            font-size: 1.125rem;
+        }
+        
+        .chart-container {
+            height: 16rem;
+        }
+        
+        .calendar-day {
+            font-size: 0.75rem;
+        }
+        
+        /* Loading states */
+        .loading-shimmer {
+            background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+        
+        /* shimmer animation with proper CSS syntax */
+        .loading-shimmer {
+            animation: shimmer 1.5s infinite;
+        }
+        
+        /* Media query simulation with class-based approach */
+        .mobile-responsive {
+            animation-delay: 0s !important;
+        }
+        
+        .mobile-responsive .faculty-card h3 {
+            font-size: 1.125rem;
+        }
+        
+        .mobile-responsive .chart-container {
+            height: 16rem;
+        }
+        
+        .mobile-responsive .calendar-day {
+            font-size: 0.75rem;
+        }
+    </style>
+}
