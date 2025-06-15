@@ -69,10 +69,13 @@ app.UseAuthorization();
 // Add antiforgery middleware
 app.UseAntiforgery();
 
-// Default route configuration
+// Default route configuration - redirect root to login
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
+    pattern: "{controller=Auth}/{action=Login}/{id?}");
+
+// Add fallback route for root URL
+app.MapFallbackToController("Login", "Auth");
 
 // Add specific route for attendance update
 app.MapControllerRoute(
