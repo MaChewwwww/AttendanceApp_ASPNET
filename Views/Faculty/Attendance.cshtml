@@ -248,7 +248,7 @@
     </div>
 
     <!-- Statistics Cards -->
-    <div id="statisticsCards" class="grid grid-cols-1 md:grid-cols-4 gap-6 fade-in hidden">
+    <div id="statisticsCards" class="grid grid-cols-1 md:grid-cols-5 gap-6 fade-in hidden">
         <!-- Total Records -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover-scale">
             <div class="flex items-center justify-between">
@@ -284,6 +284,19 @@
                 </div>
                 <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
                     <i class="fas fa-clock text-yellow-600 text-xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Absent -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover-scale">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Absent</p>
+                    <p id="absentCount" class="text-2xl font-bold text-red-600">0</p>
+                </div>
+                <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-times-circle text-red-600 text-xl"></i>
                 </div>
             </div>
         </div>
@@ -634,6 +647,7 @@
         document.getElementById('totalRecords').textContent = summary.total_records || 0;
         document.getElementById('presentCount').textContent = summary.present_count || 0;
         document.getElementById('lateCount').textContent = summary.late_count || 0;
+        document.getElementById('absentCount').textContent = summary.absent_count || 0;
         document.getElementById('attendancePercentage').textContent = (summary.attendance_percentage || 0).toFixed(1) + '%';
     }
 
