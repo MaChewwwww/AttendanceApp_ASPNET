@@ -1,5 +1,5 @@
 @{
-    ViewData["Title"] = "Faculty Attendance Management";
+    ViewData["Title"] = "Faculty Attendance History";
     Layout = "_Layout";
 }
 
@@ -101,7 +101,7 @@
 
     @@media (max-width: 768px) {
         .attendance-table {
-            min-width: 900px;
+            min-width: 800px;
         }
         
         .attendance-table th,
@@ -147,8 +147,8 @@
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <div class="flex items-center justify-between">
             <div>
-                <h1 class="text-2xl font-bold text-gray-900">Faculty Attendance Management</h1>
-                <p class="text-gray-600 mt-1">View and manage attendance records for all your courses</p>
+                <h1 class="text-2xl font-bold text-gray-900">My Attendance History</h1>
+                <p class="text-gray-600 mt-1">View and filter your personal attendance records</p>
             </div>
             <div class="text-right">
                 <div class="text-sm text-gray-500">Last updated</div>
@@ -178,22 +178,24 @@
 
     <!-- Statistics Cards -->
     <div id="statisticsCards" class="grid grid-cols-1 md:grid-cols-4 gap-6 fade-in hidden">
+        <!-- Total Records -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover-scale">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-gray-600">Total Students</p>
-                    <p id="totalStudents" class="text-2xl font-bold text-gray-900">0</p>
+                    <p class="text-sm font-medium text-gray-600">Total Records</p>
+                    <p id="totalRecords" class="text-2xl font-bold text-gray-900">0</p>
                 </div>
                 <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <i class="fas fa-users text-blue-600 text-xl"></i>
+                    <i class="fas fa-calendar-alt text-blue-600 text-xl"></i>
                 </div>
             </div>
         </div>
 
+        <!-- Present -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover-scale">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-gray-600">Present Today</p>
+                    <p class="text-sm font-medium text-gray-600">Present</p>
                     <p id="presentCount" class="text-2xl font-bold text-green-600">0</p>
                 </div>
                 <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -202,10 +204,11 @@
             </div>
         </div>
 
+        <!-- Late -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover-scale">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-gray-600">Late Arrivals</p>
+                    <p class="text-sm font-medium text-gray-600">Late</p>
                     <p id="lateCount" class="text-2xl font-bold text-yellow-600">0</p>
                 </div>
                 <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
@@ -214,14 +217,15 @@
             </div>
         </div>
 
+        <!-- Attendance Percentage -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover-scale">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-sm font-medium text-gray-600">Absent</p>
-                    <p id="absentCount" class="text-2xl font-bold text-red-600">0</p>
+                    <p class="text-sm font-medium text-gray-600">Attendance %</p>
+                    <p id="attendancePercentage" class="text-2xl font-bold text-blue-600">0%</p>
                 </div>
-                <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                    <i class="fas fa-times-circle text-red-600 text-xl"></i>
+                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-percentage text-blue-600 text-xl"></i>
                 </div>
             </div>
         </div>
@@ -232,32 +236,37 @@
         <!-- Table Header with Controls -->
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <div>
-                <h3 class="text-lg font-semibold text-gray-900">Attendance Records</h3>
+                <h3 class="text-lg font-semibold text-gray-900">All Attendance Records</h3>
                 <p class="text-sm text-gray-600" id="recordsInfo">Loading records...</p>
             </div>
             
             <!-- Filter and Sort Controls -->
             <div class="flex flex-wrap gap-3">
+                <!-- Active Filters Display -->
                 <div id="activeFilters" class="flex flex-wrap gap-2 hidden">
-                    <!-- Active filter badges will be inserted here -->
+                    <!-- Active filter badges will be inserted here by JavaScript -->
                 </div>
 
+                <!-- Filter Button -->
                 <button onclick="openFilterModal()" class="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
                     <i class="fas fa-filter mr-2"></i>
                     <span>Filter</span>
                     <span id="filterCount" class="ml-2 bg-blue-800 text-white text-xs rounded-full px-2 py-1 hidden">0</span>
                 </button>
 
+                <!-- Sort Button -->
                 <button onclick="openSortModal()" class="flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200">
                     <i class="fas fa-sort mr-2"></i>
                     <span>Sort</span>
                 </button>
 
+                <!-- Export Button -->
                 <button onclick="exportToCSV()" class="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200">
                     <i class="fas fa-download mr-2"></i>
                     <span>Export CSV</span>
                 </button>
 
+                <!-- Clear All Filters -->
                 <button id="clearFiltersBtn" onclick="clearAllFilters()" class="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 hidden">
                     <i class="fas fa-times mr-2"></i>
                     <span>Clear Filters</span>
@@ -265,18 +274,26 @@
             </div>
         </div>
 
-        <!-- Table Container -->
+        <!-- Table Container with Horizontal Scroll -->
         <div class="overflow-x-auto">
             <table class="w-full divide-y divide-gray-200 attendance-table">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/8">Date</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">Course</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/8">Student ID</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">Student Name</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/8">Section</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/8">Status</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/8">Time</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
+                            <span>Date</span>
+                        </th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-2/5">
+                            <span>Course</span>
+                        </th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
+                            <span>Course Code</span>
+                        </th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">
+                            <span>Section</span>
+                        </th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/8">
+                            <span>Status</span>
+                        </th>
                     </tr>
                 </thead>
                 <tbody id="attendanceTableBody" class="bg-white divide-y divide-gray-200">
@@ -285,7 +302,7 @@
             </table>
         </div>
 
-        <!-- Record Count Display -->
+        <!-- Simple Record Count Display -->
         <div class="flex justify-between items-center mt-6">
             <div class="text-sm text-gray-700">
                 Total: <span id="totalRecordsCount">0</span> records
@@ -299,13 +316,14 @@
             <i class="fas fa-calendar-times text-gray-400 text-2xl"></i>
         </div>
         <h3 class="text-lg font-medium text-gray-900 mb-2">No Attendance Records Found</h3>
-        <p class="text-gray-600">No attendance records are available for your courses yet.</p>
+        <p class="text-gray-600">You don't have any attendance records yet. Records will appear here once you start marking attendance.</p>
     </div>
 </div>
 
 <!-- Filter Modal -->
 <div id="filterModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 overflow-y-auto h-full w-full hidden flex items-center justify-center backdrop-blur-sm">
     <div id="filterModalContent" class="modal-content relative mx-auto p-6 border w-full max-w-lg shadow-2xl rounded-xl bg-white transform transition-all duration-300 scale-95 opacity-0 m-4">
+        <!-- Modal Header -->
         <div class="flex items-center justify-between mb-6">
             <h3 class="text-lg font-bold text-gray-800">
                 <i class="fas fa-filter mr-2 text-blue-600"></i>
@@ -316,7 +334,9 @@
             </button>
         </div>
 
+        <!-- Filter Options -->
         <div class="space-y-6">
+            <!-- Date Range Filter -->
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
                 <div class="grid grid-cols-2 gap-3">
@@ -331,6 +351,7 @@
                 </div>
             </div>
 
+            <!-- Course Filter -->
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Course</label>
                 <select id="courseFilter" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
@@ -338,6 +359,7 @@
                 </select>
             </div>
 
+            <!-- Section Filter -->
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Section</label>
                 <select id="sectionFilter" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
@@ -345,6 +367,7 @@
                 </select>
             </div>
 
+            <!-- Status Filter -->
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
                 <select id="statusFilter" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
@@ -356,12 +379,16 @@
                 </select>
             </div>
 
+            <!-- Academic Year Filter -->
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Student</label>
-                <input type="text" id="studentFilter" placeholder="Search by student name or ID" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Academic Year</label>
+                <select id="academicYearFilter" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                    <option value="">All Academic Years</option>
+                </select>
             </div>
         </div>
 
+        <!-- Modal Buttons -->
         <div class="flex justify-end space-x-3 mt-8">
             <button onclick="clearFilters()" class="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors">
                 Clear Filters
@@ -376,6 +403,7 @@
 <!-- Sort Modal -->
 <div id="sortModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 overflow-y-auto h-full w-full hidden flex items-center justify-center backdrop-blur-sm">
     <div id="sortModalContent" class="modal-content relative mx-auto p-6 border w-full max-w-md shadow-2xl rounded-xl bg-white transform transition-all duration-300 scale-95 opacity-0 m-4">
+        <!-- Modal Header -->
         <div class="flex items-center justify-between mb-6">
             <h3 class="text-lg font-bold text-gray-800">
                 <i class="fas fa-sort mr-2 text-gray-600"></i>
@@ -386,19 +414,21 @@
             </button>
         </div>
 
+        <!-- Sort Options -->
         <div class="space-y-4">
+            <!-- Sort By -->
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
                 <select id="sortBy" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
                     <option value="date">Date</option>
                     <option value="course">Course</option>
-                    <option value="studentName">Student Name</option>
-                    <option value="studentId">Student ID</option>
+                    <option value="courseCode">Course Code</option>
                     <option value="section">Section</option>
                     <option value="status">Status</option>
                 </select>
             </div>
 
+            <!-- Sort Direction -->
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Direction</label>
                 <div class="space-y-2">
@@ -414,6 +444,7 @@
             </div>
         </div>
 
+        <!-- Modal Buttons -->
         <div class="flex justify-end space-x-3 mt-8">
             <button onclick="closeSortModal()" class="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors">
                 Cancel
@@ -427,25 +458,25 @@
 
 @section Scripts {
 <script>
-    // Faculty attendance management variables
+    // Faculty personal attendance management variables
     let currentFilters = {
         dateFrom: '',
         dateTo: '',
         course: '',
         section: '',
         status: '',
-        student: ''
+        academicYear: ''
     };
     let currentSort = {
         column: 'date',
         direction: 'desc'
     };
+    
     let allRecords = [];
     let filteredRecords = [];
-    let facultyAttendanceData = null;
 
     document.addEventListener('DOMContentLoaded', function() {
-        console.log('Faculty Attendance page loaded');
+        console.log('Faculty Personal Attendance page loaded');
         initializePage();
     });
 
@@ -458,8 +489,8 @@
             hideElement('statisticsCards');
             hideElement('attendanceTableSection');
 
-            // Fetch faculty attendance data
-            await fetchFacultyAttendanceData();
+            // Fetch personal attendance data
+            await fetchPersonalAttendanceData();
             
         } catch (error) {
             console.error('Error initializing page:', error);
@@ -467,9 +498,11 @@
         }
     }
 
-    async function fetchFacultyAttendanceData() {
+    async function fetchPersonalAttendanceData() {
         try {
-            const response = await fetch('/Faculty/GetAttendanceData', {
+            console.log('Fetching personal attendance data...');
+            
+            const response = await fetch('/Faculty/GetPersonalAttendanceData', {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -482,15 +515,17 @@
 
             const data = await response.json();
             
+            console.log('Raw API response:', data);
+            
             if (!data.success) {
-                throw new Error(data.message || 'Failed to fetch attendance data');
+                throw new Error(data.message || 'Failed to fetch personal attendance data');
             }
 
-            // Process the attendance data
-            facultyAttendanceData = data;
+            // Process the personal attendance data - use snake_case property names from API
             allRecords = data.attendance_records || [];
             
-            console.log('Faculty attendance data loaded:', allRecords.length, 'records');
+            console.log('Personal attendance data loaded:', allRecords.length, 'records');
+            console.log('First record sample:', allRecords[0]);
             
             // Initialize the interface
             hideElement('loadingState');
@@ -501,34 +536,33 @@
                 showElement('statisticsCards');
                 showElement('attendanceTableSection');
                 
-                updateStatistics();
+                updateStatistics(data.attendance_summary);
                 populateFilterOptions();
                 applyFiltersAndSort();
                 showAllFilteredRecords();
             }
             
         } catch (error) {
-            console.error('Error fetching faculty attendance data:', error);
+            console.error('Error fetching personal attendance data:', error);
             hideElement('loadingState');
             showError(error.message);
         }
     }
 
-    function updateStatistics() {
-        if (!facultyAttendanceData || !facultyAttendanceData.attendance_statistics) {
-            return;
-        }
-
-        const stats = facultyAttendanceData.attendance_statistics;
+    function updateStatistics(summary) {
+        if (!summary) return;
         
-        document.getElementById('totalStudents').textContent = stats.total_students || 0;
-        document.getElementById('presentCount').textContent = stats.present_count || 0;
-        document.getElementById('lateCount').textContent = stats.late_count || 0;
-        document.getElementById('absentCount').textContent = stats.absent_count || 0;
+        console.log('Updating statistics with:', summary);
+        document.getElementById('totalRecords').textContent = summary.total_records || 0;
+        document.getElementById('presentCount').textContent = summary.present_count || 0;
+        document.getElementById('lateCount').textContent = summary.late_count || 0;
+        document.getElementById('attendancePercentage').textContent = (summary.attendance_percentage || 0).toFixed(1) + '%';
     }
 
     function populateFilterOptions() {
-        // Populate course filter
+        console.log('Populating filter options with records:', allRecords.length);
+        
+        // Populate course filter - use snake_case property names from API
         const courseFilter = document.getElementById('courseFilter');
         const courses = [...new Set(allRecords.map(r => r.course_name))].filter(Boolean).sort();
         
@@ -539,6 +573,7 @@
             option.textContent = course;
             courseFilter.appendChild(option);
         });
+        console.log('Courses populated:', courses);
 
         // Populate section filter
         const sectionFilter = document.getElementById('sectionFilter');
@@ -551,21 +586,38 @@
             option.textContent = section;
             sectionFilter.appendChild(option);
         });
+        console.log('Sections populated:', sections);
+
+        // Populate academic year filter
+        const academicYearFilter = document.getElementById('academicYearFilter');
+        const academicYears = [...new Set(allRecords.map(r => r.academic_year))].filter(Boolean).sort();
+        
+        academicYearFilter.innerHTML = '<option value="">All Academic Years</option>';
+        academicYears.forEach(year => {
+            const option = document.createElement('option');
+            option.value = year;
+            option.textContent = year;
+            academicYearFilter.appendChild(option);
+        });
+        console.log('Academic years populated:', academicYears);
     }
 
     function applyFilters() {
+        // Get filter values from the modal
         currentFilters.dateFrom = document.getElementById('dateFrom').value;
         currentFilters.dateTo = document.getElementById('dateTo').value;
         currentFilters.course = document.getElementById('courseFilter').value;
         currentFilters.section = document.getElementById('sectionFilter').value;
         currentFilters.status = document.getElementById('statusFilter').value;
-        currentFilters.student = document.getElementById('studentFilter').value.toLowerCase();
+        currentFilters.academicYear = document.getElementById('academicYearFilter').value;
 
+        // Apply filters and update display
         applyFiltersAndSort();
         showAllFilteredRecords();
         updateActiveFiltersDisplay();
         updateFilterCount();
         
+        // Close the modal
         window.closeFilterModal();
     }
 
@@ -578,6 +630,7 @@
         applyFiltersAndSort();
         showAllFilteredRecords();
         
+        // Close the modal
         window.closeSortModal();
     }
 
@@ -585,7 +638,9 @@
         // Start with all records
         filteredRecords = [...allRecords];
 
-        // Apply filters
+        console.log('Applying filters to', allRecords.length, 'records');
+
+        // Apply filters - use snake_case property names from API
         filteredRecords = filteredRecords.filter(record => {
             // Date range filter
             if (currentFilters.dateFrom || currentFilters.dateTo) {
@@ -599,6 +654,9 @@
 
             // Section filter
             if (currentFilters.section && record.section_name !== currentFilters.section) return false;
+
+            // Academic year filter
+            if (currentFilters.academicYear && record.academic_year !== currentFilters.academicYear) return false;
 
             // Status filter
             if (currentFilters.status) {
@@ -615,19 +673,10 @@
                 if (!statusMatch) return false;
             }
 
-            // Student filter
-            if (currentFilters.student) {
-                const studentName = (record.student_name || '').toLowerCase();
-                const studentId = (record.student_id || '').toString().toLowerCase();
-                if (!studentName.includes(currentFilters.student) && !studentId.includes(currentFilters.student)) {
-                    return false;
-                }
-            }
-
             return true;
         });
 
-        // Apply sorting
+        // Apply sorting - use snake_case property names from API
         filteredRecords.sort((a, b) => {
             let aValue, bValue;
             
@@ -640,13 +689,9 @@
                     aValue = a.course_name?.toLowerCase() || '';
                     bValue = b.course_name?.toLowerCase() || '';
                     break;
-                case 'studentName':
-                    aValue = a.student_name?.toLowerCase() || '';
-                    bValue = b.student_name?.toLowerCase() || '';
-                    break;
-                case 'studentId':
-                    aValue = a.student_id?.toString() || '';
-                    bValue = b.student_id?.toString() || '';
+                case 'courseCode':
+                    aValue = a.course_code?.toLowerCase() || '';
+                    bValue = b.course_code?.toLowerCase() || '';
                     break;
                 case 'section':
                     aValue = a.section_name?.toLowerCase() || '';
@@ -665,12 +710,15 @@
             return 0;
         });
 
+        console.log('After filtering and sorting:', filteredRecords.length, 'records');
         updateRecordCounts();
     }
 
     function showAllFilteredRecords() {
         const tbody = document.getElementById('attendanceTableBody');
         tbody.innerHTML = '';
+        
+        console.log('Rendering', filteredRecords.length, 'records to table');
         
         filteredRecords.forEach(record => {
             const row = createTableRow(record);
@@ -684,6 +732,7 @@
         const row = document.createElement('tr');
         row.className = 'hover:bg-gray-50 attendance-row';
         
+        // Format date - use snake_case property names from API
         const date = new Date(record.attendance_date);
         const formattedDate = date.toLocaleDateString('en-US', { 
             year: 'numeric', 
@@ -691,66 +740,90 @@
             day: 'numeric' 
         });
         
+        // Get status display info
         const statusClass = getStatusBadgeClass(record.status);
         const statusIcon = getStatusIcon(record.status);
         const statusText = getStatusDisplayText(record.status);
-        
-        const timeIn = record.time_in || 'N/A';
         
         row.innerHTML = `
             <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">${formattedDate}</td>
             <td class="px-4 py-4 text-sm text-gray-900">
                 <div class="font-medium">${record.course_name || 'N/A'}</div>
-                <div class="text-xs text-gray-500 mt-1">${record.course_code || ''}</div>
+                ${record.program_name ? `<div class="text-xs text-gray-500 mt-1">Program: ${record.program_name}</div>` : ''}
             </td>
-            <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 font-mono">${record.student_id || 'N/A'}</td>
-            <td class="px-4 py-4 text-sm text-gray-900">
-                <div class="font-medium">${record.student_name || 'N/A'}</div>
-                <div class="text-xs text-gray-500 mt-1">${record.student_email || ''}</div>
+            <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 font-mono">${record.course_code || 'N/A'}</td>
+            <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                <div>
+                    <div class="font-medium">${record.section_name || 'N/A'}</div>
+                    ${record.academic_year ? `<div class="text-xs text-gray-500 mt-1">${record.academic_year}</div>` : ''}
+                </div>
             </td>
-            <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">${record.section_name || 'N/A'}</td>
             <td class="px-4 py-4 whitespace-nowrap">
                 <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${statusClass}">
                     <i class="${statusIcon} mr-1"></i>
                     ${statusText}
                 </span>
             </td>
-            <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900">${timeIn}</td>
         `;
         
         return row;
     }
 
-    // Helper functions matching the C# backend
-    function getStatusBadgeClass(status) {
-        const s = status?.toLowerCase();
-        if (s === 'present' || s === '1') return 'bg-green-100 text-green-800';
-        if (s === 'late' || s === '2') return 'bg-yellow-100 text-yellow-800';
-        if (s === 'absent' || s === '0') return 'bg-red-100 text-red-800';
-        if (s === 'excused' || s === '3') return 'bg-blue-100 text-blue-800';
-        return 'bg-gray-100 text-gray-800';
+    function exportToCSV() {
+        const dataToExport = [...filteredRecords];
+        
+        if (dataToExport.length === 0) {
+            alert('No records to export. Please adjust your filters.');
+            return;
+        }
+
+        const headers = ['Date', 'Course', 'Course Code', 'Section', 'Academic Year', 'Status'];
+        
+        const csvContent = [
+            headers.join(','),
+            ...dataToExport.map(record => {
+                const date = new Date(record.attendance_date);
+                const formattedDate = `="${date.toLocaleDateString('en-US', { 
+                    year: 'numeric', 
+                    month: 'short', 
+                    day: '2-digit' 
+                }).replace(/,/g, '')}"`;
+                
+                const course = `"${(record.course_name || 'N/A').replace(/"/g, '""')}"`;
+                const courseCode = `="${record.course_code || 'N/A'}"`;
+                const section = `"${(record.section_name || 'N/A').replace(/"/g, '""')}"`;
+                const academicYear = `"${(record.academic_year || 'N/A').replace(/"/g, '""')}"`;
+                const status = `"${getStatusDisplayText(record.status).replace(/"/g, '""')}"`;
+                
+                return [formattedDate, course, courseCode, section, academicYear, status].join(',');
+            })
+        ].join('\n');
+
+        const BOM = '\uFEFF';
+        const csvWithBOM = BOM + csvContent;
+
+        const blob = new Blob([csvWithBOM], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        
+        if (link.download !== undefined) {
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            
+            const currentDate = new Date().toISOString().split('T')[0];
+            const activeFiltersCount = Object.values(currentFilters).filter(v => v !== '').length;
+            const filterSuffix = activeFiltersCount > 0 ? '_filtered' : '';
+            const filename = `faculty_attendance_history_${currentDate}${filterSuffix}.csv`;
+            
+            link.setAttribute('download', filename);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showExportSuccess(dataToExport.length, filename);
+        }
     }
 
-    function getStatusIcon(status) {
-        const s = status?.toLowerCase();
-        if (s === 'present' || s === '1') return 'fas fa-check-circle';
-        if (s === 'late' || s === '2') return 'fas fa-clock';
-        if (s === 'absent' || s === '0') return 'fas fa-times-circle';
-        if (s === 'excused' || s === '3') return 'fas fa-user-clock';
-        return 'fas fa-question-circle';
-    }
-
-    function getStatusDisplayText(status) {
-        const s = status?.toLowerCase();
-        if (s === 'present' || s === '1') return 'Present';
-        if (s === 'late' || s === '2') return 'Late';
-        if (s === 'absent' || s === '0') return 'Absent';
-        if (s === 'excused' || s === '3') return 'Excused';
-        return `Unknown (${status})`;
-    }
-
-    // ...existing code... (rest of the JavaScript functions remain the same as AttendanceHistory.cshtml)
-    
     function updateRecordCounts() {
         document.getElementById('recordsInfo').textContent = 
             `Showing ${filteredRecords.length} of ${allRecords.length} records`;
@@ -763,7 +836,7 @@
         document.getElementById('courseFilter').value = '';
         document.getElementById('sectionFilter').value = '';
         document.getElementById('statusFilter').value = '';
-        document.getElementById('studentFilter').value = '';
+        document.getElementById('academicYearFilter').value = '';
     }
 
     function clearAllFilters() {
@@ -774,7 +847,7 @@
             course: '',
             section: '',
             status: '',
-            student: ''
+            academicYear: ''
         };
         applyFiltersAndSort();
         showAllFilteredRecords();
@@ -811,7 +884,7 @@
                     case 'course': displayText = `Course: ${value}`; break;
                     case 'section': displayText = `Section: ${value}`; break;
                     case 'status': displayText = `Status: ${value}`; break;
-                    case 'student': displayText = `Student: ${value}`; break;
+                    case 'academicYear': displayText = `Year: ${value}`; break;
                 }
                 
                 badge.innerHTML = `${displayText} <button onclick="removeFilter('${key}')" class="ml-1 text-blue-600 hover:text-blue-800"><i class="fas fa-times"></i></button>`;
@@ -829,7 +902,7 @@
             'course': 'courseFilter',
             'section': 'sectionFilter',
             'status': 'statusFilter',
-            'student': 'studentFilter'
+            'academicYear': 'academicYearFilter'
         };
         
         const fieldId = fieldMap[filterKey];
@@ -855,63 +928,6 @@
         }
     }
 
-    function exportToCSV() {
-        const dataToExport = [...filteredRecords];
-        
-        if (dataToExport.length === 0) {
-            alert('No records to export. Please adjust your filters.');
-            return;
-        }
-
-        const headers = ['Date', 'Course', 'Course Code', 'Student ID', 'Student Name', 'Section', 'Status', 'Time In'];
-        
-        const csvContent = [
-            headers.join(','),
-            ...dataToExport.map(record => {
-                const date = new Date(record.attendance_date);
-                const formattedDate = `="${date.toLocaleDateString('en-US', { 
-                    year: 'numeric', 
-                    month: 'short', 
-                    day: '2-digit' 
-                }).replace(/,/g, '')}"`;
-                
-                const course = `"${(record.course_name || 'N/A').replace(/"/g, '""')}"`;
-                const courseCode = `="${record.course_code || 'N/A'}"`;
-                const studentId = `="${record.student_id || 'N/A'}"`;
-                const studentName = `"${(record.student_name || 'N/A').replace(/"/g, '""')}"`;
-                const section = `"${(record.section_name || 'N/A').replace(/"/g, '""')}"`;
-                const status = `"${getStatusDisplayText(record.status).replace(/"/g, '""')}"`;
-                const timeIn = `"${(record.time_in || 'N/A').replace(/"/g, '""')}"`;
-                
-                return [formattedDate, course, courseCode, studentId, studentName, section, status, timeIn].join(',');
-            })
-        ].join('\n');
-
-        const BOM = '\uFEFF';
-        const csvWithBOM = BOM + csvContent;
-
-        const blob = new Blob([csvWithBOM], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        
-        if (link.download !== undefined) {
-            const url = URL.createObjectURL(blob);
-            link.setAttribute('href', url);
-            
-            const currentDate = new Date().toISOString().split('T')[0];
-            const activeFiltersCount = Object.values(currentFilters).filter(v => v !== '').length;
-            const filterSuffix = activeFiltersCount > 0 ? '_filtered' : '';
-            const filename = `faculty_attendance_${currentDate}${filterSuffix}.csv`;
-            
-            link.setAttribute('download', filename);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            showExportSuccess(dataToExport.length, filename);
-        }
-    }
-
     function showExportSuccess(recordCount, filename) {
         const successMsg = document.createElement('div');
         successMsg.className = 'fixed top-4 right-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded shadow-lg z-50 max-w-sm';
@@ -933,6 +949,34 @@
                 successMsg.parentNode.removeChild(successMsg);
             }
         }, 4000);
+    }
+
+    // Helper functions for status display (matching C# backend)
+    function getStatusBadgeClass(status) {
+        const s = status?.toLowerCase();
+        if (s === 'present' || s === '1') return 'bg-green-100 text-green-800';
+        if (s === 'late' || s === '2') return 'bg-yellow-100 text-yellow-800';
+        if (s === 'absent' || s === '0') return 'bg-red-100 text-red-800';
+        if (s === 'excused' || s === '3') return 'bg-blue-100 text-blue-800';
+        return 'bg-gray-100 text-gray-800';
+    }
+
+    function getStatusIcon(status) {
+        const s = status?.toLowerCase();
+        if (s === 'present' || s === '1') return 'fas fa-check-circle';
+        if (s === 'late' || s === '2') return 'fas fa-clock';
+        if (s === 'absent' || s === '0') return 'fas fa-times-circle';
+        if (s === 'excused' || s === '3') return 'fas fa-user-clock';
+        return 'fas fa-question-circle';
+    }
+
+    function getStatusDisplayText(status) {
+        const s = status?.toLowerCase();
+        if (s === 'present' || s === '1') return 'Present';
+        if (s === 'late' || s === '2') return 'Late';
+        if (s === 'absent' || s === '0') return 'Absent';
+        if (s === 'excused' || s === '3') return 'Excused';
+        return `Unknown (${status})`;
     }
 
     function showError(message) {

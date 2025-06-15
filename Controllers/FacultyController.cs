@@ -9,11 +9,13 @@ namespace AttendanceApp_ASPNET.Controllers
     public class FacultyController : FacultyBaseController
     {
         private readonly IClassService _classService;
+        private readonly IFacultyPersonalAttendanceService _facultyPersonalAttendanceService;
 
-        public FacultyController(IApiService apiService, IClassService classService) 
+        public FacultyController(IApiService apiService, IClassService classService, IFacultyPersonalAttendanceService facultyPersonalAttendanceService) 
             : base(apiService)
         {
             _classService = classService;
+            _facultyPersonalAttendanceService = facultyPersonalAttendanceService;
         }
 
         public IActionResult Dashboard()
@@ -387,6 +389,53 @@ namespace AttendanceApp_ASPNET.Controllers
             // Same implementation as above
             return await UpdateAttendanceStatus(attendanceId, request);
         }
+
+        [HttpGet]
+        public async Task<IActionResult> GetPersonalAttendanceData()
+        {
+            try
+            {
+                var faculty = GetCurrentFacultyInfo();
+                var jwtToken = HttpContext.Session.GetString("AuthToken");
+                
+                Console.WriteLine($"=== FACULTY CONTROLLER GET PERSONAL ATTENDANCE DATA ===");
+                Console.WriteLine($"Faculty: {faculty.FullName} ({faculty.Email})");
+                Console.WriteLine($"JWT Token present: {!string.IsNullOrEmpty(jwtToken)}");
+                Console.WriteLine("======================================================");
+                
+                if (string.IsNullOrEmpty(jwtToken))
+                {
+                    Console.WriteLine("ERROR: No JWT token available");
+                    return Json(new { success = false, message = "Authentication required" });
+                }
+
+                // Extend session before making API call
+                ExtendSession();
+
+                var personalAttendanceResponse = await _facultyPersonalAttendanceService.GetFacultyPersonalAttendanceAsync(jwtToken);
+                
+                Console.WriteLine($"=== CONTROLLER PERSONAL ATTENDANCE RESPONSE SUMMARY ===");
+                Console.WriteLine($"Response Success: {personalAttendanceResponse.Success}");
+                Console.WriteLine($"Response Message: {personalAttendanceResponse.Message}");
+                Console.WriteLine($"Records Count: {personalAttendanceResponse.AttendanceRecords?.Count ?? 0}");
+                Console.WriteLine($"Total Records: {personalAttendanceResponse.TotalRecords}");
+                Console.WriteLine($"Faculty Name: {personalAttendanceResponse.FacultyInfo?.Name}");
+                Console.WriteLine($"Attendance Percentage: {personalAttendanceResponse.AttendanceSummary?.AttendancePercentage ?? 0:F2}%");
+                Console.WriteLine("=======================================================");
+                
+                return Json(personalAttendanceResponse);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"ERROR in GetPersonalAttendanceData: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                return Json(new { 
+                    success = false, 
+                    message = "Failed to load personal attendance data. Please try again later.",
+                    error = ex.Message 
+                });
+            }
+        }
     }
 
     public class UpdateStudentStatusRequest
@@ -405,5 +454,5 @@ namespace AttendanceApp_ASPNET.Controllers
         public string AttendanceTime { get; set; } = string.Empty;
     }
 }
-  
+
 

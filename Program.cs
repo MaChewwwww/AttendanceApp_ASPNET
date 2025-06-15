@@ -28,7 +28,9 @@ builder.Services.AddHttpClient<IApiService, ApiService>();
 
 // Register services
 builder.Services.AddScoped<IApiService, ApiService>();
+builder.Services.AddScoped<IStudentManagementService, StudentManagementService>();
 builder.Services.AddScoped<IClassService, ClassService>();
+builder.Services.AddScoped<IFacultyPersonalAttendanceService, FacultyPersonalAttendanceService>();
 
 // Register HTTP clients
 builder.Services.AddHttpClient<IEnvironmentService, EnvironmentService>();

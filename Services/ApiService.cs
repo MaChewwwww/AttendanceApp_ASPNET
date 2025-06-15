@@ -19,7 +19,7 @@ namespace AttendanceApp_ASPNET.Services
         Task<string> SendPasswordResetOTPAsync(object resetData);
         Task<string> VerifyPasswordResetOTPAsync(object verifyData);
         Task<string> ResetPasswordWithTokenAsync(object resetData);
-        
+
         // Student data methods (used by StudentManagementService)
         Task<string> GetAuthenticatedDataAsync(string endpoint, string jwtToken);
         Task<string> CheckStudentOnboardingStatusAsync(string jwtToken);
@@ -27,28 +27,29 @@ namespace AttendanceApp_ASPNET.Services
         Task<string> GetAvailableSectionsByProgramAsync(int programId, string jwtToken);
         Task<string> GetAvailableCoursesBySectionAsync(int sectionId, string jwtToken);
         Task<string> CompleteStudentOnboardingAsync(object onboardingData, string jwtToken);
-        
+
         // Course data methods
         Task<string> GetStudentCoursesAsync(string jwtToken);
         Task<string> GetCourseDetailsAsync(int courseId, string jwtToken);
         Task<string> GetCourseStudentsAsync(int assignedCourseId, string jwtToken);
         Task<string> GetFacultyCourseDetailsAsync(int assignedCourseId, string jwtToken);
         Task<string> UpdateStudentStatusAsync(int assignedCourseId, int studentId, object requestData, string jwtToken);
-        
+
         // Attendance data methods
         Task<string> GetStudentAttendanceAsync(string jwtToken);
         Task<string> GetCurrentSemesterAttendanceAsync(string jwtToken);
-        
+
         // Attendance submission methods
         Task<string> ValidateAttendanceSubmissionAsync(object validationData, string jwtToken);
         Task<string> SubmitAttendanceAsync(object submissionData, string jwtToken);
         Task<string> GetTodayAttendanceStatusAsync(string jwtToken);
-        
+
         // Dashboard data methods
         Task<string> GetStudentDashboardAsync(string jwtToken);
-        
+
         // Faculty attendance data methods
         Task<string> GetFacultyAttendanceAsync(string jwtToken);
+        Task<string> GetFacultyPersonalAttendanceAsync(string jwtToken);
         Task<string> GetCourseAttendanceAsync(int assignedCourseId, string academicYear, int? month, int? day, string jwtToken);
         Task<string> UpdateAttendanceStatusAsync(int assignedCourseId, int attendanceId, string status, string jwtToken);
 
@@ -233,21 +234,23 @@ namespace AttendanceApp_ASPNET.Services
                 rejected_students = new object[0],
                 passed_students = new object[0],
                 failed_students = new object[0],
-                enrollment_summary = new { 
-                    enrolled = 0, 
-                    pending = 0, 
-                    rejected = 0, 
-                    passed = 0, 
-                    failed = 0, 
-                    total = 0 
+                enrollment_summary = new
+                {
+                    enrolled = 0,
+                    pending = 0,
+                    rejected = 0,
+                    passed = 0,
+                    failed = 0,
+                    total = 0
                 },
-                attendance_summary = new { 
-                    total_records = 0, 
-                    total_sessions = 0, 
-                    present_count = 0, 
-                    late_count = 0, 
-                    absent_count = 0, 
-                    overall_attendance_rate = 0.0 
+                attendance_summary = new
+                {
+                    total_records = 0,
+                    total_sessions = 0,
+                    present_count = 0,
+                    late_count = 0,
+                    absent_count = 0,
+                    overall_attendance_rate = 0.0
                 },
                 recent_attendance = new object[0],
                 academic_year = "",
@@ -385,6 +388,42 @@ namespace AttendanceApp_ASPNET.Services
             });
         }
 
+        public async Task<string> GetFacultyPersonalAttendanceAsync(string jwtToken)
+        {
+            return await GetApiRequestWithStructuredErrorAsync("/faculty/attendance/personal", jwtToken, "Failed to fetch faculty personal attendance", new
+            {
+                success = false,
+                message = "",
+                faculty_info = new { },
+                attendance_records = new object[0],
+                total_records = 0,
+                attendance_summary = new
+                {
+                    total_records = 0,
+                    present_count = 0,
+                    late_count = 0,
+                    absent_count = 0,
+                    attendance_percentage = 0.0,
+                    status_distribution = new
+                    {
+                        present = 0,
+                        late = 0,
+                        absent = 0
+                    }
+                },
+                course_summary = new
+                {
+                    total_courses = 0,
+                    courses = new { }
+                },
+                academic_year_summary = new
+                {
+                    years = new { },
+                    total_years = 0
+                }
+            });
+        }
+
         public async Task<string> GetCourseAttendanceAsync(int assignedCourseId, string academicYear, int? month, int? day, string jwtToken)
         {
             var queryParams = new List<string>();
@@ -394,16 +433,16 @@ namespace AttendanceApp_ASPNET.Services
                 queryParams.Add($"month={month.Value}");
             if (day.HasValue)
                 queryParams.Add($"day={day.Value}");
-            
+
             var queryString = queryParams.Count > 0 ? "?" + string.Join("&", queryParams) : "";
             var endpoint = $"/faculty/courses/{assignedCourseId}/attendance{queryString}";
-            
+
             Console.WriteLine($"=== API SERVICE GET COURSE ATTENDANCE ===");
             Console.WriteLine($"Full endpoint: {endpoint}");
             Console.WriteLine($"Base URL: {_apiBaseUrl}");
             Console.WriteLine($"Complete URL: {_apiBaseUrl}{endpoint}");
             Console.WriteLine("==========================================");
-            
+
             return await GetApiRequestWithStructuredErrorAsync(endpoint, jwtToken, "Failed to fetch course attendance", new
             {
                 success = false,
@@ -425,7 +464,7 @@ namespace AttendanceApp_ASPNET.Services
         {
             var requestData = new { status = status };
             var endpoint = $"/faculty/courses/{assignedCourseId}/attendance/{attendanceId}/status";
-            
+
             return await PutApiRequestWithStructuredErrorAsync(endpoint, requestData, jwtToken, "Failed to update attendance status", new
             {
                 success = false,
@@ -434,7 +473,7 @@ namespace AttendanceApp_ASPNET.Services
                 old_status = "",
                 new_status = "",
                 updated_at = "",
-                student_info = new 
+                student_info = new
                 {
                     student_id = 0,
                     user_id = 0,
@@ -464,17 +503,17 @@ namespace AttendanceApp_ASPNET.Services
                 var apiUrl = $"{_apiBaseUrl}{endpoint}";
                 var json = JsonSerializer.Serialize(data);
                 var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-                
+
                 SetupRequestHeaders();
-                
+
                 var response = await _httpClient.PostAsync(apiUrl, content);
                 var responseContent = await response.Content.ReadAsStringAsync();
-                
+
                 if (!response.IsSuccessStatusCode)
                 {
                     throw new Exception($"API returned {response.StatusCode}: {responseContent}");
                 }
-                
+
                 return responseContent;
             }
             catch (Exception ex)
@@ -490,12 +529,12 @@ namespace AttendanceApp_ASPNET.Services
                 var apiUrl = $"{_apiBaseUrl}{endpoint}";
                 var json = JsonSerializer.Serialize(data);
                 var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-                
+
                 SetupRequestHeaders();
-                
+
                 var response = await _httpClient.PostAsync(apiUrl, content);
                 var responseContent = await response.Content.ReadAsStringAsync();
-                
+
                 if (!response.IsSuccessStatusCode)
                 {
                     var errorResponse = new
@@ -508,8 +547,8 @@ namespace AttendanceApp_ASPNET.Services
                     };
                     return JsonSerializer.Serialize(errorResponse);
                 }
-                
-                return string.IsNullOrWhiteSpace(responseContent) 
+
+                return string.IsNullOrWhiteSpace(responseContent)
                     ? JsonSerializer.Serialize(new { success = false, message = "Empty response from API" })
                     : responseContent;
             }
@@ -534,18 +573,18 @@ namespace AttendanceApp_ASPNET.Services
                 var apiUrl = $"{_apiBaseUrl}{endpoint}";
                 var json = JsonSerializer.Serialize(data);
                 var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-                
+
                 SetupRequestHeaders(jwtToken);
-                
+
                 var response = await _httpClient.PostAsync(apiUrl, content);
                 var responseContent = await response.Content.ReadAsStringAsync();
-                
+
                 if (!response.IsSuccessStatusCode)
                 {
                     var errorResponse = JsonSerializer.Serialize(errorTemplate);
                     return errorResponse.Replace("\"message\": \"\"", $"\"message\": \"API returned {response.StatusCode}: {responseContent}\"");
                 }
-                
+
                 return responseContent ?? string.Empty;
             }
             catch (Exception ex)
@@ -560,17 +599,17 @@ namespace AttendanceApp_ASPNET.Services
             try
             {
                 var apiUrl = $"{_apiBaseUrl}{endpoint}";
-                
+
                 SetupRequestHeaders(jwtToken);
-                
+
                 var response = await _httpClient.GetAsync(apiUrl);
                 var responseContent = await response.Content.ReadAsStringAsync();
-                
+
                 if (!response.IsSuccessStatusCode)
                 {
                     throw new Exception($"API call failed {response.StatusCode}: {responseContent}");
                 }
-                
+
                 return responseContent;
             }
             catch (Exception ex)
@@ -584,18 +623,18 @@ namespace AttendanceApp_ASPNET.Services
             try
             {
                 var apiUrl = $"{_apiBaseUrl}{endpoint}";
-                
+
                 SetupRequestHeaders(jwtToken);
-                
+
                 var response = await _httpClient.GetAsync(apiUrl);
                 var responseContent = await response.Content.ReadAsStringAsync();
-                
+
                 if (!response.IsSuccessStatusCode)
                 {
                     var errorResponse = JsonSerializer.Serialize(errorTemplate);
                     return errorResponse.Replace("\"message\": \"\"", $"\"message\": \"API returned {response.StatusCode}: {responseContent}\"");
                 }
-                
+
                 return responseContent;
             }
             catch (Exception ex)
@@ -612,18 +651,18 @@ namespace AttendanceApp_ASPNET.Services
                 var apiUrl = $"{_apiBaseUrl}{endpoint}";
                 var json = JsonSerializer.Serialize(data);
                 var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-                
+
                 SetupRequestHeaders(jwtToken);
-                
+
                 var response = await _httpClient.PutAsync(apiUrl, content);
                 var responseContent = await response.Content.ReadAsStringAsync();
-                
+
                 if (!response.IsSuccessStatusCode)
                 {
                     var errorResponse = JsonSerializer.Serialize(errorTemplate);
                     return errorResponse.Replace("\"message\": \"\"", $"\"message\": \"API returned {response.StatusCode}: {responseContent}\"");
                 }
-                
+
                 return responseContent ?? string.Empty;
             }
             catch (Exception ex)
@@ -638,11 +677,11 @@ namespace AttendanceApp_ASPNET.Services
             _httpClient.DefaultRequestHeaders.Clear();
             _httpClient.DefaultRequestHeaders.Add("AttendanceApp-API-Key", _apiKey);
             _httpClient.DefaultRequestHeaders.Add("User-Agent", "AttendanceApp-ASPNET/1.0");
-            
+
             if (!string.IsNullOrEmpty(jwtToken))
             {
                 _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {jwtToken}");
+            }
         }
     }
-}
 }
