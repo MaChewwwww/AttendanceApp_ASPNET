@@ -110,6 +110,9 @@ Create or update `appsettings.json`:
 ```bash
 dotnet run --project AttendaceApp_ASPNET.csproj --launch-profile https
 ```
+```bash
+dotnet watch run
+```
 
 **Option B: Using VS Code Debug**
 ```bash
