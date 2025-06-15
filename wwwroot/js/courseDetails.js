@@ -64,7 +64,9 @@ async function loadCourseDetailsFromAPI(assignedCourseId) {
         }
 
         const data = await response.json();
-        console.log('Course details API response:', data);
+        console.log('=== FULL COURSE DETAILS API RESPONSE ===');
+        console.log(JSON.stringify(data, null, 2));
+        console.log('=========================================');
 
         if (!data.success) {
             showCourseDetailsError(data.message || 'Failed to load course details');
@@ -86,98 +88,89 @@ async function loadCourseDetailsFromAPI(assignedCourseId) {
     }
 }
 
-function updateCourseDetailsHeader(data) {
-    const titleElement = document.getElementById('modalCourseDetailsTitle');
-    const subHeaderElement = document.getElementById('modalCourseDetailsSubHeader');
-    const descriptionElement = document.getElementById('modalCourseDescription');
-    
-    if (titleElement && subHeaderElement && descriptionElement && data.course_info) {
-        const courseInfo = data.course_info;
-        titleElement.textContent = `${courseInfo.course_code} - ${courseInfo.course_name}`;
-        
-        // Build sub header with available info
-        let subHeaderParts = [];
-        if (data.section_info?.section_name) subHeaderParts.push(data.section_info.section_name);
-        if (courseInfo.room) subHeaderParts.push(courseInfo.room);
-        subHeaderElement.textContent = subHeaderParts.join(' - ') || 'Course Information';
-        
-        descriptionElement.textContent = courseInfo.course_description || 'No course description available.';
-    }
-}
-
 function processCourseDetailsData(data) {
-    console.log('processCourseDetailsData - Full API response:', data);
+    console.log('=== PROCESSING COURSE DETAILS DATA ===');
+    console.log('Full data object keys:', Object.keys(data));
+    console.log('Data structure check:');
+    console.log('  - enrolledStudents exists:', !!data.enrolledStudents);
+    console.log('  - enrolled_students exists:', !!data.enrolled_students);
+    console.log('  - pendingStudents exists:', !!data.pendingStudents);
+    console.log('  - pending_students exists:', !!data.pending_students);
+    console.log('  - rejectedStudents exists:', !!data.rejectedStudents);
+    console.log('  - rejected_students exists:', !!data.rejected_students);
+    console.log('  - passedStudents exists:', !!data.passedStudents);
+    console.log('  - passed_students exists:', !!data.passed_students);
+    console.log('  - failedStudents exists:', !!data.failedStudents);
+    console.log('  - failed_students exists:', !!data.failed_students);
+    console.log('=====================================');
     
     // Combine all students from different status arrays
     courseDetailsStudentsData = [];
     
-    // Process enrolled students - the API is putting the student in the enrolled_students array
-    if (data.enrolled_students) {
-        console.log('Processing enrolled_students:', data.enrolled_students);
-        data.enrolled_students.forEach(student => {
-            console.log('Enrolled student raw data:', student);
+    // Process enrolled students (try both camelCase and snake_case)
+    const enrolledStudents = data.enrolledStudents || data.enrolled_students;
+    if (enrolledStudents && Array.isArray(enrolledStudents)) {
+        console.log('Processing enrolledStudents:', enrolledStudents.length, 'students');
+        enrolledStudents.forEach(student => {
             const processedStudent = processStudentData(student, 'Enrolled');
-            console.log('Processed enrolled student:', processedStudent);
             courseDetailsStudentsData.push(processedStudent);
         });
+    } else {
+        console.log('No enrolled students found or not an array');
     }
     
     // Process pending students
-    if (data.pending_students) {
-        console.log('Processing pending_students:', data.pending_students);
-        data.pending_students.forEach(student => {
-            console.log('Pending student raw data:', student);
+    const pendingStudents = data.pendingStudents || data.pending_students;
+    if (pendingStudents && Array.isArray(pendingStudents)) {
+        console.log('Processing pendingStudents:', pendingStudents.length, 'students');
+        pendingStudents.forEach(student => {
             const processedStudent = processStudentData(student, 'Pending');
-            console.log('Processed pending student:', processedStudent);
             courseDetailsStudentsData.push(processedStudent);
         });
+    } else {
+        console.log('No pending students found or not an array');
     }
     
     // Process rejected students
-    if (data.rejected_students) {
-        console.log('Processing rejected_students:', data.rejected_students);
-        data.rejected_students.forEach(student => {
-            console.log('Rejected student raw data:', student);
+    const rejectedStudents = data.rejectedStudents || data.rejected_students;
+    if (rejectedStudents && Array.isArray(rejectedStudents)) {
+        console.log('Processing rejectedStudents:', rejectedStudents.length, 'students');
+        rejectedStudents.forEach(student => {
             const processedStudent = processStudentData(student, 'Rejected');
-            console.log('Processed rejected student:', processedStudent);
             courseDetailsStudentsData.push(processedStudent);
         });
+    } else {
+        console.log('No rejected students found or not an array');
     }
 
     // Process passed students
-    if (data.passed_students) {
-        console.log('Processing passed_students:', data.passed_students);
-        data.passed_students.forEach(student => {
-            console.log('Passed student raw data:', student);
+    const passedStudents = data.passedStudents || data.passed_students;
+    if (passedStudents && Array.isArray(passedStudents)) {
+        console.log('Processing passedStudents:', passedStudents.length, 'students');
+        passedStudents.forEach(student => {
             const processedStudent = processStudentData(student, 'Passed');
-            console.log('Processed passed student:', processedStudent);
             courseDetailsStudentsData.push(processedStudent);
         });
+    } else {
+        console.log('No passed students found or not an array');
     }
 
     // Process failed students
-    if (data.failed_students) {
-        console.log('Processing failed_students:', data.failed_students);
-        data.failed_students.forEach(student => {
-            console.log('Failed student raw data:', student);
+    const failedStudents = data.failedStudents || data.failed_students;
+    if (failedStudents && Array.isArray(failedStudents)) {
+        console.log('Processing failedStudents:', failedStudents.length, 'students');
+        failedStudents.forEach(student => {
             const processedStudent = processStudentData(student, 'Failed');
-            console.log('Processed failed student:', processedStudent);
             courseDetailsStudentsData.push(processedStudent);
         });
+    } else {
+        console.log('No failed students found or not an array');
     }
 
-    // Process attending students (students with attendance but no formal enrollment status)
-    if (data.attending_students) {
-        console.log('Processing attending_students:', data.attending_students);
-        data.attending_students.forEach(student => {
-            console.log('Attending student raw data:', student);
-            const processedStudent = processStudentData(student, 'Attending');
-            console.log('Processed attending student:', processedStudent);
-            courseDetailsStudentsData.push(processedStudent);
-        });
-    }
-
+    console.log('=== FINAL PROCESSING RESULTS ===');
+    console.log('Total students processed:', courseDetailsStudentsData.length);
     console.log('Final processed students data:', courseDetailsStudentsData);
+    console.log('================================');
 
     // Set filtered data
     filteredCourseDetailsStudents = [...courseDetailsStudentsData];
@@ -192,57 +185,75 @@ function processCourseDetailsData(data) {
     setupCourseDetailsEventListeners();
 }
 
+function updateCourseDetailsHeader(data) {
+    const titleElement = document.getElementById('modalCourseDetailsTitle');
+    const subHeaderElement = document.getElementById('modalCourseDetailsSubHeader');
+    const descriptionElement = document.getElementById('modalCourseDescription');
+    
+    console.log('=== UPDATING COURSE DETAILS HEADER ===');
+    console.log('courseInfo:', data.courseInfo);
+    console.log('course_info:', data.course_info);
+    console.log('sectionInfo:', data.sectionInfo);
+    console.log('section_info:', data.section_info);
+    console.log('=====================================');
+    
+    if (titleElement && subHeaderElement && descriptionElement) {
+        // Handle courseInfo properly whether it's nested or direct
+        const courseInfo = data.courseInfo || data.course_info;
+        const sectionInfo = data.sectionInfo || data.section_info;
+        
+        if (courseInfo) {
+            const courseCode = courseInfo.courseCode || courseInfo.course_code || '';
+            const courseName = courseInfo.courseName || courseInfo.course_name || '';
+            const courseDescription = courseInfo.courseDescription || courseInfo.course_description || '';
+            const room = courseInfo.room || '';
+            
+            titleElement.textContent = `${courseCode} - ${courseName}`;
+            
+            // Build sub header with available info
+            let subHeaderParts = [];
+            if (sectionInfo?.sectionName || sectionInfo?.section_name) {
+                subHeaderParts.push(sectionInfo.sectionName || sectionInfo.section_name);
+            }
+            if (room) subHeaderParts.push(room);
+            subHeaderElement.textContent = subHeaderParts.join(' - ') || 'Course Information';
+            
+            descriptionElement.textContent = courseDescription || 'No course description available.';
+        } else {
+            console.log('No courseInfo found in response');
+            titleElement.textContent = 'Course Details';
+            subHeaderElement.textContent = 'Loading course information...';
+            descriptionElement.textContent = 'Loading description...';
+        }
+    }
+}
+
 function processStudentData(student, defaultStatus) {
-    // Debug logging to see what we're receiving
     console.log('processStudentData - Processing student:', student);
     console.log('processStudentData - Default status:', defaultStatus);
     
-    // The API is returning "enrollment_status" but we need to check all possible property names
-    let actualStatus = student.enrollment_status || 
-                      student.status || 
-                      student.enrollmentStatus || 
-                      defaultStatus;
+    // Handle both camelCase and snake_case property names
+    const actualStatus = student.enrollmentStatus || 
+                        student.enrollment_status || 
+                        student.status || 
+                        defaultStatus;
     
     console.log('processStudentData - Final status assigned:', actualStatus);
     
     return {
-        id: student.student_id || student.id,
-        name: student.name || `${student.first_name || ''} ${student.last_name || ''}`.trim(),
-        studentNumber: student.student_number || '',
+        id: student.studentId || student.student_id || student.id,
+        name: student.name || `${student.firstName || student.first_name || ''} ${student.lastName || student.last_name || ''}`.trim(),
+        studentNumber: student.studentNumber || student.student_number || '',
         email: student.email || '',
-        status: actualStatus, // Use the actual status from the database
-        present: student.present_count || 0,
-        late: student.late_count || 0,
-        absent: student.absent_count || 0,
-        failed: student.failed_count || 0,
-        attendanceRate: student.attendance_percentage || 0,
-        latestAttendance: student.latest_attendance_date ? new Date(student.latest_attendance_date).toLocaleDateString() : 'N/A'
+        status: actualStatus,
+        present: student.presentCount || student.present_count || 0,
+        late: student.lateCount || student.late_count || 0,
+        absent: student.absentCount || student.absent_count || 0,
+        failed: student.failedCount || student.failed_count || 0,
+        attendanceRate: student.attendancePercentage || student.attendance_percentage || 0,
+        latestAttendance: student.latestAttendanceDate || student.latest_attendance_date ? 
+            new Date(student.latestAttendanceDate || student.latest_attendance_date).toLocaleDateString() : 'N/A'
     };
-}
-
-// Add a function to normalize status values
-function normalizeStatusForDisplay(status) {
-    if (!status) return 'Pending';
-    
-    const statusLower = status.toLowerCase().trim();
-    console.log('normalizeStatusForDisplay - Input:', status, 'Lowercase:', statusLower);
-    
-    switch (statusLower) {
-        case 'enrolled':
-        case 'approved':
-            return 'Enrolled';
-        case 'pending':
-            return 'Pending';
-        case 'rejected':
-            return 'Rejected';
-        case 'failed':
-            return 'Failed';
-        case 'passed':
-            return 'Passed';
-        default:
-            console.log('normalizeStatusForDisplay - Unknown status, defaulting to Pending:', status);
-            return 'Pending';
-    }
 }
 
 function updateCourseDetailsSummaryCards() {
@@ -282,18 +293,36 @@ function updateCourseDetailsSummaryCards() {
     console.log(`  Rejected: ${rejectedStudents}`);
     console.log(`  Failed: ${failedStudents}`);
     
-    // Log individual student statuses for debugging
-    courseDetailsStudentsData.forEach(student => {
-        const normalized = normalizeStatusForDisplay(student.status);
-        console.log(`  Student ${student.name}: raw="${student.status}" -> normalized="${normalized}"`);
-    });
-    
     document.getElementById('courseDetailsStudentCount').textContent = totalStudents;
     document.getElementById('courseDetailsPendingCount').textContent = pendingStudents;
     document.getElementById('courseDetailsEnrolledCount').textContent = enrolledStudents;
     document.getElementById('courseDetailsPassedCount').textContent = passedStudents;
     document.getElementById('courseDetailsRejectedCount').textContent = rejectedStudents;
     document.getElementById('courseDetailsFailedCount').textContent = failedStudents;
+}
+
+function normalizeStatusForDisplay(status) {
+    if (!status) return 'Pending';
+    
+    const statusLower = status.toLowerCase().trim();
+    console.log('normalizeStatusForDisplay - Input:', status, 'Lowercase:', statusLower);
+    
+    switch (statusLower) {
+        case 'enrolled':
+        case 'approved':
+            return 'Enrolled';
+        case 'pending':
+            return 'Pending';
+        case 'rejected':
+            return 'Rejected';
+        case 'failed':
+            return 'Failed';
+        case 'passed':
+            return 'Passed';
+        default:
+            console.log('normalizeStatusForDisplay - Unknown status, defaulting to Pending:', status);
+            return 'Pending';
+    }
 }
 
 function renderCourseDetailsStudentsTable() {
@@ -696,19 +725,24 @@ function courseDetailsQuickFilter(filterType) {
             filteredCourseDetailsStudents = [...courseDetailsStudentsData];
             break;
         case 'approved':
-            filteredCourseDetailsStudents = courseDetailsStudentsData.filter(s => s.status === 'Enrolled');
+            filteredCourseDetailsStudents = courseDetailsStudentsData.filter(s => 
+                normalizeStatusForDisplay(s.status) === 'Enrolled');
             break;
         case 'pending':
-            filteredCourseDetailsStudents = courseDetailsStudentsData.filter(s => s.status === 'Pending');
+            filteredCourseDetailsStudents = courseDetailsStudentsData.filter(s => 
+                normalizeStatusForDisplay(s.status) === 'Pending');
             break;
         case 'passed':
-            filteredCourseDetailsStudents = courseDetailsStudentsData.filter(s => s.status === 'Passed');
+            filteredCourseDetailsStudents = courseDetailsStudentsData.filter(s => 
+                normalizeStatusForDisplay(s.status) === 'Passed');
             break;
         case 'rejected':
-            filteredCourseDetailsStudents = courseDetailsStudentsData.filter(s => s.status === 'Rejected');
+            filteredCourseDetailsStudents = courseDetailsStudentsData.filter(s => 
+                normalizeStatusForDisplay(s.status) === 'Rejected');
             break;
         case 'failed':
-            filteredCourseDetailsStudents = courseDetailsStudentsData.filter(s => s.status === 'Failed');
+            filteredCourseDetailsStudents = courseDetailsStudentsData.filter(s => 
+                normalizeStatusForDisplay(s.status) === 'Failed');
             break;
         case 'high-attendance':
             filteredCourseDetailsStudents = courseDetailsStudentsData.filter(s => s.attendanceRate >= 80);
@@ -754,6 +788,32 @@ function reloadCourseDetails() {
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape' && ModalManager.isModalOpen('courseDetailsModal')) {
         closeCourseDetailsModal();
+    }
+});
+
+// Handle backdrop click for course details modal
+document.addEventListener('DOMContentLoaded', function() {
+    const courseDetailsModal = document.getElementById('courseDetailsModal');
+    if (courseDetailsModal) {
+        courseDetailsModal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeCourseDetailsModal();
+            }
+        });
+    }
+});
+
+// Handle escape key for confirmation modal
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        if (window.statusUpdateModal) {
+            cancelStatusUpdate();
+            return;
+        }
+        
+        if (ModalManager.isModalOpen('courseDetailsModal')) {
+            closeCourseDetailsModal();
+        }
     }
 });
 

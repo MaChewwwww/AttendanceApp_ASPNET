@@ -1,7 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using AttendanceApp_ASPNET.Controllers.Base;
 using AttendanceApp_ASPNET.Services;
-using AttendanceApp_ASPNET.Models;  // Add this line
+using AttendanceApp_ASPNET.Models;
+using System.Text.Json;
 
 namespace AttendanceApp_ASPNET.Controllers
 {
@@ -165,15 +166,17 @@ namespace AttendanceApp_ASPNET.Controllers
                 ExtendSession();
 
                 var courseDetailsResponse = await _classService.GetFacultyCourseDetailsAsync(assignedCourseId, jwtToken);
+
+                // Return the structured response directly
                 return Json(courseDetailsResponse);
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error getting course details: {ex.Message}");
-                return Json(new { 
-                    success = false, 
-                    message = "Failed to load course details. Please try again later.",
-                    error = ex.Message 
+                return Json(new FacultyCourseDetailsResponse
+                { 
+                    Success = false, 
+                    Message = "Failed to load course details. Please try again later."
                 });
             }
         }
@@ -402,4 +405,5 @@ namespace AttendanceApp_ASPNET.Controllers
         public string AttendanceTime { get; set; } = string.Empty;
     }
 }
+  
 

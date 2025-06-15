@@ -231,8 +231,24 @@ namespace AttendanceApp_ASPNET.Services
                 enrolled_students = new object[0],
                 pending_students = new object[0],
                 rejected_students = new object[0],
-                enrollment_summary = new { enrolled = 0, pending = 0, rejected = 0, total = 0 },
-                attendance_summary = new { total_records = 0, total_sessions = 0, present_count = 0, late_count = 0, absent_count = 0, overall_attendance_rate = 0.0 },
+                passed_students = new object[0],
+                failed_students = new object[0],
+                enrollment_summary = new { 
+                    enrolled = 0, 
+                    pending = 0, 
+                    rejected = 0, 
+                    passed = 0, 
+                    failed = 0, 
+                    total = 0 
+                },
+                attendance_summary = new { 
+                    total_records = 0, 
+                    total_sessions = 0, 
+                    present_count = 0, 
+                    late_count = 0, 
+                    absent_count = 0, 
+                    overall_attendance_rate = 0.0 
+                },
                 recent_attendance = new object[0],
                 academic_year = "",
                 semester = "",

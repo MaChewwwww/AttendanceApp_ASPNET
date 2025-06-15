@@ -72,45 +72,27 @@ namespace AttendanceApp_ASPNET.Services
         {
             try
             {
-                var response = await _apiService.GetFacultyCourseDetailsAsync(assignedCourseId, jwtToken);
-                var apiResponse = JsonSerializer.Deserialize<FacultyCourseDetailsResponse>(response, _jsonOptions);
+                var json = await _apiService.GetFacultyCourseDetailsAsync(assignedCourseId, jwtToken);
                 
-                if (apiResponse == null)
+                // Deserialize the JSON response directly to FacultyCourseDetailsResponse
+                var response = JsonSerializer.Deserialize<FacultyCourseDetailsResponse>(json, new JsonSerializerOptions 
+                { 
+                    PropertyNameCaseInsensitive = true 
+                });
+
+                return response ?? new FacultyCourseDetailsResponse
                 {
-                    return new FacultyCourseDetailsResponse
-                    {
-                        Success = false,
-                        Message = "Failed to parse API response",
-                        CourseInfo = new Dictionary<string, object>(),
-                        SectionInfo = new Dictionary<string, object>(),
-                        FacultyInfo = new Dictionary<string, object>(),
-                        EnrolledStudents = new List<object>(),
-                        PendingStudents = new List<object>(),
-                        RejectedStudents = new List<object>(),
-                        EnrollmentSummary = new Dictionary<string, object>(),
-                        AttendanceSummary = new Dictionary<string, object>(),
-                        RecentAttendance = new List<object>()
-                    };
-                }
-                
-                return apiResponse;
+                    Success = false,
+                    Message = "Failed to parse course details response"
+                };
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error in GetFacultyCourseDetailsAsync: {ex.Message}");
+                Console.WriteLine($"Error getting faculty course details: {ex.Message}");
                 return new FacultyCourseDetailsResponse
                 {
                     Success = false,
-                    Message = $"Failed to fetch course details: {ex.Message}",
-                    CourseInfo = new Dictionary<string, object>(),
-                    SectionInfo = new Dictionary<string, object>(),
-                    FacultyInfo = new Dictionary<string, object>(),
-                    EnrolledStudents = new List<object>(),
-                    PendingStudents = new List<object>(),
-                    RejectedStudents = new List<object>(),
-                    EnrollmentSummary = new Dictionary<string, object>(),
-                    AttendanceSummary = new Dictionary<string, object>(),
-                    RecentAttendance = new List<object>()
+                    Message = "Failed to fetch course details. Please try again later."
                 };
             }
         }
@@ -153,145 +135,60 @@ namespace AttendanceApp_ASPNET.Services
                     rejection_reason = rejectionReason
                 };
 
-                var responseJson = await _apiService.UpdateStudentStatusAsync(assignedCourseId, studentId, requestData, jwtToken);
+                var json = await _apiService.UpdateStudentStatusAsync(assignedCourseId, studentId, requestData, jwtToken);
                 
-                if (string.IsNullOrEmpty(responseJson))
+                // Parse as generic object since the response structure may vary
+                using var document = JsonDocument.Parse(json);
+                var root = document.RootElement;
+                
+                return new
                 {
-                    return new { 
-                        success = false, 
-                        message = "Empty response from API"
-                    };
-                }
-
-                Console.WriteLine($"UpdateStudentStatus API Response: {responseJson}");
-
-                // Parse the JSON response
-                var apiResponse = JsonSerializer.Deserialize<JsonElement>(responseJson, _jsonOptions);
-
-                // Check if the response indicates success
-                if (apiResponse.TryGetProperty("success", out var successElement) && 
-                    successElement.ValueKind == JsonValueKind.True)
-                {
-                    var result = JsonSerializer.Deserialize<object>(responseJson, _jsonOptions);
-                    
-                    Console.WriteLine($"Student status update successful for student {studentId} to status {status}");
-                    return result;
-                }
-                else
-                {
-                    var errorMessage = "Unknown error occurred";
-                    if (apiResponse.TryGetProperty("message", out var messageElement))
-                    {
-                        errorMessage = messageElement.GetString() ?? errorMessage;
-                    }
-
-                    Console.WriteLine($"Student status update failed: {errorMessage}");
-                    return new { 
-                        success = false, 
-                        message = errorMessage
-                    };
-                }
+                    success = root.TryGetProperty("success", out var successProp) ? successProp.GetBoolean() : false,
+                    message = root.TryGetProperty("message", out var messageProp) ? messageProp.GetString() : "Unknown error",
+                    student_info = root.TryGetProperty("student_info", out var studentProp) ? JsonSerializer.Deserialize<object>(studentProp.GetRawText()) : null,
+                    updated_status = root.TryGetProperty("updated_status", out var statusProp) ? statusProp.GetString() : "",
+                    updated_at = root.TryGetProperty("updated_at", out var updatedProp) ? updatedProp.GetString() : ""
+                };
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Exception in UpdateStudentStatusAsync: {ex.Message}");
-                return new { 
-                    success = false, 
-                    message = $"Error updating student status: {ex.Message}"
+                Console.WriteLine($"Error updating student status: {ex.Message}");
+                return new
+                {
+                    success = false,
+                    message = "Failed to update student status. Please try again later.",
+                    error = ex.Message
                 };
             }
         }
 
-        public async Task<FacultyCourseAttendanceResponse> GetCourseAttendanceAsync(int assignedCourseId, string academicYear, int? month, int? day, string jwtToken)
+        public async Task<FacultyCourseAttendanceResponse> GetCourseAttendanceAsync(int assignedCourseId, string? academicYear, int? month, int? day, string jwtToken)
         {
             try
             {
-                Console.WriteLine($"=== GET COURSE ATTENDANCE DEBUG ===");
-                Console.WriteLine($"Assigned Course ID: {assignedCourseId}");
-                Console.WriteLine($"Academic Year: {academicYear ?? "null"}");
-                Console.WriteLine($"Month: {month?.ToString() ?? "null"}");
-                Console.WriteLine($"Day: {day?.ToString() ?? "null"}");
-                Console.WriteLine($"JWT Token present: {!string.IsNullOrEmpty(jwtToken)}");
-                Console.WriteLine("=====================================");
+                var json = await _apiService.GetCourseAttendanceAsync(assignedCourseId, academicYear ?? "", month, day, jwtToken);
+                
+                // Deserialize the JSON response directly to FacultyCourseAttendanceResponse
+                var response = JsonSerializer.Deserialize<FacultyCourseAttendanceResponse>(json, new JsonSerializerOptions 
+                { 
+                    PropertyNameCaseInsensitive = true 
+                });
 
-                var response = await _apiService.GetCourseAttendanceAsync(assignedCourseId, academicYear, month, day, jwtToken);
-                
-                Console.WriteLine($"Raw API Response Length: {response?.Length ?? 0} characters");
-                Console.WriteLine($"Raw API Response Preview: {(string.IsNullOrEmpty(response) ? "EMPTY" : response.Substring(0, Math.Min(200, response.Length)))}...");
-                
-                if (string.IsNullOrEmpty(response))
+                return response ?? new FacultyCourseAttendanceResponse
                 {
-                    Console.WriteLine("ERROR: Empty response from API");
-                    return CreateEmptyAttendanceResponse("Empty response from API");
-                }
-
-                var apiResponse = JsonSerializer.Deserialize<FacultyCourseAttendanceResponse>(response, _jsonOptions);
-                
-                if (apiResponse == null)
-                {
-                    Console.WriteLine("ERROR: Failed to deserialize API response");
-                    return CreateEmptyAttendanceResponse("Failed to parse API response");
-                }
-
-                Console.WriteLine($"Deserialized Response - Success: {apiResponse.Success}");
-                Console.WriteLine($"Deserialized Response - Message: {apiResponse.Message}");
-                Console.WriteLine($"Deserialized Response - Records Count: {apiResponse.AttendanceRecords?.Count ?? 0}");
-                
-                if (apiResponse.AttendanceRecords?.Any() == true)
-                {
-                    Console.WriteLine("=== ATTENDANCE RECORDS SAMPLE ===");
-                    var sampleRecord = apiResponse.AttendanceRecords.First();
-                    Console.WriteLine($"Sample Record: {sampleRecord}");
-                    Console.WriteLine($"Sample AttendanceId Type: {sampleRecord.AttendanceId.GetType()}, Value: {sampleRecord.AttendanceId}");
-                    Console.WriteLine("=================================");
-                    
-                    // Log all attendance IDs to verify they're being passed correctly
-                    var attendanceIds = apiResponse.AttendanceRecords.Select(r => r.AttendanceId).ToList();
-                    Console.WriteLine($"All Attendance IDs: [{string.Join(", ", attendanceIds)}]");
-                    
-                    // Check for any zero or invalid IDs
-                    var invalidIds = apiResponse.AttendanceRecords.Where(r => r.AttendanceId <= 0).ToList();
-                    if (invalidIds.Any())
-                    {
-                        Console.WriteLine($"WARNING: Found {invalidIds.Count} records with invalid attendance IDs:");
-                        foreach (var invalid in invalidIds)
-                        {
-                            Console.WriteLine($"  - {invalid}");
-                        }
-                    }
-                }
-                
-                return apiResponse;
-            }
-            catch (JsonException jsonEx)
-            {
-                Console.WriteLine($"JSON Deserialization Error in GetCourseAttendanceAsync: {jsonEx.Message}");
-                Console.WriteLine($"JSON Error Path: {jsonEx.Path}");
-                return CreateEmptyAttendanceResponse($"JSON parsing error: {jsonEx.Message}");
+                    Success = false,
+                    Message = "Failed to parse attendance response"
+                };
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"General Error in GetCourseAttendanceAsync: {ex.Message}");
-                Console.WriteLine($"Stack trace: {ex.StackTrace}");
-                return CreateEmptyAttendanceResponse($"Failed to fetch course attendance: {ex.Message}");
+                Console.WriteLine($"Error getting course attendance: {ex.Message}");
+                return new FacultyCourseAttendanceResponse
+                {
+                    Success = false,
+                    Message = "Failed to fetch course attendance. Please try again later."
+                };
             }
-        }
-
-        private FacultyCourseAttendanceResponse CreateEmptyAttendanceResponse(string message)
-        {
-            return new FacultyCourseAttendanceResponse
-            {
-                Success = false,
-                Message = message,
-                CourseInfo = new Dictionary<string, object>(),
-                SectionInfo = new Dictionary<string, object>(),
-                FacultyInfo = new Dictionary<string, object>(),
-                AttendanceRecords = new List<FacultyCourseAttendanceInfo>(),
-                TotalRecords = 0,
-                AttendanceSummary = new Dictionary<string, object>(),
-                IsCurrentCourse = false,
-                AvailableFilters = new Dictionary<string, List<string>>()
-            };
         }
 
         public async Task<UpdateAttendanceStatusResponse> UpdateAttendanceStatusAsync(int assignedCourseId, int attendanceId, string status, string jwtToken)
@@ -331,7 +228,7 @@ namespace AttendanceApp_ASPNET.Services
                 if (success)
                 {
                     // Create updated record from the new API response format
-                    FacultyCourseAttendanceInfo updatedRecord = null;
+                    FacultyCourseAttendanceInfo? updatedRecord = null;
                     
                     if (apiResponse.TryGetProperty("student_info", out var studentInfo) && 
                         apiResponse.TryGetProperty("course_info", out var courseInfo))
