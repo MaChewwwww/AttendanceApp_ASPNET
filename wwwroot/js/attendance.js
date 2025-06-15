@@ -711,38 +711,18 @@ async function confirmAttendanceUpdateEnhanced() {
             throw new Error(result.message || 'Failed to update attendance status');
         }
         
-        // Success! Update the dropdown permanently
-        if (globalData.selectElement) {
-            console.log('Success: Permanently updating dropdown to new status');
-            globalData.selectElement.setAttribute('data-current-status', globalData.status);
-            globalData.selectElement.classList.remove('bg-green-100', 'text-green-800', 'border-green-200', 
-                                           'bg-yellow-100', 'text-yellow-800', 'border-yellow-200',
-                                           'bg-red-100', 'text-red-800', 'border-red-200');
-            globalData.selectElement.classList.add(...getAttendanceStatusClasses(globalData.status).split(' '));
-            globalData.selectElement.disabled = false; // Re-enable dropdown
-        }
-        
         // Close confirmation modal
         cancelAttendanceUpdateEnhanced();
         
         // Show success notification
         showAttendanceUpdateNotification(globalData.record, globalData.status);
         
-        // Update local data
-        const localRecord = attendanceRecordsData.find(r => r.attendance_id === globalData.attendanceId);
-        if (localRecord) {
-            localRecord.status = globalData.status;
-            
-            // Update the record data in the dropdown as well
-            const updatedRecordJson = JSON.stringify(localRecord).replace(/"/g, '&quot;');
-            globalData.selectElement.setAttribute('data-record', updatedRecordJson);
-            
-            // Re-apply current filters to update filtered data
-            applyAttendanceFilters();
-            
-            // This will update both summary cards and table
-            updateAttendanceSummaryCards();
-        }
+        // Store current filter and sort state before refreshing
+        const currentFilters = preserveCurrentFilters();
+        console.log('Preserving current filters:', currentFilters);
+        
+        // Refresh attendance data from server to get the latest state
+        await refreshAttendanceDataWithFilters(currentFilters);
         
     } catch (error) {
         console.error('Error updating attendance status:', error);
@@ -767,6 +747,244 @@ async function confirmAttendanceUpdateEnhanced() {
             buttonElement.disabled = false;
             buttonElement.innerHTML = 'Update Attendance';
         }
+    }
+}
+
+// New function to preserve current filter and sort state
+function preserveCurrentFilters() {
+    const searchInput = document.getElementById('attendanceStudentSearchInput');
+    const sortSelect = document.getElementById('attendanceSortSelect');
+    const monthFilter = document.getElementById('attendanceMonthFilter');
+    const dayFilter = document.getElementById('attendanceDayFilter');
+    
+    // Get current quick filter selection
+    const activeQuickFilter = document.querySelector('[id^="attendanceQuickFilter-"].active');
+    const quickFilterType = activeQuickFilter ? activeQuickFilter.id.replace('attendanceQuickFilter-', '') : 'all';
+    
+    return {
+        searchTerm: searchInput ? searchInput.value : '',
+        sortBy: sortSelect ? sortSelect.value : 'name-asc',
+        selectedMonth: monthFilter ? monthFilter.value : '',
+        selectedDay: dayFilter ? dayFilter.value : '',
+        quickFilter: quickFilterType
+    };
+}
+
+// New function to refresh data and restore filters
+async function refreshAttendanceDataWithFilters(savedFilters) {
+    try {
+        console.log('=== REFRESHING ATTENDANCE DATA WITH FILTERS ===');
+        console.log('Saved filters:', savedFilters);
+        
+        // Show a subtle loading indicator
+        showRefreshingIndicator();
+        
+        // Reload attendance data from API
+        const response = await fetch(`/Faculty/GetCourseAttendance?assignedCourseId=${currentAttendanceData.AssignedCourseId}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        if (!data.success) {
+            throw new Error(data.message || 'Failed to refresh attendance records');
+        }
+
+        console.log('Successfully refreshed attendance data');
+        
+        // Update the data arrays with fresh data
+        attendanceRecordsData = data.attendance_records || [];
+        
+        // Restore the saved filters and sorts
+        restoreFiltersAndApply(savedFilters);
+        
+        // Hide the loading indicator
+        hideRefreshingIndicator();
+        
+        console.log('Filters restored and data refreshed successfully');
+        
+    } catch (error) {
+        console.error('Error refreshing attendance data:', error);
+        hideRefreshingIndicator();
+        
+        // If refresh fails, just update local data as fallback
+        updateLocalDataOnly();
+    }
+}
+
+// Function to restore filters and apply them
+function restoreFiltersAndApply(savedFilters) {
+    console.log('=== RESTORING FILTERS ===');
+    console.log('Restoring filters:', savedFilters);
+    
+    // Restore form values
+    const searchInput = document.getElementById('attendanceStudentSearchInput');
+    const sortSelect = document.getElementById('attendanceSortSelect');
+    const monthFilter = document.getElementById('attendanceMonthFilter');
+    const dayFilter = document.getElementById('attendanceDayFilter');
+    
+    if (searchInput) searchInput.value = savedFilters.searchTerm || '';
+    if (sortSelect) sortSelect.value = savedFilters.sortBy || 'name-asc';
+    if (monthFilter) monthFilter.value = savedFilters.selectedMonth || '';
+    if (dayFilter) dayFilter.value = savedFilters.selectedDay || '';
+    
+    // Restore quick filter selection
+    const quickFilterType = savedFilters.quickFilter || 'all';
+    attendanceQuickFilter(quickFilterType);
+    
+    // Apply the restored filters
+    applyAttendanceFilters();
+    
+    // Update summary cards and render table
+    updateAttendanceSummaryCards();
+    renderAttendanceRecordsTable();
+    
+    console.log('======================');
+}
+
+// Function to update only local data (fallback when refresh fails)
+function updateLocalDataOnly() {
+    console.log('Updating local data only (fallback mode)');
+    
+    const globalData = window.attendanceUpdateGlobals.get();
+    if (globalData && globalData.attendanceId) {
+        // Update the local record
+        const localRecord = attendanceRecordsData.find(r => r.attendance_id === globalData.attendanceId);
+        if (localRecord) {
+            localRecord.status = globalData.status;
+            
+            // Update the dropdown's data-current-status attribute
+            if (globalData.selectElement) {
+                globalData.selectElement.setAttribute('data-current-status', globalData.status);
+                globalData.selectElement.classList.remove('bg-green-100', 'text-green-800', 'border-green-200', 
+                                               'bg-yellow-100', 'text-yellow-800', 'border-yellow-200',
+                                               'bg-red-100', 'text-red-800', 'border-red-200');
+                globalData.selectElement.classList.add(...getAttendanceStatusClasses(globalData.status).split(' '));
+                globalData.selectElement.disabled = false; // Re-enable dropdown
+                
+                // Update the record data in the dropdown as well
+                const updatedRecordJson = JSON.stringify(localRecord).replace(/"/g, '&quot;');
+                globalData.selectElement.setAttribute('data-record', updatedRecordJson);
+            }
+            
+            // Re-apply current filters to update filtered data
+            applyAttendanceFilters();
+            
+            // Update summary cards and table
+            updateAttendanceSummaryCards();
+        }
+    }
+}
+
+// Function to show subtle refreshing indicator
+function showRefreshingIndicator() {
+    const notificationArea = document.getElementById('attendanceNotificationArea');
+    if (!notificationArea) return;
+    
+    // Remove any existing refresh notification
+    const existingRefresh = notificationArea.querySelector('.refresh-indicator');
+    if (existingRefresh) existingRefresh.remove();
+    
+    const refreshIndicator = document.createElement('div');
+    refreshIndicator.className = 'refresh-indicator bg-blue-100 border border-blue-400 text-blue-700 px-3 py-2 rounded-lg shadow-lg transition-all duration-300 transform translate-x-0 opacity-100 text-sm min-w-[200px]';
+    refreshIndicator.innerHTML = `
+        <div class="flex items-center">
+            <i class="fas fa-sync fa-spin mr-2 text-blue-600"></i>
+            <span>Refreshing data...</span>
+        </div>
+    `;
+    
+    notificationArea.appendChild(refreshIndicator);
+}
+
+// Function to hide refreshing indicator
+function hideRefreshingIndicator() {
+    const refreshIndicator = document.querySelector('.refresh-indicator');
+    if (refreshIndicator) {
+        refreshIndicator.style.opacity = '0';
+        refreshIndicator.style.transform = 'translateX(20px)';
+        setTimeout(() => {
+            if (refreshIndicator && refreshIndicator.parentElement) {
+                refreshIndicator.remove();
+            }
+        }, 300);
+    }
+}
+
+// Enhanced reloadAttendance function that preserves filters
+function reloadAttendance() {
+    if (currentAttendanceData && currentAttendanceData.AssignedCourseId) {
+        // Preserve current filters before reloading
+        const currentFilters = preserveCurrentFilters();
+        console.log('Manual reload - preserving filters:', currentFilters);
+        
+        // Show loading state
+        showAttendanceLoading();
+        
+        // Load fresh data and restore filters
+        loadAttendanceFromAPIWithFilters(currentAttendanceData.AssignedCourseId, currentFilters);
+    }
+}
+
+// Enhanced loadAttendanceFromAPI that can restore filters after loading
+async function loadAttendanceFromAPIWithFilters(assignedCourseId, savedFilters = null) {
+    try {
+        console.log(`=== LOADING ATTENDANCE FROM API WITH FILTERS ===`);
+        console.log(`Assigned Course ID: ${assignedCourseId} (type: ${typeof assignedCourseId})`);
+        console.log('Saved filters to restore:', savedFilters);
+        
+        const url = `/Faculty/GetCourseAttendance?assignedCourseId=${assignedCourseId}`;
+        console.log(`Request URL: ${url}`);
+        
+        // Make API call to get attendance records
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+
+        console.log(`HTTP Response Status: ${response.status} ${response.statusText}`);
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('Fresh API data loaded');
+        
+        if (!data.success) {
+            showAttendanceError(data.message || 'Failed to load attendance records');
+            return;
+        }
+
+        // Update modal header with course info
+        updateAttendanceHeader(data);
+        
+        // Process attendance data
+        processAttendanceData(data);
+        
+        // If we have saved filters, restore them
+        if (savedFilters) {
+            console.log('Restoring saved filters after data load');
+            restoreFiltersAndApply(savedFilters);
+        }
+        
+        // Show content
+        showAttendanceContent();
+        
+    } catch (error) {
+        console.error('Error loading attendance from API with filters:', error);
+        showAttendanceError('Failed to load attendance records. Please try again later.');
     }
 }
 
@@ -1102,18 +1320,11 @@ function printAttendanceRecords() {
     printWindow.close();
 }
 
-function reloadAttendance() {
-    if (currentAttendanceData && currentAttendanceData.AssignedCourseId) {
-        showAttendanceLoading();
-        loadAttendanceFromAPI(currentAttendanceData.AssignedCourseId);
-    }
-}
-
 // Handle escape key for attendance modal
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         if (window.attendanceUpdateModal) {
-            cancelAttendanceUpdate();
+            cancelAttendanceUpdateEnhanced();
             return;
         }
         
