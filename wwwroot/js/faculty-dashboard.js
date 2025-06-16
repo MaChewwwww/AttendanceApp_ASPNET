@@ -11,13 +11,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize schedule filters
     initializeScheduleFilters();
     
-    // Initialize dashboard animations
-    initializeDashboardAnimations();
-    
     // Initialize real data features if available
     if (hasRealData) {
         initializeRealDataFeatures();
     }
+    
+    console.log('Faculty Dashboard initialization complete - animations delegated to layout');
 });
 
 // Real data features
@@ -461,15 +460,5 @@ function updateActiveFilter(activeDay) {
             activeFilter.classList.remove('text-gray-700', 'hover:bg-gray-100');
         }
     }
-}
-
-// Dashboard animations
-function initializeDashboardAnimations() {
-    // Animate cards on load
-    const cards = document.querySelectorAll('.dashboard-card-entrance');
-    cards.forEach((card, index) => {
-        card.style.animationDelay = `${index * 0.1}s`;
-        card.classList.add('animate');
-    });
 }
 

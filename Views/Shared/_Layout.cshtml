@@ -744,26 +744,39 @@
 
         // Initialize dashboard animations on page load
         document.addEventListener('DOMContentLoaded', function() {
-            // Add entrance animations to dashboard cards - but exclude attendance table elements
+            // IMPROVED: Only add animations to elements that don't already have them
+            // and exclude specific sections to prevent conflicts
             const dashboardCards = document.querySelectorAll('.bg-white.rounded-lg:not(#attendanceTableSection):not(.page-modal), .grid > div:not(.attendance-row)');
+            
             dashboardCards.forEach((card, index) => {
-                if (!card.classList.contains('dashboard-card-entrance') && !card.closest('#attendanceTableSection')) {
+                // Skip if card already has animation class or is in excluded sections
+                if (!card.classList.contains('dashboard-card-entrance') && 
+                    !card.closest('#attendanceTableSection') &&
+                    !card.hasAttribute('data-animation-applied')) {
+                    
                     card.classList.add('dashboard-card-entrance');
-                    card.style.animationDelay = `${0.3 + (index * 0.05)}s`; // Reduced delay
+                    card.style.animationDelay = `${0.3 + (index * 0.05)}s`;
+                    card.setAttribute('data-animation-applied', 'true'); // Mark as animated
+                    
+                    console.log(`Applied animation to card ${index + 1}`);
                 }
             });
             
             // Smooth scroll behavior for better UX
             document.documentElement.style.scrollBehavior = 'smooth';
             
-            // Welcome animation for user name
+            // Welcome animation for user name - only if not already animated
             const welcomeText = document.querySelector('h1');
-            if (welcomeText && welcomeText.textContent.includes('Welcome back')) {
-                welcomeText.style.animation = 'dashboardCardEntrance 0.8s ease-out 0.6s forwards'; // Reduced delay
+            if (welcomeText && 
+                welcomeText.textContent.includes('Welcome back') && 
+                !welcomeText.hasAttribute('data-welcome-animated')) {
+                
+                welcomeText.style.animation = 'dashboardCardEntrance 0.8s ease-out 0.6s forwards';
                 welcomeText.style.opacity = '0';
+                welcomeText.setAttribute('data-welcome-animated', 'true');
             }
             
-            console.log('Dashboard animations initialized');
+            console.log('Layout dashboard animations initialized (no duplicates)');
         });
         
         // Layout logout functions

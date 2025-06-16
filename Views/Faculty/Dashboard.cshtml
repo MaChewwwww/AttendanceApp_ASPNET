@@ -748,17 +748,9 @@
                 console.error('Chart.js not loaded');
             }
             
-            // Make sure content is visible immediately
-            const cards = document.querySelectorAll('.dashboard-card-entrance');
-            cards.forEach(card => {
-                card.style.opacity = '1';
-                card.style.transform = 'translateY(0)';
-            });
-            
-            // Initialize dashboard components
-            setTimeout(() => {
-                console.log('Dashboard components initialized');
-            }, 100);
+            // DISABLE layout auto-animation for dashboard cards to prevent doubling
+            // The layout already applies dashboard-card-entrance animations
+            console.log('Faculty dashboard initialization complete - animations handled by layout');
         });
         
         function updateDashboardWithRealData(facultyData) {
@@ -878,6 +870,14 @@
         @@media (max-width: 768px) {
             .calendar-day {
                 font-size: 0.75rem;
+            }
+            
+            .chart-container {
+                height: 16rem;
+            }
+        }
+    </style>
+}
             }
             
             .chart-container {
