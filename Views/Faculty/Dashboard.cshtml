@@ -2,17 +2,26 @@
     ViewData["Title"] = "Faculty Dashboard";
     Layout = "_Layout";
     
-    // Declare variables for faculty dashboard data
-    var dashboardData = ViewBag.DashboardData as dynamic;
-    var todaySchedule = dashboardData?.TodaySchedule ?? new List<dynamic>();
-    var allSchedules = dashboardData?.AllSchedules ?? new List<dynamic>();
+    // Get faculty dashboard data from the API
+    var facultyDashboardData = ViewBag.FacultyDashboardData as AttendanceApp_ASPNET.Services.FacultyDashboardData;
+    var hasRealData = ViewBag.HasFacultyDashboardData == true && facultyDashboardData != null;
+    
+    // Use real data if available, otherwise fall back to mock data
+    var currentClass = hasRealData ? facultyDashboardData.ScheduleSummary?.CurrentClass : null;
+    var nextClass = hasRealData ? facultyDashboardData.ScheduleSummary?.NextClass : null;
+    var todaySchedule = hasRealData ? facultyDashboardData.TodaySchedule : new List<AttendanceApp_ASPNET.Services.FacultyScheduleItem>();
+    var allSchedules = hasRealData ? facultyDashboardData.AllSchedules : new List<AttendanceApp_ASPNET.Services.FacultyScheduleItem>();
+    var recentAttendance = hasRealData ? facultyDashboardData.RecentAttendance : new List<AttendanceApp_ASPNET.Services.FacultyRecentAttendance>();
+    var currentCourses = hasRealData ? facultyDashboardData.CurrentCourses : new List<AttendanceApp_ASPNET.Services.FacultyCourseInfo>();
+    
     var daysOfWeek = new[] { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" };
 }
 
 <!-- Hidden data elements for JavaScript -->
 <script type="application/json" id="dashboard-data">@Html.Raw(Json.Serialize(allSchedules))</script>
-<script type="text/plain" id="has-attendance-data">@(ViewBag.HasAttendanceData?.ToString().ToLower() ?? "false")</script>
-<script type="text/plain" id="has-charts-data">@(ViewBag.HasChartsData?.ToString().ToLower() ?? "false")</script>
+<script type="application/json" id="faculty-dashboard-data">@Html.Raw(Json.Serialize(facultyDashboardData))</script>
+<script type="text/plain" id="has-real-data">@(hasRealData.ToString().ToLower())</script>
+<script type="text/plain" id="has-charts-data">@((ViewBag.HasChartsData == true).ToString().ToLower())</script>
 @if (ViewBag.HasChartsData == true && ViewBag.ChartsData != null)
 {
     <script type="application/json" id="charts-data">@Html.Raw(Json.Serialize(ViewBag.ChartsData))</script>
@@ -65,38 +74,116 @@
             </button>
         </div>
         
-        <!-- Mock current class data -->
+        <!-- Dynamic current class data -->
         <div class="flex items-center mb-4 pr-40">
             <div class="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
                 <i class="fas fa-chalkboard-teacher text-indigo-600 text-xl"></i>
             </div>
             <div class="ml-4">
-                <h3 class="text-lg font-semibold text-gray-900">Current Class</h3>
-                <p class="text-gray-500 text-sm">Database Systems</p>
+                <h3 class="text-lg font-semibold text-gray-900">
+                    @if (currentClass != null)
+                    {
+                        <span>Current Class</span>
+                    }
+                    else if (nextClass != null)
+                    {
+                        <span>Next Class</span>
+                    }
+                    else
+                    {
+                        <span>No Active Class</span>
+                    }
+                </h3>
+                <p class="text-gray-500 text-sm">
+                    @if (currentClass?.CourseName != null)
+                    {
+                        @currentClass.CourseName
+                    }
+                    else if (nextClass?.CourseName != null)
+                    {
+                        @nextClass.CourseName
+                    }
+                    else if (!hasRealData)
+                    {
+                        <span>Database Systems</span>
+                    }
+                    else
+                    {
+                        <span>No classes scheduled</span>
+                    }
+                </p>
             </div>
         </div>
-        <div class="space-y-2">
-            <div class="flex justify-between items-center">
-                <span class="text-sm text-gray-600">Course Code:</span>
-                <span class="text-sm font-medium text-gray-900">CS-301</span>
+        
+        @if (currentClass != null || nextClass != null)
+        {
+            var displayClass = currentClass ?? nextClass;
+            <div class="space-y-2">
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">Course Code:</span>
+                    <span class="text-sm font-medium text-gray-900">@(displayClass.CourseCode ?? "N/A")</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">Section:</span>
+                    <span class="text-sm font-medium text-gray-900">@displayClass.SectionName</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">Room:</span>
+                    <span class="text-sm font-medium text-gray-900">@(displayClass.Room ?? "TBA")</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">Time:</span>
+                    <span class="text-sm font-medium text-gray-900">@displayClass.StartTime - @displayClass.EndTime</span>
+                </div>
+                @if (hasRealData)
+                {
+                    var courseInfo = currentCourses.FirstOrDefault(c => c.AssignedCourseId == displayClass.AssignedCourseId);
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">Students:</span>
+                        <span class="text-sm font-medium text-gray-900">@(courseInfo?.EnrolledStudents ?? 0) enrolled</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">Students:</span>
+                        <span class="text-sm font-medium text-gray-900">42 enrolled</span>
+                    </div>
+                }
             </div>
-            <div class="flex justify-between items-center">
-                <span class="text-sm text-gray-600">Section:</span>
-                <span class="text-sm font-medium text-gray-900">BSCS-A</span>
+        }
+        else if (!hasRealData)
+        {
+            <!-- Fallback mock data -->
+            <div class="space-y-2">
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">Course Code:</span>
+                    <span class="text-sm font-medium text-gray-900">CS-301</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">Section:</span>
+                    <span class="text-sm font-medium text-gray-900">BSCS-A</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">Room:</span>
+                    <span class="text-sm font-medium text-gray-900">Lab 203</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">Time:</span>
+                    <span class="text-sm font-medium text-gray-900">2:00 PM - 3:30 PM</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">Students:</span>
+                    <span class="text-sm font-medium text-gray-900">42 enrolled</span>
+                </div>
             </div>
-            <div class="flex justify-between items-center">
-                <span class="text-sm text-gray-600">Room:</span>
-                <span class="text-sm font-medium text-gray-900">Lab 203</span>
+        }
+        else
+        {
+            <div class="text-center py-4">
+                <p class="text-gray-500 text-sm">No current or upcoming classes</p>
             </div>
-            <div class="flex justify-between items-center">
-                <span class="text-sm text-gray-600">Time:</span>
-                <span class="text-sm font-medium text-gray-900">2:00 PM - 3:30 PM</span>
-            </div>
-            <div class="flex justify-between items-center">
-                <span class="text-sm text-gray-600">Students:</span>
-                <span class="text-sm font-medium text-gray-900">42 enrolled</span>
-            </div>
-        </div>
+        }
     </div>
 
     <!-- Weather Widget -->
@@ -226,7 +313,7 @@
         <div class="flex items-center justify-between">
             <div>
                 <p class="text-sm font-medium text-gray-600">Total Courses</p>
-                <p class="text-2xl font-bold text-gray-900">6</p>
+                <p class="text-2xl font-bold text-gray-900">@ViewBag.TotalCourses</p>
             </div>
             <div class="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
                 <i class="fas fa-book-open text-indigo-600"></i>
@@ -240,7 +327,7 @@
         <div class="flex items-center justify-between">
             <div>
                 <p class="text-sm font-medium text-gray-600">Total Students</p>
-                <p class="text-2xl font-bold text-blue-600">256</p>
+                <p class="text-2xl font-bold text-blue-600">@ViewBag.TotalStudents</p>
             </div>
             <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                 <i class="fas fa-users text-blue-600"></i>
@@ -249,32 +336,32 @@
         <p class="mt-2 text-sm text-gray-500">All sections</p>
     </div>
 
-    <!-- Average Attendance -->
-    <div class="bg-white rounded-lg shadow-sm p-6 dashboard-card-entrance">
-        <div class="flex items-center justify-between">
-            <div>
-                <p class="text-sm font-medium text-gray-600">Avg. Attendance</p>
-                <p class="text-2xl font-bold text-green-600">87%</p>
-            </div>
-            <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                <i class="fas fa-chart-line text-green-600"></i>
-            </div>
-        </div>
-        <p class="mt-2 text-sm text-gray-500">This semester</p>
-    </div>
-
     <!-- Pending Reviews -->
     <div class="bg-white rounded-lg shadow-sm p-6 dashboard-card-entrance">
         <div class="flex items-center justify-between">
             <div>
                 <p class="text-sm font-medium text-gray-600">Pending Reviews</p>
-                <p class="text-2xl font-bold text-yellow-600">12</p>
+                <p class="text-2xl font-bold text-yellow-600">@ViewBag.PendingReviews</p>
             </div>
             <div class="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
                 <i class="fas fa-clock text-yellow-600"></i>
             </div>
         </div>
         <p class="mt-2 text-sm text-gray-500">Student applications</p>
+    </div>
+
+    <!-- Today's Attendance -->
+    <div class="bg-white rounded-lg shadow-sm p-6 dashboard-card-entrance">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-600">Today's Attendance</p>
+                <p class="text-2xl font-bold text-green-600">@ViewBag.TodayAttendanceCount</p>
+            </div>
+            <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                <i class="fas fa-check-circle text-green-600"></i>
+            </div>
+        </div>
+        <p class="mt-2 text-sm text-gray-500">Submissions today</p>
     </div>
 </div>
 
@@ -327,11 +414,11 @@
                         <div class="mt-4 space-y-2">
                             <button class="w-full text-left px-3 py-2 rounded-md text-sm font-medium bg-indigo-100 text-indigo-700 border border-indigo-200 day-filter active" data-day="today">
                                 <i class="fas fa-calendar-day mr-2"></i>Today
-                                <span class="float-right text-xs text-gray-500">4</span>
+                                <span class="float-right text-xs text-gray-500">@todaySchedule.Count</span>
                             </button>
                             <button class="w-full text-left px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 day-filter" data-day="all">
                                 <i class="fas fa-calendar-week mr-2"></i>All Days
-                                <span class="float-right text-xs text-gray-500">24</span>
+                                <span class="float-right text-xs text-gray-500">@allSchedules.Count</span>
                             </button>
                         </div>
                     </div>
@@ -346,42 +433,65 @@
                             <p class="text-sm text-gray-500">@DateTime.Now.ToString("dddd, MMMM d, yyyy")</p>
                         </div>
                         <div class="max-h-96 overflow-y-auto space-y-4 pr-2">
-                            <!-- Mock today's classes -->
-                            <div class="flex items-center justify-between p-4 bg-blue-50 border-blue-200 border rounded-lg">
-                                <div>
-                                    <p class="font-medium text-gray-900">Database Systems</p>
-                                    <p class="text-sm text-gray-500">BSCS-A • 42 students</p>
-                                    <p class="text-sm text-gray-500">Room Lab 203</p>
+                            @if (hasRealData && todaySchedule.Any())
+                            {
+                                @foreach (var schedule in todaySchedule)
+                                {
+                                    var statusColor = schedule.Status == "ongoing" ? "blue" : schedule.Status == "completed" ? "gray" : "yellow";
+                                    var courseInfo = currentCourses.FirstOrDefault(c => c.AssignedCourseId == schedule.AssignedCourseId);
+                                    
+                                    <div class="flex items-center justify-between p-4 bg-@(statusColor)-50 border-@(statusColor)-200 border rounded-lg schedule-item">
+                                        <div>
+                                            <p class="font-medium text-gray-900">@schedule.CourseName</p>
+                                            <p class="text-sm text-gray-500">@schedule.SectionName • @(courseInfo?.EnrolledStudents ?? 0) students</p>
+                                            <p class="text-sm text-gray-500">Room @(schedule.Room ?? "TBA")</p>
+                                        </div>
+                                        <div class="text-right">
+                                            <p class="font-medium text-@(statusColor)-600">@schedule.StartTime - @schedule.EndTime</p>
+                                            <p class="text-xs text-gray-500 capitalize">@schedule.Status</p>
+                                        </div>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <!-- Fallback mock data -->
+                                <div class="flex items-center justify-between p-4 bg-blue-50 border-blue-200 border rounded-lg">
+                                    <div>
+                                        <p class="font-medium text-gray-900">Database Systems</p>
+                                        <p class="text-sm text-gray-500">BSCS-A • 42 students</p>
+                                        <p class="text-sm text-gray-500">Room Lab 203</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="font-medium text-blue-600">2:00 PM - 3:30 PM</p>
+                                        <p class="text-xs text-gray-500 capitalize">Current</p>
+                                    </div>
                                 </div>
-                                <div class="text-right">
-                                    <p class="font-medium text-blue-600">2:00 PM - 3:30 PM</p>
-                                    <p class="text-xs text-gray-500 capitalize">Current</p>
+                                
+                                <div class="flex items-center justify-between p-4 bg-gray-50 border-gray-200 border rounded-lg">
+                                    <div>
+                                        <p class="font-medium text-gray-900">Software Engineering</p>
+                                        <p class="text-sm text-gray-500">BSCS-B • 38 students</p>
+                                        <p class="text-sm text-gray-500">Room 301</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="font-medium text-gray-600">4:00 PM - 5:30 PM</p>
+                                        <p class="text-xs text-gray-500 capitalize">Upcoming</p>
+                                    </div>
                                 </div>
-                            </div>
-                            
-                            <div class="flex items-center justify-between p-4 bg-gray-50 border-gray-200 border rounded-lg">
-                                <div>
-                                    <p class="font-medium text-gray-900">Software Engineering</p>
-                                    <p class="text-sm text-gray-500">BSCS-B • 38 students</p>
-                                    <p class="text-sm text-gray-500">Room 301</p>
+                                
+                                <div class="flex items-center justify-between p-4 bg-yellow-50 border-yellow-200 border rounded-lg">
+                                    <div>
+                                        <p class="font-medium text-gray-900">Web Development</p>
+                                        <p class="text-sm text-gray-500">BSCS-C • 35 students</p>
+                                        <p class="text-sm text-gray-500">Room Lab 105</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="font-medium text-yellow-600">6:00 PM - 7:30 PM</p>
+                                        <p class="text-xs text-gray-500 capitalize">Evening</p>
+                                    </div>
                                 </div>
-                                <div class="text-right">
-                                    <p class="font-medium text-gray-600">4:00 PM - 5:30 PM</p>
-                                    <p class="text-xs text-gray-500 capitalize">Upcoming</p>
-                                </div>
-                            </div>
-                            
-                            <div class="flex items-center justify-between p-4 bg-yellow-50 border-yellow-200 border rounded-lg">
-                                <div>
-                                    <p class="font-medium text-gray-900">Web Development</p>
-                                    <p class="text-sm text-gray-500">BSCS-C • 35 students</p>
-                                    <p class="text-sm text-gray-500">Room Lab 105</p>
-                                </div>
-                                <div class="text-right">
-                                    <p class="font-medium text-yellow-600">6:00 PM - 7:30 PM</p>
-                                    <p class="text-xs text-gray-500 capitalize">Evening</p>
-                                </div>
-                            </div>
+                            }
                         </div>
                     </div>
                     
@@ -392,37 +502,68 @@
                             <p class="text-sm text-gray-500">Complete weekly schedule</p>
                         </div>
                         <div class="max-h-96 overflow-y-auto space-y-6 pr-2">
-                            <!-- Mock weekly schedule grouped by day -->
-                            @foreach (var day in new[] { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday" })
+                            @if (hasRealData && allSchedules.Any())
                             {
-                                <div>
-                                    <h6 class="font-medium text-gray-800 mb-3">@day</h6>
-                                    <div class="space-y-3">
-                                        <div class="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                                            <div>
-                                                <p class="font-medium text-gray-900">Database Systems</p>
-                                                <p class="text-sm text-gray-500">BSCS-A</p>
-                                            </div>
-                                            <div class="text-right">
-                                                <p class="font-medium text-gray-700">2:00 PM - 3:30 PM</p>
-                                                <p class="text-xs text-gray-500">Lab 203</p>
-                                            </div>
+                                @foreach (var dayGroup in allSchedules.GroupBy(s => s.DayOfWeek))
+                                {
+                                    <div>
+                                        <h6 class="font-medium text-gray-800 mb-3">@dayGroup.Key</h6>
+                                        <div class="space-y-3">
+                                            @foreach (var schedule in dayGroup)
+                                            {
+                                                var courseInfo = currentCourses.FirstOrDefault(c => c.AssignedCourseId == schedule.AssignedCourseId);
+                                                
+                                                <div class="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                                                    <div>
+                                                        <p class="font-medium text-gray-900">@schedule.CourseName</p>
+                                                        <p class="text-sm text-gray-500">@schedule.SectionName • @(courseInfo?.EnrolledStudents ?? 0) students</p>
+                                                    </div>
+                                                    <div class="text-right">
+                                                        <p class="font-medium text-gray-700">@schedule.StartTime - @schedule.EndTime</p>
+                                                        <p class="text-xs text-gray-500">@(schedule.Room ?? "TBA")</p>
+                                                    </div>
+                                                </div>
+                                            }
                                         </div>
-                                        <div class="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                                            <div>
-                                                <p class="font-medium text-gray-900">Software Engineering</p>
-                                                <p class="text-sm text-gray-500">BSCS-B</p>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <!-- Fallback mock weekly schedule -->
+                                @foreach (var day in new[] { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday" })
+                                {
+                                    <div>
+                                        <h6 class="font-medium text-gray-800 mb-3">@day</h6>
+                                        <div class="space-y-3">
+                                            <div class="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                                                <div>
+                                                    <p class="font-medium text-gray-900">Database Systems</p>
+                                                    <p class="text-sm text-gray-500">BSCS-A</p>
+                                                </div>
+                                                <div class="text-right">
+                                                    <p class="font-medium text-gray-700">2:00 PM - 3:30 PM</p>
+                                                    <p class="text-xs text-gray-500">Lab 203</p>
+                                                </div>
                                             </div>
-                                            <div class="text-right">
-                                                <p class="font-medium text-gray-700">4:00 PM - 5:30 PM</p>
-                                                <p class="text-xs text-gray-500">Room 301</p>
+                                            <div class="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                                                <div>
+                                                    <p class="font-medium text-gray-900">Software Engineering</p>
+                                                    <p class="text-sm text-gray-500">BSCS-B</p>
+                                                </div>
+                                                <div class="text-right">
+                                                    <p class="font-medium text-gray-700">4:00 PM - 5:30 PM</p>
+                                                    <p class="text-xs text-gray-500">Room 301</p>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
+                                }
                             }
                         </div>
                     </div>
+                    
+                    <!-- Selected Date Schedule will be dynamically inserted here by JavaScript -->
                 </div>
             </div>
         </div>
@@ -441,7 +582,7 @@
         <!-- Overall Stats -->
         <div class="bg-gradient-to-r from-indigo-50 to-purple-100 rounded-lg p-4 mb-4 border border-indigo-200">
             <div class="text-center">
-                <div class="text-3xl font-bold text-indigo-700">87%</div>
+                <div class="text-3xl font-bold text-indigo-700">@ViewBag.AverageAttendance%</div>
                 <div class="text-indigo-600 text-sm font-medium">Average Attendance Rate</div>
                 <div class="text-indigo-500 text-xs mt-1">Across all courses</div>
             </div>
@@ -449,49 +590,80 @@
         
         <!-- Course Stats -->
         <div class="space-y-3 max-h-64 overflow-y-auto pr-2">
-            <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
-                <div>
-                    <div class="font-medium text-gray-900">Database Systems</div>
-                    <div class="text-sm text-gray-500">BSCS-A • 42 students</div>
+            @if (hasRealData && currentCourses.Any())
+            {
+                @foreach (var course in currentCourses.Take(4))
+                {
+                    // Calculate simple performance based on enrollment vs total
+                    var enrollmentRate = course.TotalStudents > 0 ? (double)course.EnrolledStudents / course.TotalStudents * 100 : 0;
+                    var performanceLevel = enrollmentRate >= 90 ? "excellent" : enrollmentRate >= 75 ? "good" : enrollmentRate >= 60 ? "average" : "poor";
+                    var performanceColor = performanceLevel == "excellent" ? "green" : 
+                                         performanceLevel == "good" ? "green" : 
+                                         performanceLevel == "average" ? "yellow" : "red";
+                    
+                    <div class="flex items-center justify-between p-3 bg-@(performanceColor)-50 rounded-lg border border-@(performanceColor)-200">
+                        <div>
+                            <div class="font-medium text-gray-900">@course.CourseName</div>
+                            <div class="text-sm text-gray-500">@course.SectionName • @course.EnrolledStudents students</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm font-medium text-@(performanceColor)-600">@((int)enrollmentRate)%</div>
+                            <div class="text-xs text-gray-500 capitalize">@performanceLevel</div>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <!-- No data message -->
+                <div class="text-center py-8">
+                    <i class="fas fa-chart-bar text-gray-300 text-3xl mb-3"></i>
+                    <p class="text-gray-500 text-sm">No course performance data available</p>
+                    <p class="text-gray-400 text-xs mt-1">Performance metrics will appear when course data is loaded</p>
                 </div>
-                <div class="text-right">
-                    <div class="text-sm font-medium text-green-600">92%</div>
-                    <div class="text-xs text-gray-500">Excellent</div>
+            }
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="bg-white rounded-lg shadow-sm p-6 dashboard-card-entrance">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-lg font-semibold text-gray-900">Recent Activity</h3>
+            <div class="text-sm text-gray-500">Last 7 days</div>
+        </div>
+        
+        <div class="space-y-4 max-h-80 overflow-y-auto pr-2">
+            @if (hasRealData && recentAttendance.Any())
+            {
+                @foreach (var attendance in recentAttendance.Take(6))
+                {
+                    var statusColor = attendance.Status == "present" ? "green" : attendance.Status == "late" ? "yellow" : "red";
+                    var statusIcon = attendance.Status == "present" ? "check-circle" : attendance.Status == "late" ? "clock" : "times-circle";
+                    
+                    <div class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                        <div class="w-8 h-8 bg-@(statusColor)-100 rounded-full flex items-center justify-center">
+                            <i class="fas fa-@(statusIcon) text-@(statusColor)-600 text-sm"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium text-gray-900 truncate">@attendance.StudentName</p>
+                            <p class="text-xs text-gray-500">@attendance.CourseName - @attendance.SectionName</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs text-gray-500">@(attendance.Date != null ? DateTime.Parse(attendance.Date).ToString("MMM dd") : "N/A")</p>
+                            <p class="text-xs font-medium text-@(statusColor)-600 capitalize">@attendance.Status</p>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <!-- No data message -->
+                <div class="text-center py-8">
+                    <i class="fas fa-history text-gray-300 text-3xl mb-3"></i>
+                    <p class="text-gray-500 text-sm">No recent activity data available</p>
+                    <p class="text-gray-400 text-xs mt-1">Recent attendance activities will appear here</p>
                 </div>
-            </div>
-            
-            <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
-                <div>
-                    <div class="font-medium text-gray-900">Software Engineering</div>
-                    <div class="text-sm text-gray-500">BSCS-B • 38 students</div>
-                </div>
-                <div class="text-right">
-                    <div class="text-sm font-medium text-green-600">89%</div>
-                    <div class="text-xs text-gray-500">Good</div>
-                </div>
-            </div>
-            
-            <div class="flex items-center justify-between p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-                <div>
-                    <div class="font-medium text-gray-900">Web Development</div>
-                    <div class="text-sm text-gray-500">BSCS-C • 35 students</div>
-                </div>
-                <div class="text-right">
-                    <div class="text-sm font-medium text-yellow-600">78%</div>
-                    <div class="text-xs text-gray-500">Average</div>
-                </div>
-            </div>
-            
-            <div class="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200">
-                <div>
-                    <div class="font-medium text-gray-900">Mobile Programming</div>
-                    <div class="text-sm text-gray-500">BSCS-D • 28 students</div>
-                </div>
-                <div class="text-right">
-                    <div class="text-sm font-medium text-red-600">65%</div>
-                    <div class="text-xs text-gray-500">Needs attention</div>
-                </div>
-            </div>
+            }
         </div>
     </div>
 
@@ -510,47 +682,6 @@
         </div>
         <div class="h-64">
             <canvas id="weeklyTrendChart" class="max-w-full max-h-full"></canvas>
-        </div>
-    </div>
-
-    <!-- Student Management Summary -->
-    <div class="bg-white rounded-lg shadow-sm p-6 dashboard-card-entrance flex flex-col h-full">
-        <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-semibold text-gray-900">Student Management</h3>
-            <i class="fas fa-users text-gray-400"></i>
-        </div>
-        <div class="flex-1 flex flex-col">
-            <div class="space-y-4 flex-1">
-                <!-- Pending Approvals -->
-                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                    <div class="flex items-center justify-between mb-2">
-                        <h4 class="font-medium text-yellow-800">Pending Approvals</h4>
-                        <span class="bg-yellow-200 text-yellow-800 text-xs font-medium px-2 py-1 rounded-full">12</span>
-                    </div>
-                    <p class="text-sm text-yellow-700">Students waiting for course enrollment approval</p>
-                    <button class="mt-2 text-sm text-yellow-800 hover:text-yellow-900 font-medium">Review Applications →</button>
-                </div>
-                
-                <!-- Recent Activity -->
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <div class="flex items-center justify-between mb-2">
-                        <h4 class="font-medium text-blue-800">Recent Activity</h4>
-                        <span class="bg-blue-200 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">8</span>
-                    </div>
-                    <p class="text-sm text-blue-700">New attendance submissions and grade updates</p>
-                    <button class="mt-2 text-sm text-blue-800 hover:text-blue-900 font-medium">View Details →</button>
-                </div>
-                
-                <!-- Grade Reports Due -->
-                <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                    <div class="flex items-center justify-between mb-2">
-                        <h4 class="font-medium text-purple-800">Reports Due</h4>
-                        <span class="bg-purple-200 text-purple-800 text-xs font-medium px-2 py-1 rounded-full">3</span>
-                    </div>
-                    <p class="text-sm text-purple-700">Monthly attendance reports need to be submitted</p>
-                    <button class="mt-2 text-sm text-purple-800 hover:text-purple-900 font-medium">Generate Reports →</button>
-                </div>
-            </div>
         </div>
     </div>
 </div>
@@ -591,6 +722,25 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log('Faculty Dashboard initializing...');
             
+            // Get real data status
+            const hasRealData = document.getElementById('has-real-data')?.textContent === 'true';
+            console.log('Has real dashboard data:', hasRealData);
+            
+            if (hasRealData) {
+                const facultyDataElement = document.getElementById('faculty-dashboard-data');
+                if (facultyDataElement) {
+                    try {
+                        const facultyData = JSON.parse(facultyDataElement.textContent);
+                        console.log('Faculty dashboard data loaded:', facultyData);
+                        
+                        // Update any dynamic elements that need real-time data
+                        updateDashboardWithRealData(facultyData);
+                    } catch (e) {
+                        console.error('Error parsing faculty dashboard data:', e);
+                    }
+                }
+            }
+            
             // Ensure Chart.js is loaded before initializing charts
             if (typeof Chart !== 'undefined') {
                 console.log('Chart.js loaded successfully');
@@ -610,11 +760,34 @@
                 console.log('Dashboard components initialized');
             }, 100);
         });
+        
+        function updateDashboardWithRealData(facultyData) {
+            console.log('Updating dashboard with real data');
+            
+            // Update current time display if needed
+            const currentTimeElements = document.querySelectorAll('[data-current-time]');
+            currentTimeElements.forEach(element => {
+                element.textContent = new Date().toLocaleTimeString();
+            });
+            
+            // Update any status indicators
+            const statusElements = document.querySelectorAll('[data-status]');
+            statusElements.forEach(element => {
+                const status = element.getAttribute('data-status');
+                // Update status-specific styling or content
+            });
+            
+            // Log summary for debugging
+            console.log('Dashboard updated with:');
+            console.log('- Current courses:', facultyData.totalCurrentCourses || 0);
+            console.log('- Today\'s classes:', facultyData.todaySchedule?.length || 0);
+            console.log('- Pending approvals:', facultyData.totalPendingApprovals || 0);
+        }
     </script>
     
     <style>
         /* Ensure content is visible by default */
-        .dashboard-card-entrance {
+        .dashboard-card-entrance{#  #}
             opacity: 1 !important;
             transform: translateY(0) !important;
         }
@@ -683,6 +856,24 @@
         .performance-average { border-left: 4px solid #f59e0b; }
         .performance-poor { border-left: 4px solid #ef4444; }
         
+        /* Selected date schedule styling */
+        #selected-date-schedule {
+            opacity: 1 !important;
+            transform: translateX(0) !important;
+        }
+        
+        /* Calendar day selection feedback */
+        .calendar-day.selected {
+            transform: scale(1.1) !important;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.3) !important;
+        }
+        
+        /* Schedule item hover effects */
+        .schedule-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
         /* Responsive adjustments */
         @@media (max-width: 768px) {
             .calendar-day {
@@ -692,104 +883,6 @@
             .chart-container {
                 height: 16rem;
             }
-        }
-    </style>
-}
-        }
-        
-        .dashboard-card-entrance.animate {
-            transform: translateY(0);
-            opacity: 1;
-        }
-        
-        /* pulse animation */
-        .calendar-day.selected {
-            transform: scale(1.05);
-        }
-        
-        /* Chart enhancements */
-        .chart-container {
-            position: relative;
-            height: 100%;
-            width: 100%;
-            border-radius: 12px;
-            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-        }
-        
-        /* Faculty color scheme */
-        .faculty-primary { color: #667eea; }
-        .faculty-secondary { color: #764ba2; }
-        .faculty-accent { color: #f093fb; }
-        
-        /* Performance indicators */
-        .performance-excellent { border-left: 4px solid #10b981; }
-        .performance-good { border-left: 4px solid #3b82f6; }
-        .performance-average { border-left: 4px solid #f59e0b; }
-        .performance-poor { border-left: 4px solid #ef4444; }
-        
-        /* Schedule item animation */
-        .schedule-item {
-            opacity: 0;
-            transform: translateY(15px);
-            animation: fadeInUp 0.5s ease-out forwards;
-        }
-        
-        .schedule-item:nth-child(1) { animation-delay: 0.1s; }
-        .schedule-item:nth-child(2) { animation-delay: 0.2s; }
-        .schedule-item:nth-child(3) { animation-delay: 0.3s; }
-        .schedule-item:nth-child(4) { animation-delay: 0.4s; }
-        .schedule-item:nth-child(5) { animation-delay: 0.5s; }
-        
-        /* fadeInUp animation with proper CSS syntax */
-        .schedule-item {
-            animation: fadeInUp 0.5s ease-out forwards;
-        }
-        
-        /* Responsive adjustments */
-        /* Mobile styles */
-        .dashboard-card-entrance {
-            animation-delay: 0s !important;
-        }
-        
-        .faculty-card h3 {
-            font-size: 1.125rem;
-        }
-        
-        .chart-container {
-            height: 16rem;
-        }
-        
-        .calendar-day {
-            font-size: 0.75rem;
-        }
-        
-        /* Loading states */
-        .loading-shimmer {
-            background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
-            background-size: 200% 100%;
-            animation: shimmer 1.5s infinite;
-        }
-        
-        /* shimmer animation with proper CSS syntax */
-        .loading-shimmer {
-            animation: shimmer 1.5s infinite;
-        }
-        
-        /* Media query simulation with class-based approach */
-        .mobile-responsive {
-            animation-delay: 0s !important;
-        }
-        
-        .mobile-responsive .faculty-card h3 {
-            font-size: 1.125rem;
-        }
-        
-        .mobile-responsive .chart-container {
-            height: 16rem;
-        }
-        
-        .mobile-responsive .calendar-day {
-            font-size: 0.75rem;
         }
     </style>
 }

@@ -505,12 +505,15 @@ namespace AttendanceApp_ASPNET.Services
                 success = false,
                 message = "",
                 faculty_info = new { },
-                current_classes = new object[0],
+                current_courses = new object[0],
+                previous_courses = new object[0],
                 today_schedule = new object[0],
                 all_schedules = new object[0],
-                total_courses = 0,
-                total_students = 0,
-                pending_reviews = 0,
+                total_current_courses = 0,
+                total_previous_courses = 0,
+                total_pending_approvals = 0,
+                today_attendance_count = 0,
+                recent_attendance = new object[0],
                 schedule_summary = new
                 {
                     total_classes_today = 0,
@@ -518,12 +521,6 @@ namespace AttendanceApp_ASPNET.Services
                     current_class = (object)null,
                     next_class = (object)null,
                     current_day = ""
-                },
-                performance_summary = new
-                {
-                    average_attendance_rate = 0.0,
-                    best_performing_course = (object)null,
-                    courses_needing_attention = new object[0]
                 }
             });
         }
@@ -718,3 +715,4 @@ namespace AttendanceApp_ASPNET.Services
         }
     }
 }
+    

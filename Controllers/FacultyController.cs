@@ -11,13 +11,15 @@ namespace AttendanceApp_ASPNET.Controllers
         private readonly IClassService _classService;
         private readonly IFacultyPersonalAttendanceService _facultyPersonalAttendanceService;
         private readonly IEnvironmentService _environmentService;
+        private readonly IDashboardService _dashboardService;
 
-        public FacultyController(IApiService apiService, IClassService classService, IFacultyPersonalAttendanceService facultyPersonalAttendanceService, IEnvironmentService environmentService) 
+        public FacultyController(IApiService apiService, IClassService classService, IFacultyPersonalAttendanceService facultyPersonalAttendanceService, IEnvironmentService environmentService, IDashboardService dashboardService) 
             : base(apiService)
         {
             _classService = classService;
             _facultyPersonalAttendanceService = facultyPersonalAttendanceService;
             _environmentService = environmentService;
+            _dashboardService = dashboardService;
         }
 
         public async Task<IActionResult> Dashboard()
@@ -78,12 +80,81 @@ namespace AttendanceApp_ASPNET.Controllers
             // Get weather data using EnvironmentService
             await _environmentService.SetWeatherViewBagAsync(this, HttpContext);
 
-            // Add faculty dashboard data (placeholder)
-            ViewBag.HasDashboardData = true;
-            ViewBag.TotalCourses = 6;
-            ViewBag.TotalStudents = 256;
+            var jwtToken = HttpContext.Session.GetString("AuthToken");
+            
+            // Fetch faculty dashboard data from API
+            try
+            {
+                if (!string.IsNullOrEmpty(jwtToken))
+                {
+                    Console.WriteLine("=== FACULTY CONTROLLER: Starting dashboard data fetch ===");
+                    Console.WriteLine($"FACULTY CONTROLLER: Using JWT token: {jwtToken.Substring(0, Math.Min(20, jwtToken.Length))}...");
+                    
+                    var dashboardData = await _dashboardService.GetFacultyDashboardAsync(jwtToken);
+                    
+                    Console.WriteLine($"FACULTY CONTROLLER: Dashboard service result - Success: {dashboardData.Success}");
+                    Console.WriteLine($"FACULTY CONTROLLER: Message: {dashboardData.Message}");
+                    
+                    if (dashboardData.Success && dashboardData.Data != null)
+                    {
+                        Console.WriteLine("FACULTY CONTROLLER: Faculty dashboard data loaded successfully");
+                        ViewBag.FacultyDashboardData = dashboardData.Data;
+                        ViewBag.HasFacultyDashboardData = true;
+                        ViewBag.FacultyDashboardError = null;
+                        
+                        // Set statistics from real data
+                        ViewBag.TotalCourses = dashboardData.Data.TotalCurrentCourses;
+                        ViewBag.TotalStudents = dashboardData.Data.CurrentCourses.Sum(c => c.EnrolledStudents);
+                        ViewBag.PendingReviews = dashboardData.Data.TotalPendingApprovals;
+                        ViewBag.TodayAttendanceCount = dashboardData.Data.TodayAttendanceCount;
+                        
+                        Console.WriteLine($"FACULTY CONTROLLER: Total courses: {dashboardData.Data.TotalCurrentCourses}");
+                        Console.WriteLine($"FACULTY CONTROLLER: Today's schedule count: {dashboardData.Data.TodaySchedule.Count}");
+                        Console.WriteLine($"FACULTY CONTROLLER: All schedules count: {dashboardData.Data.AllSchedules.Count}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"FACULTY CONTROLLER: Faculty dashboard data fetch failed - {dashboardData.Message}");
+                        ViewBag.HasFacultyDashboardData = false;
+                        ViewBag.FacultyDashboardError = !string.IsNullOrEmpty(dashboardData.Message) ? 
+                                                        dashboardData.Message : "Failed to load faculty dashboard data";
+                        
+                        // Set fallback placeholder data
+                        ViewBag.TotalCourses = 6;
+                        ViewBag.TotalStudents = 256;
+                        ViewBag.PendingReviews = 12;
+                        ViewBag.TodayAttendanceCount = 8;
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("FACULTY CONTROLLER: No JWT token available");
+                    ViewBag.HasFacultyDashboardData = false;
+                    ViewBag.FacultyDashboardError = "Authentication token not found";
+                    
+                    // Set fallback placeholder data
+                    ViewBag.TotalCourses = 6;
+                    ViewBag.TotalStudents = 256;
+                    ViewBag.PendingReviews = 12;
+                    ViewBag.TodayAttendanceCount = 8;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"FACULTY CONTROLLER: Exception in faculty dashboard data fetch: {ex.Message}");
+                Console.WriteLine($"FACULTY CONTROLLER: Stack trace: {ex.StackTrace}");
+                ViewBag.HasFacultyDashboardData = false;
+                ViewBag.FacultyDashboardError = "Unable to load dashboard data due to system error";
+                
+                // Set fallback placeholder data
+                ViewBag.TotalCourses = 6;
+                ViewBag.TotalStudents = 256;
+                ViewBag.PendingReviews = 12;
+                ViewBag.TodayAttendanceCount = 8;
+            }
+
+            // Keep existing mock data approach for now
             ViewBag.AverageAttendance = 87;
-            ViewBag.PendingReviews = 12;
 
             return View();
         }
