@@ -22,6 +22,14 @@
 <script type="application/json" id="faculty-dashboard-data">@Html.Raw(Json.Serialize(facultyDashboardData))</script>
 <script type="text/plain" id="has-real-data">@(hasRealData.ToString().ToLower())</script>
 <script type="text/plain" id="has-charts-data">@((ViewBag.HasChartsData == true).ToString().ToLower())</script>
+<!-- Add weather data for faculty attendance modal -->
+<script type="application/json" id="weather-data">{
+    "temperature": @(ViewBag.Temperature ?? 0),
+    "humidity": @(ViewBag.Humidity ?? 0),
+    "heatIndex": @(ViewBag.HeatIndex ?? 0),
+    "maxFeelsLike": @(ViewBag.MaxFeelsLike ?? 0),
+    "weatherDataAvailable": @((ViewBag.WeatherDataAvailable == true).ToString().ToLower())
+}</script>
 @if (ViewBag.HasChartsData == true && ViewBag.ChartsData != null)
 {
     <script type="application/json" id="charts-data">@Html.Raw(Json.Serialize(ViewBag.ChartsData))</script>
@@ -269,8 +277,8 @@
                     </div>
                 </div>
                 <div class="text-right">
-                    <div class="text-orange-600 text-sm font-medium">Feels like now</div>
-                    <div class="text-2xl font-bold text-orange-600">@ViewBag.HeatIndex°C</div>
+                    <div class="text-orange-600 text-sm font-medium">Max feels like</div>
+                    <div class="text-2xl font-bold text-orange-600">@ViewBag.MaxFeelsLike°C</div>
                 </div>
             </div>
             <div class="space-y-2">
@@ -285,6 +293,10 @@
                 <div class="flex justify-between items-center">
                     <span class="text-sm text-gray-600">Low today:</span>
                     <span class="text-sm font-medium text-blue-600">@ViewBag.MinTemperature°C</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">Max feels like:</span>
+                    <span class="text-sm font-medium text-orange-600">@ViewBag.MaxFeelsLike°C</span>
                 </div>
                 <div class="flex justify-between items-center">
                     <span class="text-sm text-gray-600">Heat level:</span>
@@ -728,23 +740,19 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="~/js/faculty-charts.js"></script>
     <script src="~/js/mark-attendance.js"></script>
+    <script src="~/js/faculty-mark-attendance.js"></script>
     
     <script>
         // Initialize faculty dashboard after all scripts are loaded
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('Faculty Dashboard initializing...');
-            
             // Get real data status
             const hasRealData = document.getElementById('has-real-data')?.textContent === 'true';
-            console.log('Has real dashboard data:', hasRealData);
             
             if (hasRealData) {
                 const facultyDataElement = document.getElementById('faculty-dashboard-data');
                 if (facultyDataElement) {
                     try {
                         const facultyData = JSON.parse(facultyDataElement.textContent);
-                        console.log('Faculty dashboard data loaded:', facultyData);
-                        
                         // Update any dynamic elements that need real-time data
                         updateDashboardWithRealData(facultyData);
                     } catch (e) {
@@ -752,22 +760,9 @@
                     }
                 }
             }
-            
-            // Ensure Chart.js is loaded before initializing charts
-            if (typeof Chart !== 'undefined') {
-                console.log('Chart.js loaded successfully');
-            } else {
-                console.error('Chart.js not loaded');
-            }
-            
-            // DISABLE layout auto-animation for dashboard cards to prevent doubling
-            // The layout already applies dashboard-card-entrance animations
-            console.log('Faculty dashboard initialization complete - animations handled by layout');
         });
         
         function updateDashboardWithRealData(facultyData) {
-            console.log('Updating dashboard with real data');
-            
             // Update current time display if needed
             const currentTimeElements = document.querySelectorAll('[data-current-time]');
             currentTimeElements.forEach(element => {
@@ -780,12 +775,6 @@
                 const status = element.getAttribute('data-status');
                 // Update status-specific styling or content
             });
-            
-            // Log summary for debugging
-            console.log('Dashboard updated with:');
-            console.log('- Current courses:', facultyData.totalCurrentCourses || 0);
-            console.log('- Today\'s classes:', facultyData.todaySchedule?.length || 0);
-            console.log('- Pending approvals:', facultyData.totalPendingApprovals || 0);
         }
     </script>
     
