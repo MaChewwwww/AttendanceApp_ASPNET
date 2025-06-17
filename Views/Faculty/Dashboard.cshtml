@@ -67,27 +67,39 @@
 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
     <!-- Current Class & Mark Attendance -->
     <div class="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow duration-200 dashboard-card-entrance relative">
-        <!-- Mark Attendance Button - Top Right Corner -->
-        <div class="absolute top-4 right-4">
-            <button data-action="mark-attendance" class="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-200 font-semibold flex items-center text-sm">
-                <i class="fas fa-user-check mr-2"></i>Mark Attendance
-            </button>
-        </div>
+        @{
+            var isCurrentlyOngoing = currentClass != null && currentClass.Status?.ToString().ToLower() == "ongoing";
+        }
+        
+        @if (isCurrentlyOngoing)
+        {
+            <!-- Mark Attendance Button - Only show for ongoing classes -->
+            <div class="absolute top-4 right-4">
+                <button data-action="mark-attendance" class="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-200 font-semibold flex items-center text-sm">
+                    <i class="fas fa-user-check mr-2"></i>Mark Attendance
+                </button>
+            </div>
+        }
+        <!-- No button at all for next/upcoming classes or completed classes -->
         
         <!-- Dynamic current class data -->
-        <div class="flex items-center mb-4 pr-40">
+        <div class="flex items-center mb-4 @(isCurrentlyOngoing ? "pr-40" : "")">
             <div class="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
-                <i class="fas fa-chalkboard-teacher text-indigo-600 text-xl"></i>
+                <i class="fas fa-@(isCurrentlyOngoing ? "chalkboard-teacher" : currentClass != null || nextClass != null ? "clock" : "calendar-times") text-indigo-600 text-xl"></i>
             </div>
             <div class="ml-4">
                 <h3 class="text-lg font-semibold text-gray-900">
-                    @if (currentClass != null)
+                    @if (isCurrentlyOngoing)
                     {
                         <span>Current Class</span>
                     }
                     else if (nextClass != null)
                     {
                         <span>Next Class</span>
+                    }
+                    else if (currentClass != null)
+                    {
+                        <span>@(currentClass.Status?.ToString() == "completed" ? "Last Class" : "Scheduled Class")</span>
                     }
                     else
                     {
