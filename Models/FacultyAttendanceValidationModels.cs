@@ -4,7 +4,7 @@ namespace AttendanceApp_ASPNET.Models
 {
     public class FacultyAttendanceValidationRequest
     {
-        [JsonPropertyName("assigned_course_id")]
+        [JsonPropertyName("assignedCourseId")]
         public int AssignedCourseId { get; set; }
     }
 

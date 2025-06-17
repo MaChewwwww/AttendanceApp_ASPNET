@@ -12,6 +12,12 @@
                     </button>
                 </div>
                 
+                <!-- Debug info (only visible in development) -->
+                <div id="facultyDebugInfo" class="mb-4 p-2 bg-gray-100 rounded text-xs text-gray-600" style="display: none;">
+                    <div>Course ID: <span id="debugCourseId">-</span></div>
+                    <div>Course Name: <span id="debugCourseName">-</span></div>
+                </div>
+                
                 <!-- Current Class Info & Date (will be populated by JavaScript) -->
                 <div id="currentFacultyInfo" class="mb-6 p-4 bg-gray-50 rounded-lg">
                     <!-- This will be populated by JavaScript -->
@@ -52,6 +58,9 @@
                         Cancel
                     </button>
                 </div>
+                
+                <!-- Debug toggle button (only in development) -->
+                <button onclick="toggleFacultyDebug()" class="mt-2 text-xs text-gray-400 hover:text-gray-600">Show Debug Info</button>
             </div>
         </div>
     </div>
@@ -243,9 +252,31 @@
     }
 }
 </style>
-</style>
-        opacity: 0.8; 
-        box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+
+<script>
+function toggleFacultyDebug() {
+    const debugInfo = document.getElementById('facultyDebugInfo');
+    const modal = document.getElementById('facultyMarkAttendanceModal');
+    
+    if (debugInfo && debugInfo.style.display === 'none') {
+        debugInfo.style.display = 'block';
+        
+        // Update debug info
+        const courseId = modal.getAttribute('data-validated-course-id') || 'Not set';
+        const courseName = modal.getAttribute('data-course-name') || 'Not set';
+        
+        const debugCourseIdElement = document.getElementById('debugCourseId');
+        const debugCourseNameElement = document.getElementById('debugCourseName');
+        
+        if (debugCourseIdElement) debugCourseIdElement.textContent = courseId;
+        if (debugCourseNameElement) debugCourseNameElement.textContent = courseName;
+        
+        console.log('Debug panel opened - Course ID:', courseId, 'Course Name:', courseName);
+    } else if (debugInfo) {
+        debugInfo.style.display = 'none';
     }
 }
-</style>
+
+// Debug: Log when the modal script loads
+console.log('Faculty attendance modal script loaded');
+</script>

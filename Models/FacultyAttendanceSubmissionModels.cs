@@ -4,10 +4,10 @@ namespace AttendanceApp_ASPNET.Models
 {
     public class FacultyAttendanceSubmissionRequest
     {
-        [JsonPropertyName("assigned_course_id")]
+        [JsonPropertyName("assignedCourseId")]
         public int AssignedCourseId { get; set; }
 
-        [JsonPropertyName("face_image")]
+        [JsonPropertyName("faceImage")]
         public string FaceImage { get; set; } = string.Empty;
 
         [JsonPropertyName("latitude")]

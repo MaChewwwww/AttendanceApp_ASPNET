@@ -111,9 +111,134 @@ class FacultyAttendanceModal {
         // Show success notification and then modal
         this.showSuccessNotification(validationResult.message);
         
+        // Store the course ID in a data attribute on the modal for later retrieval
+        this.modal.setAttribute('data-validated-course-id', currentClassInfo.assignedCourseId.toString());
+        this.modal.setAttribute('data-course-name', currentClassInfo.courseName || '');
+        
         setTimeout(() => {
             this.showModal();
         }, 1000);
+    }
+
+    async submitFacultyAttendance() {
+        try {
+            const submitButton = document.getElementById('markFacultyAttendanceBtn');
+            if (!submitButton) return;
+
+            // Show loading state
+            submitButton.disabled = true;
+            submitButton.innerHTML = `
+                <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 008-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Submitting...
+            `;
+
+            // Get the validated course ID from the modal data attribute
+            const validatedCourseId = this.modal.getAttribute('data-validated-course-id');
+            const courseName = this.modal.getAttribute('data-course-name');
+            
+            console.log('=== FACULTY ATTENDANCE SUBMISSION DEBUG ===');
+            console.log('Validated Course ID from modal:', validatedCourseId);
+            console.log('Course Name from modal:', courseName);
+            console.log('Modal element:', this.modal);
+            console.log('Modal attributes:', Array.from(this.modal.attributes).map(attr => `${attr.name}=${attr.value}`));
+            console.log('===========================================');
+            
+            if (!validatedCourseId || validatedCourseId === '0' || validatedCourseId === 'null') {
+                // Fallback: Try to get current class info again
+                const currentClassInfo = this.getCurrentClassInfoForValidation();
+                
+                if (!currentClassInfo || !currentClassInfo.assignedCourseId) {
+                    this.showError('No current class available for attendance submission');
+                    this.resetSubmitButton();
+                    return;
+                }
+                
+                // Use the fallback course ID
+                const assignedCourseId = parseInt(currentClassInfo.assignedCourseId);
+                console.log('Using fallback course ID:', assignedCourseId);
+                
+                // Update modal with the correct course ID
+                this.modal.setAttribute('data-validated-course-id', assignedCourseId.toString());
+                
+                return this.performSubmission(assignedCourseId, currentClassInfo);
+            }
+
+            const assignedCourseId = parseInt(validatedCourseId);
+            
+            if (isNaN(assignedCourseId) || assignedCourseId <= 0) {
+                this.showError('Invalid course ID for attendance submission');
+                this.resetSubmitButton();
+                return;
+            }
+
+            const classInfo = {
+                assignedCourseId: assignedCourseId,
+                courseName: courseName
+            };
+
+            return this.performSubmission(assignedCourseId, classInfo);
+
+        } catch (error) {
+            console.error('Error submitting attendance:', error);
+            this.showError('Failed to capture image. Please try again.');
+            this.resetSubmitButton();
+        }
+    }
+
+    async performSubmission(assignedCourseId, classInfo) {
+        try {
+            console.log('=== PERFORMING SUBMISSION ===');
+            console.log('Final assigned course ID:', assignedCourseId);
+            console.log('Final class info:', classInfo);
+            console.log('============================');
+
+            // Validate camera availability
+            if (!this.video || !this.canvas) {
+                this.showError('Camera not available for attendance capture');
+                this.resetSubmitButton();
+                return;
+            }
+
+            // Capture image
+            const base64Image = this.attendanceService.captureImageFromVideo(this.video, this.canvas);
+            
+            if (!base64Image || base64Image.trim() === '') {
+                this.showError('Failed to capture image from camera');
+                this.resetSubmitButton();
+                return;
+            }
+            
+            // Submit attendance with the validated assigned course ID
+            const submissionResult = await this.attendanceService.submitAttendance(
+                assignedCourseId, 
+                base64Image
+            );
+            
+            if (submissionResult.success) {
+                // Show success notification
+                this.showSuccessNotification(submissionResult.message);
+                
+                // Close modal and show success modal
+                setTimeout(() => {
+                    this.hideModal();
+                    
+                    setTimeout(() => {
+                        this.showSuccessModal(submissionResult.data, classInfo, submissionResult.statusText);
+                    }, 400);
+                }, 1000);
+            } else {
+                this.showError(submissionResult.message);
+                this.resetSubmitButton();
+            }
+
+        } catch (error) {
+            console.error('Error in performSubmission:', error);
+            this.showError('Failed to submit attendance. Please try again.');
+            this.resetSubmitButton();
+        }
     }
 
     getCurrentClassInfoForValidation() {
@@ -130,7 +255,7 @@ class FacultyAttendanceModal {
                     const currentClass = facultyData?.ScheduleSummary?.CurrentClass;
                     if (currentClass && currentClass.AssignedCourseId && currentClass.AssignedCourseId > 0) {
                         return {
-                            assignedCourseId: currentClass.AssignedCourseId.toString(),
+                            assignedCourseId: parseInt(currentClass.AssignedCourseId), // Ensure it's an integer
                             courseName: currentClass.CourseName
                         };
                     }
@@ -139,7 +264,7 @@ class FacultyAttendanceModal {
                     const nextClass = facultyData?.ScheduleSummary?.NextClass;
                     if (nextClass && nextClass.AssignedCourseId && nextClass.AssignedCourseId > 0) {
                         return {
-                            assignedCourseId: nextClass.AssignedCourseId.toString(),
+                            assignedCourseId: parseInt(nextClass.AssignedCourseId), // Ensure it's an integer
                             courseName: nextClass.CourseName
                         };
                     }
@@ -152,7 +277,7 @@ class FacultyAttendanceModal {
                     
                     if (validClass) {
                         return {
-                            assignedCourseId: validClass.AssignedCourseId.toString(),
+                            assignedCourseId: parseInt(validClass.AssignedCourseId), // Ensure it's an integer
                             courseName: validClass.CourseName
                         };
                     }
@@ -165,7 +290,7 @@ class FacultyAttendanceModal {
                     
                     if (validCourse) {
                         return {
-                            assignedCourseId: validCourse.AssignedCourseId.toString(),
+                            assignedCourseId: parseInt(validCourse.AssignedCourseId), // Ensure it's an integer
                             courseName: validCourse.CourseName
                         };
                     }
@@ -185,7 +310,7 @@ class FacultyAttendanceModal {
                     const courseIdInt = parseInt(assignedCourseId);
                     if (courseIdInt > 0) {
                         return {
-                            assignedCourseId: courseIdInt.toString(),
+                            assignedCourseId: courseIdInt, // Already an integer
                             courseName: courseName
                         };
                     }
@@ -273,70 +398,6 @@ class FacultyAttendanceModal {
         }
     }
 
-    async submitFacultyAttendance() {
-        try {
-            const submitButton = document.getElementById('markFacultyAttendanceBtn');
-            if (!submitButton) return;
-
-            // Show loading state
-            submitButton.disabled = true;
-            submitButton.innerHTML = `
-                <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 008-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Submitting...
-            `;
-
-            // Get current class info
-            const currentClassInfo = this.getCurrentClassInfoForValidation();
-            
-            if (!currentClassInfo || !currentClassInfo.assignedCourseId) {
-                this.showError('No current class available for attendance submission');
-                this.resetSubmitButton();
-                return;
-            }
-
-            // Validate camera availability
-            if (!this.video || !this.canvas) {
-                this.showError('Camera not available for attendance capture');
-                this.resetSubmitButton();
-                return;
-            }
-
-            // Capture image
-            const base64Image = this.attendanceService.captureImageFromVideo(this.video, this.canvas);
-            
-            // Submit attendance
-            const submissionResult = await this.attendanceService.submitAttendance(
-                currentClassInfo.assignedCourseId, 
-                base64Image
-            );
-            
-            if (submissionResult.success) {
-                // Show success notification
-                this.showSuccessNotification(submissionResult.message);
-                
-                // Close modal and show success modal
-                setTimeout(() => {
-                    this.hideModal();
-                    
-                    setTimeout(() => {
-                        this.showSuccessModal(submissionResult.data, currentClassInfo, submissionResult.statusText);
-                    }, 400);
-                }, 1000);
-            } else {
-                this.showError(submissionResult.message);
-                this.resetSubmitButton();
-            }
-
-        } catch (error) {
-            console.error('Error submitting attendance:', error);
-            this.showError('Failed to capture image. Please try again.');
-            this.resetSubmitButton();
-        }
-    }
-
     showModal() {
         if (!this.modal) {
             console.error('Faculty modal element not found!');
@@ -371,6 +432,10 @@ class FacultyAttendanceModal {
         }, 200);
 
         this.stopCamera();
+        
+        // Clear the stored course ID when modal is closed
+        this.modal.removeAttribute('data-validated-course-id');
+        this.modal.removeAttribute('data-course-name');
     }
 
     showHeatWarningModal() {
@@ -528,6 +593,13 @@ class FacultyAttendanceModal {
 
     loadCurrentClassInfo() {
         try {
+            // Get the validated course ID from the modal if available
+            const validatedCourseId = this.modal.getAttribute('data-validated-course-id');
+            
+            console.log('=== LOAD CURRENT CLASS INFO ===');
+            console.log('Validated course ID from modal:', validatedCourseId);
+            console.log('==============================');
+            
             // First try to get from dashboard data attributes
             const currentClassCard = document.querySelector('[data-current-class="true"]');
             if (currentClassCard) {
@@ -991,5 +1063,4 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('No faculty dashboard data element found');
     }
 });
-    
-   
+

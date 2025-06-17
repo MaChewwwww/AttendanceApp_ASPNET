@@ -6,9 +6,24 @@ class FacultyAttendanceService {
 
     async validateSubmission(assignedCourseId) {
         try {
+            // Ensure assignedCourseId is a valid integer
+            const courseId = parseInt(assignedCourseId);
+            if (isNaN(courseId) || courseId <= 0) {
+                return { 
+                    success: false, 
+                    message: `Invalid assigned course ID: ${assignedCourseId}` 
+                };
+            }
+            
             const validationData = {
-                assignedCourseId: parseInt(assignedCourseId)
+                assignedCourseId: courseId
             };
+            
+            console.log('=== FACULTY VALIDATION SERVICE DEBUG ===');
+            console.log('Original assignedCourseId:', assignedCourseId);
+            console.log('Parsed courseId:', courseId);
+            console.log('Validation data:', validationData);
+            console.log('========================================');
             
             const response = await fetch('/Faculty/ValidateFacultyAttendanceSubmission', {
                 method: 'POST',
@@ -46,10 +61,64 @@ class FacultyAttendanceService {
 
     async submitAttendance(assignedCourseId, base64Image) {
         try {
+            // Multiple layers of validation to ensure we have valid data
+            console.log('=== FACULTY SUBMISSION SERVICE VALIDATION ===');
+            console.log('Input assignedCourseId:', assignedCourseId, 'Type:', typeof assignedCourseId);
+            console.log('Input base64Image length:', base64Image?.length || 0);
+            
+            // Ensure assignedCourseId is a valid integer
+            let courseId;
+            if (typeof assignedCourseId === 'string') {
+                courseId = parseInt(assignedCourseId, 10);
+            } else if (typeof assignedCourseId === 'number') {
+                courseId = Math.floor(assignedCourseId);
+            } else {
+                return { 
+                    success: false, 
+                    message: `Invalid assigned course ID type: ${typeof assignedCourseId}` 
+                };
+            }
+            
+            console.log('Converted courseId:', courseId, 'Type:', typeof courseId);
+            
+            if (isNaN(courseId) || courseId <= 0) {
+                return { 
+                    success: false, 
+                    message: `Invalid assigned course ID for submission: ${assignedCourseId} -> ${courseId}` 
+                };
+            }
+            
+            if (!base64Image || typeof base64Image !== 'string' || base64Image.trim() === '') {
+                return { 
+                    success: false, 
+                    message: 'Face image is required for attendance submission' 
+                };
+            }
+            
+            // Use camelCase to match the C# JsonPropertyName attributes
             const submissionData = {
-                assignedCourseId: parseInt(assignedCourseId),
-                faceImage: base64Image
+                assignedCourseId: courseId,
+                faceImage: base64Image.trim(),
+                latitude: null,
+                longitude: null
             };
+            
+            console.log('=== FACULTY SUBMISSION SERVICE FINAL DATA ===');
+            console.log('Final courseId:', courseId);
+            console.log('Final courseId type:', typeof courseId);
+            console.log('Base64 image length:', base64Image.length);
+            console.log('Submission data structure:', {
+                assignedCourseId: submissionData.assignedCourseId,
+                faceImage: '[BASE64_DATA_TRUNCATED]',
+                latitude: submissionData.latitude,
+                longitude: submissionData.longitude
+            });
+            console.log('Submission data.assignedCourseId type:', typeof submissionData.assignedCourseId);
+            
+            // Log the actual JSON being sent
+            const jsonString = JSON.stringify(submissionData);
+            console.log('JSON string being sent (first 200 chars):', jsonString.substring(0, 200));
+            console.log('============================================');
             
             const response = await fetch('/Faculty/SubmitFacultyAttendance', {
                 method: 'POST',
@@ -57,20 +126,28 @@ class FacultyAttendanceService {
                     'Content-Type': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest'
                 },
-                body: JSON.stringify(submissionData)
+                body: jsonString
             });
+            
+            console.log('Response status:', response.status);
+            console.log('Response ok:', response.ok);
             
             if (!response.ok) {
                 const errorText = await response.text();
+                console.log('Error response text:', errorText);
                 throw new Error(`Submission request failed: ${response.status} - ${errorText}`);
             }
             
             const responseText = await response.text();
+            console.log('Response text:', responseText);
+            
             let submissionResult;
             
             try {
                 submissionResult = JSON.parse(responseText);
             } catch (parseError) {
+                console.error('JSON parse error:', parseError);
+                console.log('Raw response that failed to parse:', responseText);
                 return {
                     success: false,
                     message: 'Invalid response from server. Please try again.'

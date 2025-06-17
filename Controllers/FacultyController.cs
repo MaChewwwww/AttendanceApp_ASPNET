@@ -525,7 +525,7 @@ namespace AttendanceApp_ASPNET.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> ValidateFacultyAttendanceSubmission([FromBody] FacultyAttendanceValidationRequest request)
+        public async Task<IActionResult> ValidateFacultyAttendanceSubmission([FromBody] Models.FacultyAttendanceValidationRequest request)
         {
             try
             {
@@ -533,7 +533,9 @@ namespace AttendanceApp_ASPNET.Controllers
                 var jwtToken = HttpContext.Session.GetString("AuthToken");
                 
                 Console.WriteLine($"=== FACULTY CONTROLLER VALIDATE ATTENDANCE SUBMISSION ===");
+                Console.WriteLine($"Request Model Type: {request.GetType().FullName}");
                 Console.WriteLine($"Request - Assigned Course ID: {request.AssignedCourseId}");
+                Console.WriteLine($"Request - Course ID Type: {request.AssignedCourseId.GetType()}");
                 Console.WriteLine($"Faculty: {faculty.FullName} ({faculty.Email})");
                 Console.WriteLine($"JWT Token present: {!string.IsNullOrEmpty(jwtToken)}");
                 Console.WriteLine("========================================================");
@@ -601,7 +603,9 @@ namespace AttendanceApp_ASPNET.Controllers
                 var jwtToken = HttpContext.Session.GetString("AuthToken");
                 
                 Console.WriteLine($"=== FACULTY CONTROLLER SUBMIT ATTENDANCE ===");
+                Console.WriteLine($"Request Model Type: {request.GetType().FullName}");
                 Console.WriteLine($"Request - Assigned Course ID: {request.AssignedCourseId}");
+                Console.WriteLine($"Request - Course ID Type: {request.AssignedCourseId.GetType()}");
                 Console.WriteLine($"Request - Face Image Length: {request.FaceImage?.Length ?? 0}");
                 Console.WriteLine($"Request - Has Location: {request.Latitude.HasValue && request.Longitude.HasValue}");
                 Console.WriteLine($"Faculty: {faculty.FullName} ({faculty.Email})");
@@ -617,7 +621,7 @@ namespace AttendanceApp_ASPNET.Controllers
                 if (request.AssignedCourseId <= 0)
                 {
                     Console.WriteLine($"ERROR: Invalid assigned course ID: {request.AssignedCourseId}");
-                    return Json(new { success = false, message = "Invalid course ID" });
+                    return Json(new { success = false, message = $"Invalid course ID: {request.AssignedCourseId}" });
                 }
 
                 if (string.IsNullOrEmpty(request.FaceImage))
@@ -689,37 +693,6 @@ namespace AttendanceApp_ASPNET.Controllers
         public string Status { get; set; } = string.Empty;
         public string AttendanceDate { get; set; } = string.Empty;
         public string AttendanceTime { get; set; } = string.Empty;
-    }
-
-    public class FacultyAttendanceValidationRequest
-    {
-        public int AssignedCourseId { get; set; }
-    }
-
-    public class FacultyAttendanceValidationResponse
-    {
-        public bool CanSubmit { get; set; }
-        public string Message { get; set; } = string.Empty;
-        public object? ScheduleInfo { get; set; }
-        public object? ExistingAttendance { get; set; }
-    }
-
-    public class FacultyAttendanceSubmissionRequest
-    {
-        public int AssignedCourseId { get; set; }
-        public string FaceImage { get; set; } = string.Empty;
-        public double? Latitude { get; set; }
-        public double? Longitude { get; set; }
-    }
-
-    public class FacultyAttendanceSubmissionResponse
-    {
-        public bool Success { get; set; }
-        public string Message { get; set; } = string.Empty;
-        public int AttendanceId { get; set; }
-        public string Status { get; set; } = string.Empty;
-        public string SubmittedAt { get; set; } = string.Empty;
-        public object? CourseInfo { get; set; }
     }
 }
 
