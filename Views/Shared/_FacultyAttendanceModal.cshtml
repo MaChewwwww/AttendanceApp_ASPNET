@@ -12,23 +12,17 @@
                     </button>
                 </div>
                 
-                <!-- Current Faculty Info -->
+                <!-- Current Class Info & Date (will be populated by JavaScript) -->
                 <div id="currentFacultyInfo" class="mb-6 p-4 bg-gray-50 rounded-lg">
-                    <h4 class="font-medium text-gray-900 mb-2">Faculty Details</h4>
-                    <div class="space-y-1 text-sm text-gray-600">
-                        <div id="facultyName">Loading...</div>
-                        <div id="facultyDepartment">Loading...</div>
-                        <div id="facultyId">Loading...</div>
-                        <div id="currentDate">Loading...</div>
-                    </div>
+                    <!-- This will be populated by JavaScript -->
                 </div>
                 
-                <!-- Camera Container with faster initialization -->
+                <!-- Camera Container -->
                 <div class="mb-4 relative">
-                    <video id="facultyAttendanceVideo" class="w-full h-64 bg-gray-100 rounded-lg object-cover" autoplay playsinline muted></video>
+                    <video id="facultyAttendanceVideo" class="w-full h-64 bg-gray-100 rounded-lg object-cover" autoplay playsinline muted style="display: block;"></video>
                     <canvas id="facultyAttendanceCanvas" class="hidden"></canvas>
-                    <!-- Loading overlay -->
-                    <div id="facultyCameraLoading" class="absolute inset-0 bg-gray-100 rounded-lg flex items-center justify-center">
+                    <!-- Loading overlay with proper z-index -->
+                    <div id="facultyCameraLoading" class="absolute inset-0 bg-gray-100 rounded-lg flex items-center justify-center z-10">
                         <div class="text-center">
                             <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
                             <p class="text-sm text-gray-600">Starting camera...</p>
@@ -36,7 +30,7 @@
                     </div>
                 </div>
                 
-                <!-- Simplified Instructions -->
+                <!-- Instructions -->
                 <div class="mb-4 p-3 bg-blue-50 rounded-lg">
                     <div class="flex items-center text-sm text-blue-800">
                         <svg class="w-4 h-4 text-blue-600 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -146,6 +140,10 @@
                             <span class="font-medium text-gray-900" id="successDepartmentName">-</span>
                         </div>
                         <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">Current Class:</span>
+                            <span class="font-medium text-gray-900" id="successCurrentClass">-</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
                             <span class="text-gray-600">Time:</span>
                             <span class="font-medium text-gray-900" id="facultySuccessTime">-</span>
                         </div>
@@ -240,6 +238,12 @@
         box-shadow: 0 0 5px rgba(59, 130, 246, 0.3);
     }
     50% { 
+        opacity: 0.8; 
+        box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+    }
+}
+</style>
+</style>
         opacity: 0.8; 
         box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
     }

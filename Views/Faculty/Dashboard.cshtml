@@ -28,8 +28,34 @@
     "humidity": @(ViewBag.Humidity ?? 0),
     "heatIndex": @(ViewBag.HeatIndex ?? 0),
     "maxFeelsLike": @(ViewBag.MaxFeelsLike ?? 0),
-    "weatherDataAvailable": @((ViewBag.WeatherDataAvailable == true).ToString().ToLower())
+    "maxTemperature": @(ViewBag.MaxTemperature ?? 0),
+    "minTemperature": @(ViewBag.MinTemperature ?? 0),
+    "weatherDataAvailable": @((ViewBag.WeatherDataAvailable == true).ToString().ToLower()),
+    "weatherLocation": "@(ViewBag.WeatherLocation ?? "")",
+    "weatherCondition": "@(ViewBag.WeatherCondition ?? "")"
 }</script>
+
+<!-- Also add ViewBag data to window object for JavaScript access -->
+<script type="text/javascript">
+    window.ViewBag = {
+        Temperature: @(ViewBag.Temperature ?? 0),
+        Humidity: @(ViewBag.Humidity ?? 0),
+        HeatIndex: @(ViewBag.HeatIndex ?? 0),
+        MaxFeelsLike: @(ViewBag.MaxFeelsLike ?? 0),
+        MaxTemperature: @(ViewBag.MaxTemperature ?? 0),
+        MinTemperature: @(ViewBag.MinTemperature ?? 0),
+        WeatherDataAvailable: @((ViewBag.WeatherDataAvailable == true).ToString().ToLower()),
+        WeatherLocation: "@(ViewBag.WeatherLocation ?? "")",
+        WeatherCondition: "@(ViewBag.WeatherCondition ?? "")",
+        // Add faculty info
+        FirstName: "@(ViewBag.FirstName ?? "")",
+        LastName: "@(ViewBag.LastName ?? "")",
+        Department: "@(ViewBag.Department ?? "")",
+        EmployeeNumber: "@(ViewBag.EmployeeNumber ?? "")",
+        UserEmail: "@(ViewBag.UserEmail ?? "")"
+    };
+    console.log('Faculty ViewBag weather data:', window.ViewBag);
+</script>
 @if (ViewBag.HasChartsData == true && ViewBag.ChartsData != null)
 {
     <script type="application/json" id="charts-data">@Html.Raw(Json.Serialize(ViewBag.ChartsData))</script>
@@ -74,7 +100,39 @@
 <!-- Main Action Cards -->
 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
     <!-- Current Class & Mark Attendance -->
-    <div class="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow duration-200 dashboard-card-entrance relative">
+    <div class="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow duration-200 dashboard-card-entrance relative" 
+         data-current-class="true"
+         @if (currentClass != null)
+         {
+             @:data-course-name="@currentClass.CourseName"
+             @:data-course-code="@currentClass.CourseCode"
+             @:data-section-name="@currentClass.SectionName"
+             @:data-room="@(currentClass.Room ?? "TBA")"
+             @:data-start-time="@currentClass.StartTime"
+             @:data-end-time="@currentClass.EndTime"
+             @:data-status="@currentClass.Status"
+         }
+         else if (nextClass != null)
+         {
+             @:data-course-name="@nextClass.CourseName"
+             @:data-course-code="@nextClass.CourseCode"
+             @:data-section-name="@nextClass.SectionName"
+             @:data-room="@(nextClass.Room ?? "TBA")"
+             @:data-start-time="@nextClass.StartTime"
+             @:data-end-time="@nextClass.EndTime"
+             @:data-status="@nextClass.Status"
+         }
+         else if (!hasRealData)
+         {
+             @:data-course-name="Database Systems"
+             @:data-course-code="CS-4203"
+             @:data-section-name="4-2"
+             @:data-room="Lecture Hall 1"
+             @:data-start-time="11:00"
+             @:data-end-time="19:00"
+             @:data-status="ongoing"
+         }>
+        
         @{
             var isCurrentlyOngoing = currentClass != null && currentClass.Status?.ToString().ToLower() == "ongoing";
         }
@@ -278,7 +336,7 @@
                 </div>
                 <div class="text-right">
                     <div class="text-orange-600 text-sm font-medium">Max feels like</div>
-                    <div class="text-2xl font-bold text-orange-600">@ViewBag.MaxFeelsLike°C</div>
+                    <div class="text-2xl font-bold text-orange-600" data-max-feels-like="@ViewBag.MaxFeelsLike">@ViewBag.MaxFeelsLike°C</div>
                 </div>
             </div>
             <div class="space-y-2">
@@ -739,7 +797,6 @@
     <script src="~/js/faculty-dashboard.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="~/js/faculty-charts.js"></script>
-    <script src="~/js/mark-attendance.js"></script>
     <script src="~/js/faculty-mark-attendance.js"></script>
     
     <script>
