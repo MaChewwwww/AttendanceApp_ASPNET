@@ -52,6 +52,7 @@ namespace AttendanceApp_ASPNET.Services
         Task<string> GetFacultyPersonalAttendanceAsync(string jwtToken);
         Task<string> GetCourseAttendanceAsync(int assignedCourseId, string academicYear, int? month, int? day, string jwtToken);
         Task<string> UpdateAttendanceStatusAsync(int assignedCourseId, int attendanceId, string status, string jwtToken);
+        Task<string> ValidateFacultyAttendanceSubmissionAsync(object validationData, string jwtToken);
 
         // Faculty dashboard data methods
         Task<string> GetFacultyDashboardAsync(string jwtToken);
@@ -465,39 +466,56 @@ namespace AttendanceApp_ASPNET.Services
 
         public async Task<string> UpdateAttendanceStatusAsync(int assignedCourseId, int attendanceId, string status, string jwtToken)
         {
-            var requestData = new { status = status };
-            var endpoint = $"/faculty/courses/{assignedCourseId}/attendance/{attendanceId}/status";
-
-            return await PutApiRequestWithStructuredErrorAsync(endpoint, requestData, jwtToken, "Failed to update attendance status", new
+            try
             {
-                success = false,
-                message = "",
-                attendance_id = 0,
-                old_status = "",
-                new_status = "",
-                updated_at = "",
-                student_info = new
-                {
-                    student_id = 0,
-                    user_id = 0,
-                    student_number = "",
-                    name = "",
-                    email = ""
-                },
-                course_info = new
-                {
-                    assigned_course_id = 0,
-                    course_id = 0,
-                    course_name = "",
-                    course_code = "",
-                    section_name = "",
-                    program_name = "",
-                    academic_year = "",
-                    semester = ""
-                }
-            });
+                Console.WriteLine("=== API SERVICE: UPDATE ATTENDANCE STATUS ===");
+                Console.WriteLine($"AssignedCourseId: {assignedCourseId}");
+                Console.WriteLine($"AttendanceId: {attendanceId}");
+                Console.WriteLine($"Status: {status}");
+                Console.WriteLine($"JWT Token present: {!string.IsNullOrEmpty(jwtToken)}");
+                Console.WriteLine("=============================================");
+
+                var updateData = new { status = status };
+                var response = await PutDataAsync($"/faculty/courses/{assignedCourseId}/attendance/{attendanceId}/status", updateData, jwtToken);
+                
+                Console.WriteLine($"API Response received, length: {response?.Length ?? 0}");
+                Console.WriteLine($"Response preview: {(string.IsNullOrEmpty(response) ? "null" : response.Substring(0, Math.Min(200, response.Length)))}...");
+                
+                return response ?? "";
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in UpdateAttendanceStatusAsync: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                throw;
+            }
         }
 
+        public async Task<string> ValidateFacultyAttendanceSubmissionAsync(object validationData, string jwtToken)
+        {
+            try
+            {
+                Console.WriteLine("=== API SERVICE: FACULTY ATTENDANCE VALIDATION ===");
+                Console.WriteLine($"Validation data: {JsonSerializer.Serialize(validationData)}");
+                Console.WriteLine($"JWT Token present: {!string.IsNullOrEmpty(jwtToken)}");
+                Console.WriteLine("================================================");
+
+                var response = await PostDataAsync("/faculty/attendance/validate", validationData, jwtToken);
+                
+                Console.WriteLine($"API Response received, length: {response?.Length ?? 0}");
+                Console.WriteLine($"Response preview: {(string.IsNullOrEmpty(response) ? "null" : response.Substring(0, Math.Min(200, response.Length)))}...");
+                
+                return response ?? "";
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in ValidateFacultyAttendanceSubmissionAsync: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                throw;
+            }
+        }
+
+        // Faculty dashboard data methods
         public async Task<string> GetFacultyDashboardAsync(string jwtToken)
         {
             return await GetApiRequestWithStructuredErrorAsync("/faculty/dashboard", jwtToken, "Failed to fetch faculty dashboard", new
@@ -713,6 +731,60 @@ namespace AttendanceApp_ASPNET.Services
                 _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {jwtToken}");
             }
         }
+
+        private async Task<string> PostDataAsync(string endpoint, object data, string jwtToken)
+        {
+            try
+            {
+                var apiUrl = $"{_apiBaseUrl}{endpoint}";
+                var json = JsonSerializer.Serialize(data);
+                var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                SetupRequestHeaders(jwtToken);
+
+                var response = await _httpClient.PostAsync(apiUrl, content);
+                var responseContent = await response.Content.ReadAsStringAsync();
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new Exception($"API call failed {response.StatusCode}: {responseContent}");
+                }
+
+                return responseContent;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"PostDataAsync error: {ex.Message}");
+                throw;
+            }
+        }
+
+        private async Task<string> PutDataAsync(string endpoint, object data, string jwtToken)
+        {
+            try
+            {
+                var apiUrl = $"{_apiBaseUrl}{endpoint}";
+                var json = JsonSerializer.Serialize(data);
+                var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+                SetupRequestHeaders(jwtToken);
+
+                var response = await _httpClient.PutAsync(apiUrl, content);
+                var responseContent = await response.Content.ReadAsStringAsync();
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new Exception($"API call failed {response.StatusCode}: {responseContent}");
+                }
+
+                return responseContent;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"PutDataAsync error: {ex.Message}");
+                throw;
+            }
+        }
     }
 }
-    
+

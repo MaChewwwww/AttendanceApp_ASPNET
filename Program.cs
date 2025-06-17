@@ -29,8 +29,14 @@ builder.Services.AddHttpClient<IApiService, ApiService>();
 // Register services
 builder.Services.AddScoped<IApiService, ApiService>();
 builder.Services.AddScoped<IStudentManagementService, StudentManagementService>();
+builder.Services.AddScoped<IAttendanceService, AttendanceService>();
+builder.Services.AddScoped<ICourseService, CourseService>();
+builder.Services.AddScoped<IStudentHistoryService, StudentHistoryService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IClassService, ClassService>();
 builder.Services.AddScoped<IFacultyPersonalAttendanceService, FacultyPersonalAttendanceService>();
+builder.Services.AddScoped<IFacultyAttendanceValidationService, FacultyAttendanceValidationService>();
+builder.Services.AddScoped<IEnvironmentService, EnvironmentService>();
 
 // Register HTTP clients
 builder.Services.AddHttpClient<IEnvironmentService, EnvironmentService>();

@@ -104,6 +104,7 @@
          data-current-class="true"
          @if (currentClass != null)
          {
+             @:data-assigned-course-id="@currentClass.AssignedCourseId"
              @:data-course-name="@currentClass.CourseName"
              @:data-course-code="@currentClass.CourseCode"
              @:data-section-name="@currentClass.SectionName"
@@ -114,6 +115,7 @@
          }
          else if (nextClass != null)
          {
+             @:data-assigned-course-id="@nextClass.AssignedCourseId"
              @:data-course-name="@nextClass.CourseName"
              @:data-course-code="@nextClass.CourseCode"
              @:data-section-name="@nextClass.SectionName"
@@ -124,6 +126,7 @@
          }
          else if (!hasRealData)
          {
+             @:data-assigned-course-id="1"
              @:data-course-name="Database Systems"
              @:data-course-code="CS-4203"
              @:data-section-name="4-2"

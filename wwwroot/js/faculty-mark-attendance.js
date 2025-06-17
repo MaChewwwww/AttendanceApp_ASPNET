@@ -96,8 +96,227 @@ class FacultyAttendanceModal {
             return;
         }
 
-        // If heat is safe, show the attendance modal
-        this.showModal();
+        // Check faculty attendance validation before showing modal
+        console.log('Faculty checking attendance validation...');
+        const canSubmit = await this.validateFacultyAttendanceSubmission();
+        
+        console.log(`Faculty validation result: canSubmit = ${canSubmit}`);
+        
+        if (!canSubmit) {
+            // Validation failed, error message already shown by validateFacultyAttendanceSubmission
+            console.log('Faculty validation failed - not showing modal');
+            return;
+        }
+
+        // If heat is safe and validation passes, show the attendance modal
+        console.log('Faculty validation passed - showing modal');
+        // Add a small delay to ensure the success notification is visible before showing modal
+        setTimeout(() => {
+            this.showModal();
+        }, 1000); // Wait 1 second after success notification
+    }
+
+    async validateFacultyAttendanceSubmission() {
+        try {
+            console.log('Faculty validating attendance submission eligibility...');
+            
+            // Get the current class info to determine assigned course ID
+            const currentClassInfo = this.getCurrentClassInfoForValidation();
+            
+            if (!currentClassInfo || !currentClassInfo.assignedCourseId) {
+                this.showError('No current class available for attendance submission');
+                return false;
+            }
+            
+            console.log(`Faculty validating for assigned course ID: ${currentClassInfo.assignedCourseId}`);
+            
+            // Call the validation endpoint
+            const validationData = {
+                assignedCourseId: parseInt(currentClassInfo.assignedCourseId)
+            };
+            
+            const response = await fetch('/Faculty/ValidateFacultyAttendanceSubmission', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify(validationData)
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Validation request failed: ${response.status}`);
+            }
+            
+            const validationResult = await response.json();
+            console.log('Faculty validation result:', validationResult);
+            console.log('Full validation result object:', JSON.stringify(validationResult, null, 2));
+            
+            // Log all properties in the response
+            console.log('All properties in validationResult:');
+            Object.keys(validationResult).forEach(key => {
+                console.log(`  ${key}: ${validationResult[key]} (type: ${typeof validationResult[key]})`);
+            });
+            
+            // Check for canSubmit property (should now be camelCase from controller)
+            const canSubmit = validationResult.canSubmit;
+            console.log('Final canSubmit value:', canSubmit, 'type:', typeof canSubmit);
+            
+            // Check if validation failed
+            if (canSubmit !== true) {
+                const message = validationResult.message || 'Cannot submit faculty attendance at this time';
+                this.showError(message);
+                return false;
+            }
+            
+            // Store validation info for later use
+            this.validationInfo = validationResult;
+            
+            // Show success message if validation passes
+            const message = validationResult.message;
+            if (message) {
+                console.log('Showing SUCCESS notification for validation message:', message);
+                this.showSuccessNotification(message);
+            } else {
+                console.log('Validation successful but no message to display');
+                this.showSuccessNotification('Validation successful - you can mark attendance');
+            }
+            
+            console.log('Faculty attendance validation successful - proceeding to show modal');
+            return true;
+            
+        } catch (error) {
+            console.error('Faculty attendance validation error:', error);
+            this.showError('Failed to validate attendance submission. Please try again.');
+            return false;
+        }
+    }
+
+    showSuccessNotification(message) {
+        // Remove any existing notifications first to avoid conflicts
+        const existingNotifications = document.querySelectorAll('.fixed.top-4.right-4');
+        existingNotifications.forEach(notification => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        });
+
+        // Create success notification with proper styling
+        const notification = document.createElement('div');
+        notification.className = 'fixed top-4 right-4 bg-green-100 border border-green-200 text-green-800 px-4 py-3 rounded-lg shadow-lg z-50';
+        notification.innerHTML = `
+            <div class="flex items-center">
+                <i class="fas fa-check-circle text-green-600 mr-2"></i>
+                <div>
+                    <div class="font-medium text-green-800">Validation Successful</div>
+                    <div class="text-sm text-green-700">${message}</div>
+                </div>
+                <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-green-600 hover:text-green-800">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+
+        document.body.appendChild(notification);
+
+        // Auto remove after 4 seconds (longer for success messages)
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 4000);
+        
+        console.log('SUCCESS notification displayed:', message);
+    }
+
+    showError(message) {
+        // Remove any existing notifications first to avoid conflicts
+        const existingNotifications = document.querySelectorAll('.fixed.top-4.right-4');
+        existingNotifications.forEach(notification => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        });
+
+        // Create error notification
+        const notification = document.createElement('div');
+        notification.className = 'fixed top-4 right-4 bg-red-100 border border-red-200 text-red-800 px-4 py-3 rounded-lg shadow-lg z-50';
+        notification.innerHTML = `
+            <div class="flex items-center">
+                <i class="fas fa-exclamation-circle text-red-600 mr-2"></i>
+                <div>
+                    <div class="font-medium text-red-800">Faculty Attendance Error</div>
+                    <div class="text-sm text-red-700">${message}</div>
+                </div>
+                <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-red-600 hover:text-red-800">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+
+        document.body.appendChild(notification);
+
+        // Auto remove after 8 seconds
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 8000);
+        
+        console.log('ERROR notification displayed:', message);
+    }
+
+    getCurrentClassInfoForValidation() {
+        try {
+            // First try to get from dashboard data attributes
+            const currentClassCard = document.querySelector('[data-current-class="true"]');
+            if (currentClassCard) {
+                const assignedCourseId = currentClassCard.getAttribute('data-assigned-course-id');
+                const courseName = currentClassCard.getAttribute('data-course-name');
+                
+                console.log('Faculty class data from attributes:', {
+                    assignedCourseId, courseName
+                });
+                
+                if (assignedCourseId && assignedCourseId !== 'null' && assignedCourseId !== '0') {
+                    return {
+                        assignedCourseId: assignedCourseId,
+                        courseName: courseName
+                    };
+                }
+            }
+            
+            // Then try dashboard data JSON
+            const dashboardDataElement = document.getElementById('faculty-dashboard-data');
+            const hasRealData = document.getElementById('has-real-data')?.textContent === 'true';
+            
+            if (hasRealData && dashboardDataElement) {
+                try {
+                    const facultyData = JSON.parse(dashboardDataElement.textContent);
+                    
+                    // Try to get current class
+                    const currentClass = facultyData?.ScheduleSummary?.CurrentClass || 
+                                        facultyData?.scheduleSummary?.currentClass ||
+                                        facultyData?.CurrentClass;
+                    
+                    if (currentClass && currentClass.AssignedCourseId) {
+                        console.log('Faculty class data from JSON:', currentClass);
+                        return {
+                            assignedCourseId: currentClass.AssignedCourseId,
+                            courseName: currentClass.CourseName || currentClass.courseName
+                        };
+                    }
+                } catch (parseError) {
+                    console.error('Error parsing faculty dashboard data for validation:', parseError);
+                }
+            }
+            
+            console.log('Faculty: No valid current class found for validation');
+            return null;
+        } catch (error) {
+            console.error('Error getting current class info for validation:', error);
+            return null;
+        }
     }
 
     async checkWeatherConditions() {
@@ -382,17 +601,28 @@ class FacultyAttendanceModal {
     }
 
     showModal() {
-        if (!this.modal) return;
+        if (!this.modal) {
+            console.error('Faculty modal element not found!');
+            return;
+        }
         
-        console.log('Faculty showing modal');
+        console.log('Faculty showing modal - element found:', !!this.modal);
+        console.log('Faculty modal current classes:', this.modal.className);
+        
+        // Show modal with flexbox positioning
         this.modal.classList.remove('hidden');
+        
+        console.log('Faculty modal classes after show:', this.modal.className);
         
         // Animate modal appearance
         setTimeout(() => {
-            const content = this.modal.querySelector('.transform');
+            const content = this.modal.querySelector('div > div');
             if (content) {
+                console.log('Faculty animating modal content');
                 content.classList.remove('scale-95');
                 content.classList.add('scale-100');
+            } else {
+                console.error('Faculty modal content element not found');
             }
         }, 10);
 
@@ -407,7 +637,7 @@ class FacultyAttendanceModal {
         if (!this.modal) return;
         
         console.log('Faculty hiding modal');
-        const content = this.modal.querySelector('.transform');
+        const content = this.modal.querySelector('div > div');
         if (content) {
             content.classList.remove('scale-100');
             content.classList.add('scale-95');
@@ -436,7 +666,7 @@ class FacultyAttendanceModal {
         
         // Animate modal appearance
         setTimeout(() => {
-            const content = this.heatWarningModal.querySelector('.transform');
+            const content = this.heatWarningModal.querySelector('div > div');
             if (content) {
                 content.classList.remove('scale-95');
                 content.classList.add('scale-100');
@@ -448,7 +678,7 @@ class FacultyAttendanceModal {
         if (!this.heatWarningModal) return;
         
         console.log('Faculty hiding heat warning modal');
-        const content = this.heatWarningModal.querySelector('.transform');
+        const content = this.heatWarningModal.querySelector('div > div');
         if (content) {
             content.classList.remove('scale-100');
             content.classList.add('scale-95');
@@ -469,7 +699,7 @@ class FacultyAttendanceModal {
         
         // Animate modal appearance
         setTimeout(() => {
-            const content = this.successModal.querySelector('.transform');
+            const content = this.successModal.querySelector('div > div');
             if (content) {
                 content.classList.remove('scale-95');
                 content.classList.add('scale-100');
@@ -481,7 +711,7 @@ class FacultyAttendanceModal {
         if (!this.successModal) return;
         
         console.log('Faculty hiding success modal');
-        const content = this.successModal.querySelector('.transform');
+        const content = this.successModal.querySelector('div > div');
         if (content) {
             content.classList.remove('scale-100');
             content.classList.add('scale-95');
@@ -808,13 +1038,11 @@ class FacultyAttendanceModal {
                 submitButton.innerHTML = `
                     <svg class="w-5 h-5 inline mr-2" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path>
-                    </svg>
-                    Mark Present
                 `;
             }
 
             // Show error message
-            alert('Failed to submit attendance. Please try again.');
+            this.showError('Failed to submit attendance. Please try again.');
         }
     }
 
@@ -874,91 +1102,6 @@ class FacultyAttendanceModal {
         // Update submission time
         document.getElementById('facultySubmissionTime').textContent = 
             `Recorded at ${now.toLocaleTimeString()}`;
-    }
-
-    loadFacultyInfo() {
-        // Remove this method since we don't need faculty info
-        // Just load current class information directly
-        this.loadCurrentClassInfo();
-    }
-
-    loadCurrentClassInfo() {
-        try {
-            console.log('Faculty loading current class info...');
-            
-            // First try to get from dashboard data attributes
-            const currentClassCard = document.querySelector('[data-current-class="true"]');
-            if (currentClassCard) {
-                const courseName = currentClassCard.getAttribute('data-course-name');
-                const courseCode = currentClassCard.getAttribute('data-course-code');
-                const sectionName = currentClassCard.getAttribute('data-section-name');
-                const room = currentClassCard.getAttribute('data-room');
-                const startTime = currentClassCard.getAttribute('data-start-time');
-                const endTime = currentClassCard.getAttribute('data-end-time');
-                const status = currentClassCard.getAttribute('data-status');
-                
-                console.log('Found class data from attributes:', {
-                    courseName, courseCode, sectionName, room, startTime, endTime, status
-                });
-                
-                if (courseName && courseName !== 'null') {
-                    const classInfo = {
-                        CourseName: courseName,
-                        CourseCode: courseCode,
-                        SectionName: sectionName,
-                        Room: room,
-                        StartTime: startTime,
-                        EndTime: endTime,
-                        Status: status || 'ongoing'
-                    };
-                    this.populateClassInfo(classInfo);
-                    return;
-                }
-            }
-            
-            // Then try dashboard data JSON
-            const dashboardDataElement = document.getElementById('faculty-dashboard-data');
-            const hasRealData = document.getElementById('has-real-data')?.textContent === 'true';
-            
-            console.log('Dashboard data element found:', !!dashboardDataElement);
-            console.log('Has real data:', hasRealData);
-            
-            if (hasRealData && dashboardDataElement) {
-                try {
-                    const facultyData = JSON.parse(dashboardDataElement.textContent);
-                    console.log('Faculty data parsed:', facultyData);
-                    
-                    // Try multiple property path variations
-                    const currentClass = facultyData?.ScheduleSummary?.CurrentClass || 
-                                        facultyData?.scheduleSummary?.currentClass ||
-                                        facultyData?.CurrentClass;
-                    const nextClass = facultyData?.ScheduleSummary?.NextClass || 
-                                     facultyData?.scheduleSummary?.nextClass ||
-                                     facultyData?.NextClass;
-                    
-                    console.log('Current class from data:', currentClass);
-                    console.log('Next class from data:', nextClass);
-                    
-                    const classToShow = currentClass || nextClass;
-                    
-                    if (classToShow) {
-                        console.log('Using class for display:', classToShow);
-                        this.populateClassInfo(classToShow);
-                        return;
-                    }
-                } catch (parseError) {
-                    console.error('Error parsing faculty dashboard data:', parseError);
-                }
-            }
-            
-            // Final fallback - show personal attendance
-            console.log('No current class found, showing personal attendance');
-            this.showPersonalAttendanceInfo();
-            
-        } catch (error) {
-            console.error('Error loading current class info:', error);
-            this.showPersonalAttendanceInfo();
-        }
     }
 
     getFacultyName() {
@@ -1035,5 +1178,5 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('No faculty dashboard data element found');
     }
 });
-
+        
 

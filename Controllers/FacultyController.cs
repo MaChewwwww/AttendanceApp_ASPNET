@@ -10,14 +10,16 @@ namespace AttendanceApp_ASPNET.Controllers
     {
         private readonly IClassService _classService;
         private readonly IFacultyPersonalAttendanceService _facultyPersonalAttendanceService;
+        private readonly IFacultyAttendanceValidationService _facultyAttendanceValidationService;
         private readonly IEnvironmentService _environmentService;
         private readonly IDashboardService _dashboardService;
 
-        public FacultyController(IApiService apiService, IClassService classService, IFacultyPersonalAttendanceService facultyPersonalAttendanceService, IEnvironmentService environmentService, IDashboardService dashboardService) 
+        public FacultyController(IApiService apiService, IClassService classService, IFacultyPersonalAttendanceService facultyPersonalAttendanceService, IFacultyAttendanceValidationService facultyAttendanceValidationService, IEnvironmentService environmentService, IDashboardService dashboardService) 
             : base(apiService)
         {
             _classService = classService;
             _facultyPersonalAttendanceService = facultyPersonalAttendanceService;
+            _facultyAttendanceValidationService = facultyAttendanceValidationService;
             _environmentService = environmentService;
             _dashboardService = dashboardService;
         }
@@ -519,6 +521,74 @@ namespace AttendanceApp_ASPNET.Controllers
                 });
             }
         }
+
+        [HttpPost]
+        public async Task<IActionResult> ValidateFacultyAttendanceSubmission([FromBody] FacultyAttendanceValidationRequest request)
+        {
+            try
+            {
+                var faculty = GetCurrentFacultyInfo();
+                var jwtToken = HttpContext.Session.GetString("AuthToken");
+                
+                Console.WriteLine($"=== FACULTY CONTROLLER VALIDATE ATTENDANCE SUBMISSION ===");
+                Console.WriteLine($"Request - Assigned Course ID: {request.AssignedCourseId}");
+                Console.WriteLine($"Faculty: {faculty.FullName} ({faculty.Email})");
+                Console.WriteLine($"JWT Token present: {!string.IsNullOrEmpty(jwtToken)}");
+                Console.WriteLine("========================================================");
+                
+                if (string.IsNullOrEmpty(jwtToken))
+                {
+                    Console.WriteLine("ERROR: No JWT token available");
+                    return Json(new { success = false, message = "Authentication required" });
+                }
+
+                if (request.AssignedCourseId <= 0)
+                {
+                    Console.WriteLine($"ERROR: Invalid assigned course ID: {request.AssignedCourseId}");
+                    return Json(new { success = false, message = "Invalid course ID" });
+                }
+
+                // Extend session before making API call
+                ExtendSession();
+
+                var validationResponse = await _facultyAttendanceValidationService.ValidateFacultyAttendanceAsync(request.AssignedCourseId, jwtToken);
+                
+                Console.WriteLine($"=== CONTROLLER VALIDATION RESPONSE SUMMARY ===");
+                Console.WriteLine($"Can Submit: {validationResponse.CanSubmit}");
+                Console.WriteLine($"Message: {validationResponse.Message}");
+                Console.WriteLine($"Schedule Info Present: {validationResponse.ScheduleInfo != null}");
+                Console.WriteLine($"Existing Attendance Present: {validationResponse.ExistingAttendance != null}");
+                Console.WriteLine("=============================================");
+                
+                // Create response with explicit camelCase property names for JavaScript compatibility
+                var response = new
+                {
+                    canSubmit = validationResponse.CanSubmit,
+                    message = validationResponse.Message,
+                    scheduleInfo = validationResponse.ScheduleInfo,
+                    existingAttendance = validationResponse.ExistingAttendance
+                };
+                
+                Console.WriteLine($"=== EXPLICIT RESPONSE OBJECT ===");
+                Console.WriteLine($"Response canSubmit: {response.canSubmit}");
+                Console.WriteLine($"Response message: {response.message}");
+                Console.WriteLine("===============================");
+                
+                return Json(response);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"ERROR in ValidateFacultyAttendanceSubmission: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                return Json(new 
+                { 
+                    canSubmit = false, 
+                    message = "Failed to validate attendance submission eligibility. Please try again later.",
+                    scheduleInfo = (object?)null,
+                    existingAttendance = (object?)null
+                });
+            }
+        }
     }
 
     public class UpdateStudentStatusRequest
@@ -535,6 +605,19 @@ namespace AttendanceApp_ASPNET.Controllers
         public string Status { get; set; } = string.Empty;
         public string AttendanceDate { get; set; } = string.Empty;
         public string AttendanceTime { get; set; } = string.Empty;
+    }
+
+    public class FacultyAttendanceValidationRequest
+    {
+        public int AssignedCourseId { get; set; }
+    }
+
+    public class FacultyAttendanceValidationResponse
+    {
+        public bool CanSubmit { get; set; }
+        public string Message { get; set; } = string.Empty;
+        public object? ScheduleInfo { get; set; }
+        public object? ExistingAttendance { get; set; }
     }
 }
 
