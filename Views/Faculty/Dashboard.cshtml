@@ -55,6 +55,36 @@
         UserEmail: "@(ViewBag.UserEmail ?? "")"
     };
     console.log('Faculty ViewBag weather data:', window.ViewBag);
+    
+    // Add debug information for faculty dashboard
+    console.log('=== FACULTY DASHBOARD DEBUG INFO ===');
+    console.log('Has real data:', @(hasRealData.ToString().ToLower()));
+    console.log('Current class:', @Html.Raw(Json.Serialize(currentClass)));
+    console.log('Next class:', @Html.Raw(Json.Serialize(nextClass)));
+    console.log('Today schedule count:', @todaySchedule.Count);
+    console.log('Current courses count:', @currentCourses.Count);
+    
+    @if (currentClass != null)
+    {
+        @:console.log('Current class assigned course ID:', @currentClass.AssignedCourseId);
+    }
+    
+    @if (nextClass != null)
+    {
+        @:console.log('Next class assigned course ID:', @nextClass.AssignedCourseId);
+    }
+    
+    @if (todaySchedule.Any())
+    {
+        @:console.log('First today schedule assigned course ID:', @todaySchedule.First().AssignedCourseId);
+    }
+    
+    @if (currentCourses.Any())
+    {
+        @:console.log('First current course assigned course ID:', @currentCourses.First().AssignedCourseId);
+    }
+    
+    console.log('===================================');
 </script>
 @if (ViewBag.HasChartsData == true && ViewBag.ChartsData != null)
 {
@@ -102,7 +132,7 @@
     <!-- Current Class & Mark Attendance -->
     <div class="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow duration-200 dashboard-card-entrance relative" 
          data-current-class="true"
-         @if (currentClass != null)
+         @if (currentClass != null && currentClass.AssignedCourseId > 0)
          {
              @:data-assigned-course-id="@currentClass.AssignedCourseId"
              @:data-course-name="@currentClass.CourseName"
@@ -113,7 +143,7 @@
              @:data-end-time="@currentClass.EndTime"
              @:data-status="@currentClass.Status"
          }
-         else if (nextClass != null)
+         else if (nextClass != null && nextClass.AssignedCourseId > 0)
          {
              @:data-assigned-course-id="@nextClass.AssignedCourseId"
              @:data-course-name="@nextClass.CourseName"
@@ -123,6 +153,30 @@
              @:data-start-time="@nextClass.StartTime"
              @:data-end-time="@nextClass.EndTime"
              @:data-status="@nextClass.Status"
+         }
+         else if (hasRealData && todaySchedule.Any())
+         {
+             var firstTodayClass = todaySchedule.Where(s => s.AssignedCourseId > 0).FirstOrDefault() ?? todaySchedule.First();
+             @:data-assigned-course-id="@firstTodayClass.AssignedCourseId"
+             @:data-course-name="@firstTodayClass.CourseName"
+             @:data-course-code="@firstTodayClass.CourseCode"
+             @:data-section-name="@firstTodayClass.SectionName"
+             @:data-room="@(firstTodayClass.Room ?? "TBA")"
+             @:data-start-time="@firstTodayClass.StartTime"
+             @:data-end-time="@firstTodayClass.EndTime"
+             @:data-status="@firstTodayClass.Status"
+         }
+         else if (hasRealData && currentCourses.Any())
+         {
+             var firstValidCourse = currentCourses.Where(c => c.AssignedCourseId > 0).FirstOrDefault() ?? currentCourses.First();
+             @:data-assigned-course-id="@firstValidCourse.AssignedCourseId"
+             @:data-course-name="@firstValidCourse.CourseName"
+             @:data-course-code="@firstValidCourse.CourseCode"
+             @:data-section-name="@firstValidCourse.SectionName"
+             @:data-room="TBA"
+             @:data-start-time="09:00"
+             @:data-end-time="17:00"
+             @:data-status="ongoing"
          }
          else if (!hasRealData)
          {

@@ -26,29 +26,21 @@ builder.Services.Configure<ApiSettings>(builder.Configuration.GetSection("ApiSet
 // Register HttpClient and ApiService
 builder.Services.AddHttpClient<IApiService, ApiService>();
 
-// Register services
+// Register all services (consolidated and organized)
 builder.Services.AddScoped<IApiService, ApiService>();
 builder.Services.AddScoped<IStudentManagementService, StudentManagementService>();
-builder.Services.AddScoped<IAttendanceService, AttendanceService>();
 builder.Services.AddScoped<ICourseService, CourseService>();
-builder.Services.AddScoped<IStudentHistoryService, StudentHistoryService>();
-builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<IAttendanceService, AttendanceService>();
 builder.Services.AddScoped<IClassService, ClassService>();
 builder.Services.AddScoped<IFacultyPersonalAttendanceService, FacultyPersonalAttendanceService>();
 builder.Services.AddScoped<IFacultyAttendanceValidationService, FacultyAttendanceValidationService>();
+builder.Services.AddScoped<IFacultyAttendanceSubmissionService, FacultyAttendanceSubmissionService>();
 builder.Services.AddScoped<IEnvironmentService, EnvironmentService>();
-
-// Register HTTP clients
-builder.Services.AddHttpClient<IEnvironmentService, EnvironmentService>();
-
-// Register consolidated services
-builder.Services.AddScoped<IEnvironmentService, EnvironmentService>();
-builder.Services.AddScoped<IStudentManagementService, StudentManagementService>();
-builder.Services.AddScoped<ICourseService, CourseService>();
-builder.Services.AddScoped<IClassService, ClassService>();  // Add this line
-builder.Services.AddScoped<IStudentHistoryService, StudentHistoryService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
-builder.Services.AddScoped<IAttendanceService, AttendanceService>();
+builder.Services.AddScoped<IStudentHistoryService, StudentHistoryService>();
+
+// Register HTTP clients for services that need them
+builder.Services.AddHttpClient<IEnvironmentService, EnvironmentService>();
 
 // Add antiforgery token services
 builder.Services.AddAntiforgery(options => {

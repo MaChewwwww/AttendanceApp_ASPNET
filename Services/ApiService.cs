@@ -53,6 +53,7 @@ namespace AttendanceApp_ASPNET.Services
         Task<string> GetCourseAttendanceAsync(int assignedCourseId, string academicYear, int? month, int? day, string jwtToken);
         Task<string> UpdateAttendanceStatusAsync(int assignedCourseId, int attendanceId, string status, string jwtToken);
         Task<string> ValidateFacultyAttendanceSubmissionAsync(object validationData, string jwtToken);
+        Task<string> SubmitFacultyAttendanceAsync(object submissionData, string jwtToken);
 
         // Faculty dashboard data methods
         Task<string> GetFacultyDashboardAsync(string jwtToken);
@@ -493,26 +494,26 @@ namespace AttendanceApp_ASPNET.Services
 
         public async Task<string> ValidateFacultyAttendanceSubmissionAsync(object validationData, string jwtToken)
         {
-            try
+            return await PostApiRequestWithStructuredErrorAsync("/faculty/attendance/validate", validationData, jwtToken, "Failed to validate faculty attendance submission", new
             {
-                Console.WriteLine("=== API SERVICE: FACULTY ATTENDANCE VALIDATION ===");
-                Console.WriteLine($"Validation data: {JsonSerializer.Serialize(validationData)}");
-                Console.WriteLine($"JWT Token present: {!string.IsNullOrEmpty(jwtToken)}");
-                Console.WriteLine("================================================");
+                can_submit = false,
+                message = "",
+                schedule_info = (object)null,
+                existing_attendance = (object)null
+            });
+        }
 
-                var response = await PostDataAsync("/faculty/attendance/validate", validationData, jwtToken);
-                
-                Console.WriteLine($"API Response received, length: {response?.Length ?? 0}");
-                Console.WriteLine($"Response preview: {(string.IsNullOrEmpty(response) ? "null" : response.Substring(0, Math.Min(200, response.Length)))}...");
-                
-                return response ?? "";
-            }
-            catch (Exception ex)
+        public async Task<string> SubmitFacultyAttendanceAsync(object submissionData, string jwtToken)
+        {
+            return await PostApiRequestWithStructuredErrorAsync("/faculty/attendance/submit", submissionData, jwtToken, "Failed to submit faculty attendance", new
             {
-                Console.WriteLine($"Error in ValidateFacultyAttendanceSubmissionAsync: {ex.Message}");
-                Console.WriteLine($"Stack trace: {ex.StackTrace}");
-                throw;
-            }
+                success = false,
+                message = "",
+                attendance_id = (object)null,
+                status = (object)null,
+                submitted_at = (object)null,
+                course_info = (object)null
+            });
         }
 
         // Faculty dashboard data methods
@@ -787,4 +788,4 @@ namespace AttendanceApp_ASPNET.Services
         }
     }
 }
-
+ 

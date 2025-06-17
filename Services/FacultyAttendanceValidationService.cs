@@ -26,9 +26,9 @@ namespace AttendanceApp_ASPNET.Services
                 Console.WriteLine("============================================");
 
                 // Call the API validation endpoint
-                var validationData = new FacultyAttendanceValidationRequest
+                var validationData = new
                 {
-                    AssignedCourseId = assignedCourseId
+                    assigned_course_id = assignedCourseId
                 };
 
                 var apiResponse = await _apiService.ValidateFacultyAttendanceSubmissionAsync(validationData, jwtToken);
@@ -54,13 +54,6 @@ namespace AttendanceApp_ASPNET.Services
                 Console.WriteLine($"Message: {response.Message}");
                 Console.WriteLine($"Schedule Info Present: {response.ScheduleInfo != null}");
                 Console.WriteLine($"Existing Attendance Present: {response.ExistingAttendance != null}");
-                if (response.ScheduleInfo != null)
-                {
-                    Console.WriteLine($"Course: {response.ScheduleInfo.CourseName} ({response.ScheduleInfo.CourseCode})");
-                    Console.WriteLine($"Section: {response.ScheduleInfo.SectionName}");
-                    Console.WriteLine($"Time: {response.ScheduleInfo.StartTime} - {response.ScheduleInfo.EndTime}");
-                    Console.WriteLine($"Room: {response.ScheduleInfo.Room}");
-                }
                 Console.WriteLine("============================================");
 
                 return response;
@@ -90,3 +83,4 @@ namespace AttendanceApp_ASPNET.Services
         }
     }
 }
+               

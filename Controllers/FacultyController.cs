@@ -11,15 +11,17 @@ namespace AttendanceApp_ASPNET.Controllers
         private readonly IClassService _classService;
         private readonly IFacultyPersonalAttendanceService _facultyPersonalAttendanceService;
         private readonly IFacultyAttendanceValidationService _facultyAttendanceValidationService;
+        private readonly IFacultyAttendanceSubmissionService _facultyAttendanceSubmissionService;
         private readonly IEnvironmentService _environmentService;
         private readonly IDashboardService _dashboardService;
 
-        public FacultyController(IApiService apiService, IClassService classService, IFacultyPersonalAttendanceService facultyPersonalAttendanceService, IFacultyAttendanceValidationService facultyAttendanceValidationService, IEnvironmentService environmentService, IDashboardService dashboardService) 
+        public FacultyController(IApiService apiService, IClassService classService, IFacultyPersonalAttendanceService facultyPersonalAttendanceService, IFacultyAttendanceValidationService facultyAttendanceValidationService, IFacultyAttendanceSubmissionService facultyAttendanceSubmissionService, IEnvironmentService environmentService, IDashboardService dashboardService) 
             : base(apiService)
         {
             _classService = classService;
             _facultyPersonalAttendanceService = facultyPersonalAttendanceService;
             _facultyAttendanceValidationService = facultyAttendanceValidationService;
+            _facultyAttendanceSubmissionService = facultyAttendanceSubmissionService;
             _environmentService = environmentService;
             _dashboardService = dashboardService;
         }
@@ -589,6 +591,88 @@ namespace AttendanceApp_ASPNET.Controllers
                 });
             }
         }
+
+        [HttpPost]
+        public async Task<IActionResult> SubmitFacultyAttendance([FromBody] Models.FacultyAttendanceSubmissionRequest request)
+        {
+            try
+            {
+                var faculty = GetCurrentFacultyInfo();
+                var jwtToken = HttpContext.Session.GetString("AuthToken");
+                
+                Console.WriteLine($"=== FACULTY CONTROLLER SUBMIT ATTENDANCE ===");
+                Console.WriteLine($"Request - Assigned Course ID: {request.AssignedCourseId}");
+                Console.WriteLine($"Request - Face Image Length: {request.FaceImage?.Length ?? 0}");
+                Console.WriteLine($"Request - Has Location: {request.Latitude.HasValue && request.Longitude.HasValue}");
+                Console.WriteLine($"Faculty: {faculty.FullName} ({faculty.Email})");
+                Console.WriteLine($"JWT Token present: {!string.IsNullOrEmpty(jwtToken)}");
+                Console.WriteLine("============================================");
+                
+                if (string.IsNullOrEmpty(jwtToken))
+                {
+                    Console.WriteLine("ERROR: No JWT token available");
+                    return Json(new { success = false, message = "Authentication required" });
+                }
+
+                if (request.AssignedCourseId <= 0)
+                {
+                    Console.WriteLine($"ERROR: Invalid assigned course ID: {request.AssignedCourseId}");
+                    return Json(new { success = false, message = "Invalid course ID" });
+                }
+
+                if (string.IsNullOrEmpty(request.FaceImage))
+                {
+                    Console.WriteLine("ERROR: Face image is required");
+                    return Json(new { success = false, message = "Face image is required for attendance verification" });
+                }
+
+                // Extend session before making API call
+                ExtendSession();
+
+                var submissionResponse = await _facultyAttendanceSubmissionService.SubmitFacultyAttendanceAsync(request, jwtToken);
+                
+                Console.WriteLine($"=== CONTROLLER SUBMISSION RESPONSE SUMMARY ===");
+                Console.WriteLine($"Success: {submissionResponse.Success}");
+                Console.WriteLine($"Message: {submissionResponse.Message}");
+                Console.WriteLine($"Attendance ID: {submissionResponse.AttendanceId}");
+                Console.WriteLine($"Status: {submissionResponse.Status}");
+                Console.WriteLine($"Submitted At: {submissionResponse.SubmittedAt}");
+                Console.WriteLine("==============================================");
+                
+                // Create response with explicit camelCase property names for JavaScript compatibility
+                var response = new
+                {
+                    success = submissionResponse.Success,
+                    message = submissionResponse.Message,
+                    attendanceId = submissionResponse.AttendanceId,
+                    status = submissionResponse.Status,
+                    submittedAt = submissionResponse.SubmittedAt,
+                    courseInfo = submissionResponse.CourseInfo
+                };
+                
+                Console.WriteLine($"=== EXPLICIT RESPONSE OBJECT ===");
+                Console.WriteLine($"Response success: {response.success}");
+                Console.WriteLine($"Response message: {response.message}");
+                Console.WriteLine($"Response status: {response.status}");
+                Console.WriteLine("===============================");
+                
+                return Json(response);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"ERROR in SubmitFacultyAttendance: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                return Json(new 
+                { 
+                    success = false, 
+                    message = "Failed to submit faculty attendance. Please try again later.",
+                    attendanceId = (int?)null,
+                    status = (string?)null,
+                    submittedAt = (string?)null,
+                    courseInfo = (object?)null
+                });
+            }
+        }
     }
 
     public class UpdateStudentStatusRequest
@@ -618,6 +702,24 @@ namespace AttendanceApp_ASPNET.Controllers
         public string Message { get; set; } = string.Empty;
         public object? ScheduleInfo { get; set; }
         public object? ExistingAttendance { get; set; }
+    }
+
+    public class FacultyAttendanceSubmissionRequest
+    {
+        public int AssignedCourseId { get; set; }
+        public string FaceImage { get; set; } = string.Empty;
+        public double? Latitude { get; set; }
+        public double? Longitude { get; set; }
+    }
+
+    public class FacultyAttendanceSubmissionResponse
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; } = string.Empty;
+        public int AttendanceId { get; set; }
+        public string Status { get; set; } = string.Empty;
+        public string SubmittedAt { get; set; } = string.Empty;
+        public object? CourseInfo { get; set; }
     }
 }
 
