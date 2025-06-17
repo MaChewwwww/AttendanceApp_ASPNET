@@ -991,57 +991,5 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('No faculty dashboard data element found');
     }
 });
-        
-
-// Initialize when DOM is loaded
-document.addEventListener('DOMContentLoaded', function() {
-    // Check if modal elements exist before initializing
-    const facultyModal = document.getElementById('facultyMarkAttendanceModal');
-    const facultyHeatModal = document.getElementById('facultyHeatWarningModal');
-    const facultySuccessModal = document.getElementById('facultyAttendanceSuccessModal');
     
-    if (!facultyModal || !facultyHeatModal || !facultySuccessModal) {
-        console.error('Some faculty modal elements are missing! Cannot initialize faculty attendance modal.');
-        return;
-    }
-    
-    window.facultyAttendanceModal = new FacultyAttendanceModal();
-    
-    // Debug: Check if ViewBag data is available
-    if (window.ViewBag) {
-        console.log('Faculty ViewBag data available:', {
-            FirstName: window.ViewBag.FirstName,
-            LastName: window.ViewBag.LastName,
-            Department: window.ViewBag.Department,
-            EmployeeNumber: window.ViewBag.EmployeeNumber
-        });
-    } else {
-        console.log('Faculty ViewBag data not available on window object');
-    }
-    
-    // Debug: Check weather data
-    const weatherData = document.getElementById('weather-data');
-    if (weatherData) {
-        try {
-            const data = JSON.parse(weatherData.textContent);
-            console.log('Faculty weather data available:', data);
-        } catch (e) {
-            console.error('Faculty error parsing weather data:', e);
-        }
-    }
-    
-    // Debug: Check faculty dashboard data
-    const facultyDashboardData = document.getElementById('faculty-dashboard-data');
-    if (facultyDashboardData) {
-        try {
-            const data = JSON.parse(facultyDashboardData.textContent);
-            console.log('Faculty dashboard data available:', data);
-        } catch (e) {
-            console.error('Faculty error parsing dashboard data:', e);
-        }
-    } else {
-        console.log('No faculty dashboard data element found');
-    }
-});
-
    
