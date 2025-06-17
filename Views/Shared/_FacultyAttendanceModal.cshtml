@@ -1,163 +1,169 @@
 <!-- Faculty Mark Attendance Modal -->
-<div id="facultyMarkAttendanceModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-auto transform transition-all duration-200 scale-95 max-h-[90vh] overflow-y-auto">
-        <div class="p-6">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-semibold text-gray-900">Faculty Attendance</h3>
-                <button id="closeFacultyAttendanceModal" class="text-gray-400 hover:text-gray-600 transition-colors">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                </button>
-            </div>
-            
-            <!-- Current Class Info & Date (will be populated by JavaScript) -->
-            <div id="currentFacultyInfo" class="mb-6 p-4 bg-gray-50 rounded-lg">
-                <!-- This will be populated by JavaScript -->
-            </div>
-            
-            <!-- Camera Container -->
-            <div class="mb-4 relative">
-                <video id="facultyAttendanceVideo" class="w-full h-64 bg-gray-100 rounded-lg object-cover" autoplay playsinline muted style="display: block;"></video>
-                <canvas id="facultyAttendanceCanvas" class="hidden"></canvas>
-                <!-- Loading overlay with proper z-index -->
-                <div id="facultyCameraLoading" class="absolute inset-0 bg-gray-100 rounded-lg flex items-center justify-center z-10">
-                    <div class="text-center">
-                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                        <p class="text-sm text-gray-600">Starting camera...</p>
+<div id="facultyMarkAttendanceModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+    <div class="max-w-md w-full mx-4">
+        <div class="bg-white rounded-lg shadow-xl transform transition-all duration-200 scale-95">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900">Faculty Attendance</h3>
+                    <button id="closeFacultyAttendanceModal" class="text-gray-400 hover:text-gray-600 transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- Current Class Info & Date (will be populated by JavaScript) -->
+                <div id="currentFacultyInfo" class="mb-6 p-4 bg-gray-50 rounded-lg">
+                    <!-- This will be populated by JavaScript -->
+                </div>
+                
+                <!-- Camera Container -->
+                <div class="mb-4 relative">
+                    <video id="facultyAttendanceVideo" class="w-full h-64 bg-gray-100 rounded-lg object-cover" autoplay playsinline muted style="display: block;"></video>
+                    <canvas id="facultyAttendanceCanvas" class="hidden"></canvas>
+                    <!-- Loading overlay with proper z-index -->
+                    <div id="facultyCameraLoading" class="absolute inset-0 bg-gray-100 rounded-lg flex items-center justify-center z-10">
+                        <div class="text-center">
+                            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                            <p class="text-sm text-gray-600">Starting camera...</p>
+                        </div>
                     </div>
                 </div>
-            </div>
-            
-            <!-- Instructions -->
-            <div class="mb-4 p-3 bg-blue-50 rounded-lg">
-                <div class="flex items-center text-sm text-blue-800">
-                    <svg class="w-4 h-4 text-blue-600 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
-                    </svg>
-                    <span>Position your face clearly in the camera view for faculty verification</span>
+                
+                <!-- Instructions -->
+                <div class="mb-4 p-3 bg-blue-50 rounded-lg">
+                    <div class="flex items-center text-sm text-blue-800">
+                        <svg class="w-4 h-4 text-blue-600 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                        </svg>
+                        <span>Position your face clearly in the camera view for faculty verification</span>
+                    </div>
                 </div>
-            </div>
-            
-            <!-- Action Buttons -->
-            <div class="flex space-x-3">
-                <button id="markFacultyAttendanceBtn" class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed">
-                    <svg class="w-5 h-5 inline mr-2" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path>
-                    </svg>
-                    Mark Present
-                </button>
-                <button id="cancelFacultyAttendanceBtn" class="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors">
-                    Cancel
-                </button>
+                
+                <!-- Action Buttons -->
+                <div class="flex space-x-3">
+                    <button id="markFacultyAttendanceBtn" class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed">
+                        <svg class="w-5 h-5 inline mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path>
+                        </svg>
+                        Mark Present
+                    </button>
+                    <button id="cancelFacultyAttendanceBtn" class="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors">
+                        Cancel
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 <!-- Faculty Heat Warning Modal -->
-<div id="facultyHeatWarningModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-auto transform transition-all duration-200 scale-95">
-        <div class="p-6">
-            <div class="flex items-center mb-4">
-                <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mr-4">
-                    <svg class="w-6 h-6 text-red-600" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
-                    </svg>
-                </div>
-                <div>
-                    <h3 class="text-lg font-semibold text-red-900">Extreme Heat Warning</h3>
-                    <p class="text-sm text-red-700">Faculty attendance suspended</p>
-                </div>
-            </div>
-            
-            <div class="mb-6">
-                <div class="bg-red-50 border border-red-200 rounded-lg p-4">
-                    <div class="text-center">
-                        <div class="text-3xl font-bold text-red-700 mb-2" id="facultyCurrentHeatIndex">--°C</div>
-                        <div class="text-red-600 text-sm font-medium mb-2">Current Heat Index</div>
-                        <div class="text-red-500 text-xs">Feels like temperature is dangerously high</div>
+<div id="facultyHeatWarningModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+    <div class="max-w-md w-full mx-4">
+        <div class="bg-white rounded-lg shadow-xl transform transition-all duration-200 scale-95">
+            <div class="p-6">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mr-4">
+                        <svg class="w-6 h-6 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-red-900">Extreme Heat Warning</h3>
+                        <p class="text-sm text-red-700">Faculty attendance suspended</p>
                     </div>
                 </div>
                 
-                <div class="mt-4 text-sm text-gray-700">
-                    <p class="mb-2">
-                        <strong>For safety reasons:</strong> Faculty attendance marking has been suspended due to extreme heat conditions 
-                        (feels like temperature of 42°C or higher).
-                    </p>
-                    <p class="text-xs text-gray-600">
-                        Please consider relocating classes to air-conditioned venues or adjusting schedules as needed.
-                    </p>
+                <div class="mb-6">
+                    <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <div class="text-center">
+                            <div class="text-3xl font-bold text-red-700 mb-2" id="facultyCurrentHeatIndex">--°C</div>
+                            <div class="text-red-600 text-sm font-medium mb-2">Current Heat Index</div>
+                            <div class="text-red-500 text-xs">Feels like temperature is dangerously high</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 text-sm text-gray-700">
+                        <p class="mb-2">
+                            <strong>For safety reasons:</strong> Faculty attendance marking has been suspended due to extreme heat conditions 
+                            (feels like temperature of 42°C or higher).
+                        </p>
+                        <p class="text-xs text-gray-600">
+                            Please consider relocating classes to air-conditioned venues or adjusting schedules as needed.
+                        </p>
+                    </div>
                 </div>
-            </div>
-            
-            <div class="flex space-x-3">
-                <button id="closeFacultyHeatWarningBtn" class="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors">
-                    I Understand
-                </button>
+                
+                <div class="flex space-x-3">
+                    <button id="closeFacultyHeatWarningBtn" class="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors">
+                        I Understand
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 <!-- Faculty Success Modal -->
-<div id="facultyAttendanceSuccessModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-auto transform transition-all duration-300 scale-95">
-        <div class="p-6">
-            <div class="flex items-center mb-4">
-                <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-4">
-                    <svg class="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                    </svg>
-                </div>
-                <div>
-                    <h3 class="text-lg font-semibold text-blue-900">Faculty Attendance Recorded!</h3>
-                    <p class="text-sm text-blue-700" id="facultySuccessModalSubtitle">Your attendance has been successfully recorded</p>
-                </div>
-            </div>
-            
-            <div class="mb-6">
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <div class="text-center">
-                        <div class="text-2xl font-bold text-blue-700 mb-2" id="facultyAttendanceStatus">Present</div>
-                        <div class="text-blue-600 text-sm font-medium mb-2">Status</div>
-                        <div class="text-blue-500 text-xs" id="facultySubmissionTime">Recorded successfully</div>
+<div id="facultyAttendanceSuccessModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+    <div class="max-w-md w-full mx-4">
+        <div class="bg-white rounded-lg shadow-xl transform transition-all duration-300 scale-95">
+            <div class="p-6">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-4">
+                        <svg class="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-blue-900">Faculty Attendance Recorded!</h3>
+                        <p class="text-sm text-blue-700" id="facultySuccessModalSubtitle">Your attendance has been successfully recorded</p>
                     </div>
                 </div>
                 
-                <div class="mt-4 space-y-2" id="facultyAttendanceDetails">
-                    <div class="flex justify-between text-sm">
-                        <span class="text-gray-600">Faculty:</span>
-                        <span class="font-medium text-gray-900" id="successFacultyName">-</span>
+                <div class="mb-6">
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-blue-700 mb-2" id="facultyAttendanceStatus">Present</div>
+                            <div class="text-blue-600 text-sm font-medium mb-2">Status</div>
+                            <div class="text-blue-500 text-xs" id="facultySubmissionTime">Recorded successfully</div>
+                        </div>
                     </div>
-                    <div class="flex justify-between text-sm">
-                        <span class="text-gray-600">Department:</span>
-                        <span class="font-medium text-gray-900" id="successDepartmentName">-</span>
-                    </div>
-                    <div class="flex justify-between text-sm">
-                        <span class="text-gray-600">Current Class:</span>
-                        <span class="font-medium text-gray-900" id="successCurrentClass">-</span>
-                    </div>
-                    <div class="flex justify-between text-sm">
-                        <span class="text-gray-600">Time:</span>
-                        <span class="font-medium text-gray-900" id="facultySuccessTime">-</span>
-                    </div>
-                    <div class="flex justify-between text-sm">
-                        <span class="text-gray-600">Date:</span>
-                        <span class="font-medium text-gray-900" id="facultySuccessDate">-</span>
+                    
+                    <div class="mt-4 space-y-2" id="facultyAttendanceDetails">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">Faculty:</span>
+                            <span class="font-medium text-gray-900" id="successFacultyName">-</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">Department:</span>
+                            <span class="font-medium text-gray-900" id="successDepartmentName">-</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">Current Class:</span>
+                            <span class="font-medium text-gray-900" id="successCurrentClass">-</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">Time:</span>
+                            <span class="font-medium text-gray-900" id="facultySuccessTime">-</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">Date:</span>
+                            <span class="font-medium text-gray-900" id="facultySuccessDate">-</span>
+                        </div>
                     </div>
                 </div>
-            </div>
-            
-            <div class="flex space-x-3">
-                <button id="closeFacultySuccessModalBtn" class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-all duration-200 transform hover:scale-105">
-                    <i class="fas fa-check mr-2"></i>
-                    Continue
-                </button>
-                <button id="viewFacultyAttendanceBtn" class="flex-1 bg-gray-100 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-200 transition-all duration-200 transform hover:scale-105">
-                    <i class="fas fa-calendar mr-2"></i>
-                    View Records
-                </button>
+                
+                <div class="flex space-x-3">
+                    <button id="closeFacultySuccessModalBtn" class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-all duration-200 transform hover:scale-105">
+                        <i class="fas fa-check mr-2"></i>
+                        Continue
+                    </button>
+                    <button id="viewFacultyAttendanceBtn" class="flex-1 bg-gray-100 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-200 transition-all duration-200 transform hover:scale-105">
+                        <i class="fas fa-calendar mr-2"></i>
+                        View Records
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -232,12 +238,6 @@
         box-shadow: 0 0 5px rgba(59, 130, 246, 0.3);
     }
     50% { 
-        opacity: 0.8; 
-        box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
-    }
-}
-</style>
-</style>
         opacity: 0.8; 
         box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
     }

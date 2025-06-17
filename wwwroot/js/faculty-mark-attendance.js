@@ -609,14 +609,14 @@ class FacultyAttendanceModal {
         console.log('Faculty showing modal - element found:', !!this.modal);
         console.log('Faculty modal current classes:', this.modal.className);
         
-        // Show modal with flexbox positioning
+        // Show modal immediately - flex is already set in HTML
         this.modal.classList.remove('hidden');
         
         console.log('Faculty modal classes after show:', this.modal.className);
         
         // Animate modal appearance
         setTimeout(() => {
-            const content = this.modal.querySelector('div > div');
+            const content = this.modal.querySelector('.transform');
             if (content) {
                 console.log('Faculty animating modal content');
                 content.classList.remove('scale-95');
@@ -637,7 +637,7 @@ class FacultyAttendanceModal {
         if (!this.modal) return;
         
         console.log('Faculty hiding modal');
-        const content = this.modal.querySelector('div > div');
+        const content = this.modal.querySelector('.transform');
         if (content) {
             content.classList.remove('scale-100');
             content.classList.add('scale-95');
@@ -666,7 +666,7 @@ class FacultyAttendanceModal {
         
         // Animate modal appearance
         setTimeout(() => {
-            const content = this.heatWarningModal.querySelector('div > div');
+            const content = this.heatWarningModal.querySelector('.transform');
             if (content) {
                 content.classList.remove('scale-95');
                 content.classList.add('scale-100');
@@ -678,7 +678,7 @@ class FacultyAttendanceModal {
         if (!this.heatWarningModal) return;
         
         console.log('Faculty hiding heat warning modal');
-        const content = this.heatWarningModal.querySelector('div > div');
+        const content = this.heatWarningModal.querySelector('.transform');
         if (content) {
             content.classList.remove('scale-100');
             content.classList.add('scale-95');
@@ -699,7 +699,7 @@ class FacultyAttendanceModal {
         
         // Animate modal appearance
         setTimeout(() => {
-            const content = this.successModal.querySelector('div > div');
+            const content = this.successModal.querySelector('.transform');
             if (content) {
                 content.classList.remove('scale-95');
                 content.classList.add('scale-100');
@@ -711,7 +711,7 @@ class FacultyAttendanceModal {
         if (!this.successModal) return;
         
         console.log('Faculty hiding success modal');
-        const content = this.successModal.querySelector('div > div');
+        const content = this.successModal.querySelector('.transform');
         if (content) {
             content.classList.remove('scale-100');
             content.classList.add('scale-95');
@@ -1179,4 +1179,3 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
         
-
