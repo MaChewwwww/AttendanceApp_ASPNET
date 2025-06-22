@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Attendify - My Courses</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans">
+  <div class="flex">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white h-screen shadow-md p-6 space-y-6">
+    <div class="text-xl font-bold text-blue-600 flex items-center gap-2">
+        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M4 4h16v16H4z" />
+        </svg>
+        Attendify
+    </div>
+    <nav class="space-y-4 text-sm mt-8">
+        <!-- Dashboard -->
+        <a href="#" class="flex items-center gap-2 text-blue-700 font-semibold">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M3 12l2-2m0 0l7-7 7 7m-9 2v6h4v-6m-4 0h4" />
+        </svg>
+        Dashboard
+        </a>
+
+        <!-- Courses -->
+        <a href="#" class="flex items-center gap-2 text-gray-700 hover:text-blue-600">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M12 20H5a2 2 0 01-2-2V7a2 2 0 012-2h7m5 15v-2a4 4 0 00-4-4H7a4 4 0 00-4 4v2m16-12h-4m0 0V4m0 4V4" />
+        </svg>
+        Courses
+        </a>
+
+        <!-- Attendance History -->
+        <a href="#" class="flex items-center gap-2 text-gray-700 hover:text-blue-600">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+        Attendance History
+        </a>
+
+        <!-- Logout -->
+        <a href="#" class="flex items-center gap-2 text-red-500">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1" />
+        </svg>
+        Logout
+        </a>
+    </nav>
+    </aside>
+
+
+    <!-- Main Content -->
+    <main class="flex-1 p-10">
+      <div class="flex justify-between items-start">
+        <div>
+          <h1 class="text-3xl font-bold mb-1">My Courses</h1>
+          <p class="text-gray-600 text-sm">Manage your enrolled courses and track attendance</p>
+        </div>
+        <div class="text-sm text-right">
+          <div class="text-gray-600">Wednesday, June 11, 2025</div>
+          <div class="text-xs text-gray-400">10:04:52 AM</div>
+          <div class="mt-1 text-blue-600 font-medium cursor-pointer">No Section Assigned</div>
+        </div>
+      </div>
+
+      <!-- Current Academic Year -->
+      <div class="mt-6 bg-white rounded shadow p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-lg font-semibold">Current Academic Year 2024-2025</h2>
+          <span class="text-green-600 text-sm">1 Course</span>
+        </div>
+
+        <!-- Semester Tabs (Static) -->
+        <div class="flex gap-6 border-b mb-4 text-sm font-medium">
+          <button class="text-blue-600 border-b-2 border-blue-600 pb-2">1st Semester</button>
+          <button class="text-gray-500 hover:text-blue-600 pb-2">2nd Semester</button>
+          <button class="text-gray-500 hover:text-blue-600 pb-2">3rd Semester</button>
+          <button class="text-gray-500 hover:text-blue-600 pb-2">Summer Semester</button>
+        </div>
+
+        <!-- Course Card -->
+        <div class="border rounded-lg p-4 flex items-start justify-between hover:shadow-sm transition">
+          <div>
+            <h3 class="font-bold">Introduction to Computing</h3>
+            <div class="text-blue-600 text-sm font-medium">IT-1101</div>
+            <p class="text-sm text-gray-600 mt-1">Fundamentals of computing and digital literacy</p>
+            <p class="text-sm mt-1 font-semibold">Dr. Maria Santos</p>
+            <p class="text-xs text-gray-400">1st Semester • 2024-2025</p>
+            <p class="text-xs text-gray-600 mt-1">Lab 2</p>
+            <p class="text-xs text-gray-500 mt-1 italic">Click to view details</p>
+          </div>
+          <span class="bg-yellow-100 text-yellow-700 text-xs font-semibold px-3 py-1 rounded">Pending</span>
+        </div>
+      </div>
+
+      <!-- Previous Academic Years -->
+      <div class="mt-8 bg-white rounded shadow p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-lg font-semibold">Previous Academic Years</h2>
+          <div class="flex items-center gap-3">
+            <span class="text-sm text-gray-600">10 Courses</span>
+            <select class="text-sm border rounded px-2 py-1">
+              <option>All Previous Years</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Previous Course Cards -->
+        <div class="grid md:grid-cols-2 gap-4">
+          <div class="border rounded-lg p-4">
+            <h3 class="font-bold">Computer Hardware Fundamentals</h3>
+            <p class="text-sm text-gray-600">Computer components and assembly</p>
+            <p class="text-sm mt-1 font-semibold">Dr. Rachel Rivera</p>
+            <p class="text-xs text-gray-400 mt-1">2023-2024</p>
+            <span class="mt-2 inline-block bg-yellow-100 text-yellow-700 text-xs font-semibold px-3 py-1 rounded">Pending</span>
+          </div>
+          <div class="border rounded-lg p-4">
+            <h3 class="font-bold">Mathematics in the Modern World</h3>
+            <p class="text-sm text-gray-600">Applied mathematics for IT</p>
+            <p class="text-sm mt-1 font-semibold">Prof. Mark Diaz</p>
+            <p class="text-xs text-gray-400 mt-1">2023-2024</p>
+            <span class="mt-2 inline-block bg-yellow-100 text-yellow-700 text-xs font-semibold px-3 py-1 rounded">Pending</span>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</body>
+</html>
