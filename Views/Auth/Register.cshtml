@@ -385,7 +385,8 @@
 
         // Handle "I Agree"
         if (agreeTermsBtn) {
-            agreeTermsBtn.addEventListener('click', function() {
+            agreeTermsBtn.addEventListener('click', function(e) {
+                e.preventDefault(); // Prevent form submission or refresh
                 termsCheckbox.checked = true;
                 termsModal.classList.add('hidden');
                 termsCheckbox.focus();
