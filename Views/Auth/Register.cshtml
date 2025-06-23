@@ -198,12 +198,128 @@
         <div class="bg-blue-50 rounded-lg p-3 border border-blue-200">
             <div class="flex items-start">
                 <input type="checkbox" id="terms" name="terms" required
-                       class="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 transition-colors">
-                <label for="terms" class="ml-3 text-xs text-gray-700">
-                    I agree to the <a href="#" class="text-blue-600 hover:text-blue-800 underline font-medium">Terms and Conditions</a> 
-                    and <a href="#" class="text-blue-600 hover:text-blue-800 underline font-medium">Privacy Policy</a>
+                       class="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 transition-colors"
+                       style="accent-color: #2563eb;" />
+                <span class="ml-3 text-xs text-gray-700 select-none">
+                    I agree to the 
+                    <a href="#" class="text-blue-600 hover:text-blue-800 underline font-medium terms-link">Terms and Conditions</a>
+                    and 
+                    <a href="#" class="text-blue-600 hover:text-blue-800 underline font-medium terms-link">Privacy Policy</a>
                     <span class="text-red-500">*</span>
-                </label>
+                </span>
+            </div>
+        </div>
+
+        <!-- Terms Modal -->
+        <div id="termsModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-lg shadow-lg max-w-lg w-full relative flex flex-col">
+                <!-- Close Icon -->
+                <button id="closeTermsModal" class="absolute top-3 right-3 text-gray-400 hover:text-gray-700">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+                <div class="p-6 flex-1 flex flex-col">
+                    <h2 class="text-lg font-bold mb-4 text-gray-800">Terms and Conditions & Privacy Policy</h2>
+                    <div class="max-h-96 overflow-y-auto text-sm text-gray-700 mb-6 flex-1">
+                        <h3 class="text-lg font-bold mb-2">Terms of Use</h3>
+                        <ol class="list-decimal pl-5 mb-4 space-y-2">
+                            <li>
+                                <strong>Acceptance of Terms</strong><br>
+                                By accessing or using the Facial Recognition Attendance System Attendify, you agree to be bound by these Terms of Use. If you do not agree to these Terms, you are not authorized to access nor use the system.
+                            </li>
+                            <li>
+                                <strong>Purpose of the System</strong><br>
+                                The system is developed to streamline and automate attendance tracking through facial recognition technology. It is intended solely for authorized use by organizations, administrators, and approved users for attendance monitoring and management.
+                            </li>
+                            <li>
+                                <strong>User Responsibilities</strong><br>
+                                By using the System, you agree to:
+                                <ul class="list-disc pl-5">
+                                    <li>Use the System only for its intended purpose and in accordance with applicable laws and regulations.</li>
+                                    <li>Refrain from attempting to reverse-engineer, modify, disrupt, or misuse the System or any data it processes.</li>
+                                    <li>Maintain the confidentiality of any account credentials provided to you and promptly notify us of any unauthorized use.</li>
+                                </ul>
+                            </li>
+                            <li>
+                                <strong>Intellectual Property</strong><br>
+                                The System, including all software, algorithms, designs, and associated intellectual property, is owned by Attendify or its licensors. You may not copy, reproduce, distribute, or create derivative works from the System without prior written consent from Attendify.
+                            </li>
+                            <li>
+                                <strong>Termination</strong><br>
+                                Attendify reserves the right to suspend or terminate your access to the System at any time, with or without notice, if you violate these Terms or engage in unlawful or unauthorized activities.
+                            </li>
+                            <li>
+                                <strong>Limitation of Liability</strong><br>
+                                The System is provided “as is” without warranties of any kind. Attendify shall not be liable for any damages arising from the use or inability to use the System, including but not limited to system errors, data loss, or downtime.
+                            </li>
+                            <li>
+                                <strong>Changes to Terms</strong><br>
+                                We may update these Terms at any time. Continued use of the System after changes constitutes your acceptance of the revised Terms.
+                            </li>
+                        </ol>
+                        <h3 class="text-lg font-bold mb-2">Privacy Statement</h3>
+                        <ol class="list-decimal pl-5 mb-4 space-y-2">
+                            <li>
+                                <strong>Information We Collect</strong><br>
+                                The Facial Recognition Attendance System collects the following personal information:
+                                <ul class="list-disc pl-5">
+                                    <li><strong>Biometric Data:</strong> Facial images or templates used for attendance tracking.</li>
+                                    <li><strong>Personal Information:</strong> Name, employee ID, or other identifiers linked to attendance records.</li>
+                                    <li><strong>Usage Data:</strong> Logs of system interactions, such as timestamps of attendance records.</li>
+                                </ul>
+                            </li>
+                            <li>
+                                <strong>How We Use Your Information</strong><br>
+                                We collect and use data to:
+                                <ul class="list-disc pl-5">
+                                    <li>Authenticate identities and record attendance.</li>
+                                    <li>Enhance the System’s reliability, performance, and accuracy.</li>
+                                    <li>Comply with legal obligations or organizational policies.</li>
+                                </ul>
+                            </li>
+                            <li>
+                                <strong>Data Storage and Security</strong><br>
+                                All biometric data is encrypted and stored securely to prevent unauthorized access. Personal and usage data are stored with industry-standard security measures. We retain data only as long as necessary to fulfill attendance purposes or legal obligations.
+                            </li>
+                            <li>
+                                <strong>Data Sharing</strong><br>
+                                We do not share your data with third parties unless:
+                                <ul class="list-disc pl-5">
+                                    <li>You have given explicit consent.</li>
+                                    <li>It is required by law or a valid legal request.</li>
+                                    <li>It is shared with trusted service providers under strict confidentiality agreements to help operate or support the System.</li>
+                                </ul>
+                            </li>
+                            <li>
+                                <strong>Your Rights</strong><br>
+                                You may have the right, in accordance with applicable laws, to:
+                                <ul class="list-disc pl-5">
+                                    <li>Access, review, correct, or request deletion of your personal data.</li>
+                                    <li>Request information about how your data is collected and used.</li>
+                                </ul>
+                            </li>
+                            <li>
+                                <strong>Data Retention</strong><br>
+                                Biometric and personal data are deleted once they are no longer needed for attendance tracking or as required by applicable law. You may request earlier deletion of your data where legally permitted.
+                            </li>
+                            <li>
+                                <strong>Contact Us</strong><br>
+                                For any questions, concerns, or requests related to these Terms or our Privacy Statement, please contact us at:<br>
+                                📧 attendify.attendancesystem@gmail.com
+                            </li>
+                            <li>
+                                <strong>Changes to Privacy Statement</strong><br>
+                                This Privacy Statement may be updated periodically. Any significant changes will be communicated through the System or via other appropriate means.
+                            </li>
+                        </ol>
+                        <div class="p-6 pt-0 border-t border-gray-200">
+                            <button id="agreeTermsBtn" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 font-semibold text-sm mt-4">
+                                I Agree
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -236,11 +352,73 @@
 
 <script src="~/js/register.js"></script>
 <script>
-    // Additional helper functions
     document.addEventListener('DOMContentLoaded', function() {
         // Add switch to login functionality
         document.getElementById('switchToLogin')?.addEventListener('click', function() {
             document.getElementById('loginTab')?.click();
+        });
+
+        const termsCheckbox = document.getElementById('terms');
+        const termsModal = document.getElementById('termsModal');
+        const agreeTermsBtn = document.getElementById('agreeTermsBtn');
+        const closeTermsModal = document.getElementById('closeTermsModal');
+
+        // Always start unchecked
+        if (termsCheckbox) termsCheckbox.checked = false;
+
+        // Show modal on mouse click (before checkbox toggles)
+        if (termsCheckbox) {
+            termsCheckbox.addEventListener('mousedown', function(e) {
+                if (!termsCheckbox.checked) {
+                    e.preventDefault();
+                    termsModal.classList.remove('hidden');
+                }
+            });
+            // Show modal on keyboard (space/enter)
+            termsCheckbox.addEventListener('keydown', function(e) {
+                if ((e.key === " " || e.key === "Enter") && !termsCheckbox.checked) {
+                    e.preventDefault();
+                    termsModal.classList.remove('hidden');
+                }
+            });
+        }
+
+        // Handle "I Agree"
+        if (agreeTermsBtn) {
+            agreeTermsBtn.addEventListener('click', function() {
+                termsCheckbox.checked = true;
+                termsModal.classList.add('hidden');
+                termsCheckbox.focus();
+            });
+        }
+
+        // Handle close (X)
+        if (closeTermsModal) {
+            closeTermsModal.addEventListener('click', function() {
+                termsModal.classList.add('hidden');
+                termsCheckbox.checked = false;
+                termsCheckbox.focus();
+            });
+        }
+
+        // Optional: clicking outside modal closes it
+        if (termsModal) {
+            termsModal.addEventListener('click', function(e) {
+                if (e.target === termsModal) {
+                    termsModal.classList.add('hidden');
+                    termsCheckbox.checked = false;
+                    termsCheckbox.focus();
+                }
+            });
+        }
+
+        // Show modal when clicking Terms and Conditions or Privacy Policy links
+        document.querySelectorAll('.terms-link').forEach(function(link) {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const termsModal = document.getElementById('termsModal');
+                if (termsModal) termsModal.classList.remove('hidden');
+            });
         });
     });
 </script>
