@@ -42,13 +42,35 @@
                     </div>
                 }
             </div>
+            @if (Model?.CurrentCourses?.Any() == true)
+            {
+                // Custom semester order: 1st Semester, 2nd Semester, 3rd Semester, Summer (per academic year descending)
+                var semesterOrder = new[] { "1st Semester", "2nd Semester", "3rd Semester", "Summer" };
+                var semesters = Model.CurrentCourses
+                    .Select(c => new { Key = c.Semester + " (" + c.AcademicYear + ")", Semester = c.Semester, AcademicYear = c.AcademicYear })
+                    .Distinct()
+                    .OrderByDescending(s => s.AcademicYear)
+                    .ThenBy(s => Array.IndexOf(semesterOrder, s.Semester) == -1 ? int.MaxValue : Array.IndexOf(semesterOrder, s.Semester))
+                    .ThenBy(s => s.Semester)
+                    .Select(s => s.Key)
+                    .ToList();
+            <div class="mt-4 mb-2">
+                <div class="inline-flex rounded-md shadow-sm" role="group">
+                    <button type="button" class="semester-tab px-4 py-2 text-sm font-medium border border-gray-200 bg-blue-50 text-blue-700 focus:z-10 focus:ring-2 focus:ring-blue-500 focus:bg-blue-100 active" data-semester="all">All</button>
+                    @foreach (var sem in semesters)
+                    {
+                        <button type="button" class="semester-tab px-4 py-2 text-sm font-medium border border-gray-200 bg-white text-gray-700 focus:z-10 focus:ring-2 focus:ring-blue-500 focus:bg-blue-100" data-semester="@sem">@sem</button>
+                    }
+                </div>
+            </div>
+            }
         </div>
 
         <!-- Current Courses Table -->
         <div class="overflow-x-auto">
             @if (Model?.CurrentCourses?.Any() == true)
             {
-                <table class="min-w-full divide-y divide-gray-200">
+                <table class="min-w-full divide-y divide-gray-200" id="currentCoursesTable">
                     <thead class="bg-gray-50">
                         <tr>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Course Code</th>
@@ -64,7 +86,8 @@
                     <tbody class="bg-white divide-y divide-gray-200">
                         @foreach (var course in Model.CurrentCourses)
                         {
-                            <tr class="hover:bg-gray-50">
+                            var semKey = course.Semester + " (" + course.AcademicYear + ")";
+                            <tr class="hover:bg-gray-50" data-semester="@semKey">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                     @course.CourseCode
                                 </td>
@@ -205,4 +228,24 @@
 @section Scripts {
     <script src="~/js/courseDetails.js"></script>
     <script src="~/js/attendance.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const tabs = document.querySelectorAll('.semester-tab');
+            const rows = document.querySelectorAll('#currentCoursesTable tbody tr');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    tabs.forEach(t => t.classList.remove('active', 'bg-blue-50', 'text-blue-700'));
+                    this.classList.add('active', 'bg-blue-50', 'text-blue-700');
+                    const sem = this.getAttribute('data-semester');
+                    rows.forEach(row => {
+                        if (sem === 'all' || row.getAttribute('data-semester') === sem) {
+                            row.style.display = '';
+                        } else {
+                            row.style.display = 'none';
+                        }
+                    });
+                });
+            });
+        });
+    </script>
 }
