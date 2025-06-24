@@ -351,6 +351,7 @@
                 <!-- Sliding Panel with Logo/Wallpaper -->
                 <div id="slidingPanel" class="absolute inset-0 auth-slider transform z-20 content-container">
                     <video 
+                        id="yourVideoId"
                         src="/video/Copy%20of%20Copy%20of%20Attendify.mp4" 
                         autoplay 
                         muted 
@@ -486,6 +487,53 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            const slidingPanel = document.getElementById('slidingPanel');
+            const video = slidingPanel ? slidingPanel.querySelector('video') : null;
+            if (!video) return;
+
+            // Only jump to 6s if loaded directly at /auth/register
+            if (window.location.pathname.toLowerCase().endsWith('/auth/register')) {
+                video.currentTime = 6;
+                video.play().catch(() => {});
+            }
+
+            // Remove the native loop attribute if present
+            video.loop = false;
+
+            // Loop video from 12s when it ends
+            video.addEventListener('ended', function() {
+                // Set to 9s and play again
+                video.currentTime = 11.5; // Start from 12s
+                // Wait for seek to complete before playing
+                video.pause();
+                video.addEventListener('seeked', function handler() {
+                    video.play().catch(() => {});
+                    video.removeEventListener('seeked', handler);
+                });
+            });
+
+            // Tab switching logic (no reload, no video reset)
+            const loginTab = document.getElementById('loginTab');
+            const registerTab = document.getElementById('registerTab');
+            const loginForm = document.getElementById('loginForm');
+            const registerForm = document.getElementById('registerForm');
+
+            if (loginTab && registerTab && loginForm && registerForm) {
+                loginTab.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    loginForm.style.display = '';
+                    registerForm.style.display = 'none';
+                });
+
+                registerTab.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    loginForm.style.display = 'none';
+                    registerForm.style.display = '';
+                });
+            }
+        });
+        
+        document.addEventListener('DOMContentLoaded', function() {
             const loginTab = document.getElementById('loginTab');
             const registerTab = document.getElementById('registerTab');
             const loginSection = document.getElementById('loginSection');
@@ -562,6 +610,8 @@
                 window.history.pushState({}, '', '/Auth/Login');
                 
                 scrollToTop();
+                
+                handleVideoForView('login');
             }
             
             function showRegister() {
@@ -624,6 +674,8 @@
                 }, 1200); // Increased cleanup delay to 1200ms (was 600ms)
                 
                 scrollToTop();
+                
+                handleVideoForView('register');
             }
             
             function updateTabsForLogin() {
@@ -929,6 +981,22 @@
                 }
             }
             
+            function handleVideoForView(view) {
+                const slidingPanel = document.getElementById('slidingPanel');
+                const video = slidingPanel ? slidingPanel.querySelector('video') : null;
+                if (!video) return;
+
+                if (view === 'register') {
+                    // Jump to 5 seconds and play
+                    video.currentTime = 5;
+                    video.play().catch(() => {});
+                } else {
+                    // Start from beginning for login or other views
+                    video.currentTime = 0;
+                    video.play().catch(() => {});
+                }
+            }
+
             // Event listeners
             loginTab.addEventListener('click', showLogin);
             registerTab.addEventListener('click', showRegister);
@@ -1071,6 +1139,57 @@
                 // Clean URL
                 const cleanUrl = window.location.pathname;
                 window.history.replaceState({}, document.title, cleanUrl);
+            }
+            
+            // Initial video handling
+            handleVideoForView(currentView);
+        });
+        
+        // On initial page load, check if we're on the Register page
+        document.addEventListener('DOMContentLoaded', function() {
+            const slidingPanel = document.getElementById('slidingPanel');
+            const video = slidingPanel ? slidingPanel.querySelector('video') : null;
+            if (!video) return;
+
+            // Only jump to 6s if loaded directly at /auth/register
+            if (window.location.pathname.toLowerCase().endsWith('/auth/register')) {
+                video.currentTime = 6;
+                video.play().catch(() => {});
+            }
+
+            // Remove the native loop attribute if present
+            video.loop = false;
+
+            // Loop video from 9s when it ends
+            video.addEventListener('ended', function() {
+                // Set to 9s and play again
+                video.currentTime = 11.5;
+                // Wait for seek to complete before playing
+                video.pause();
+                video.addEventListener('seeked', function handler() {
+                    video.play().catch(() => {});
+                    video.removeEventListener('seeked', handler);
+                });
+            });
+
+            // Tab switching logic (no reload, no video reset)
+            const loginTab = document.getElementById('loginTab');
+            const registerTab = document.getElementById('registerTab');
+            const loginForm = document.getElementById('loginForm');
+            const registerForm = document.getElementById('registerForm');
+
+            if (loginTab && registerTab && loginForm && registerForm) {
+                loginTab.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    loginForm.style.display = '';
+                    registerForm.style.display = 'none';
+                });
+
+                registerTab.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    loginForm.style.display = 'none';
+                    registerForm.style.display = '';
+                });
             }
         });
     </script>
