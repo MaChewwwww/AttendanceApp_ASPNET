@@ -113,6 +113,7 @@ namespace AttendanceApp_ASPNET.Controllers
                         ViewBag.TodayAttendanceCount = dashboardData.Data.TodayAttendanceCount;
                         ViewBag.AverageAttendance = dashboardData.Data.AverageAttendance;
                         ViewBag.WeeklyAttendanceTrends = dashboardData.Data.WeeklyAttendanceTrends;
+                        ViewBag.MonthlyAttendanceTrends = dashboardData.Data.MonthlyAttendanceTrends;
                         
                         Console.WriteLine($"FACULTY CONTROLLER: Total courses: {dashboardData.Data.TotalCurrentCourses}");
                         Console.WriteLine($"FACULTY CONTROLLER: Today's schedule count: {dashboardData.Data.TodaySchedule.Count}");

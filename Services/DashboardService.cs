@@ -372,6 +372,13 @@ namespace AttendanceApp_ASPNET.Services
                 dashboardData.WeeklyAttendanceTrends = ParseWeeklyAttendanceTrends(weeklyTrendsElement);
             }
 
+            // Parse monthly_attendance_trends (optional array)
+            if (apiResponse.TryGetProperty("monthly_attendance_trends", out var monthlyTrendsElement) &&
+                monthlyTrendsElement.ValueKind == JsonValueKind.Array)
+            {
+                dashboardData.MonthlyAttendanceTrends = ParseMonthlyAttendanceTrends(monthlyTrendsElement);
+            }
+
             return dashboardData;
         }
 
@@ -384,6 +391,22 @@ namespace AttendanceApp_ASPNET.Services
                 {
                     Day = GetStringProperty(item, "day"),
                     Percentage = item.TryGetProperty("percentage", out var perc) && perc.ValueKind == JsonValueKind.Number ? perc.GetDouble() : 0.0
+                };
+                trends.Add(trend);
+            }
+            return trends;
+        }
+
+        private List<MonthlyAttendanceTrend> ParseMonthlyAttendanceTrends(JsonElement trendsElement)
+        {
+            var trends = new List<MonthlyAttendanceTrend>();
+            foreach (var item in trendsElement.EnumerateArray())
+            {
+                var trend = new MonthlyAttendanceTrend
+                {
+                    Month = GetStringProperty(item, "month"),
+                    Absent = item.TryGetProperty("Absent", out var absent) && absent.ValueKind == JsonValueKind.Number ? absent.GetInt32() : 0,
+                    Present = item.TryGetProperty("Present", out var present) && present.ValueKind == JsonValueKind.Number ? present.GetInt32() : 0
                 };
                 trends.Add(trend);
             }

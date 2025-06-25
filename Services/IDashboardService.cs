@@ -87,6 +87,7 @@ namespace AttendanceApp_ASPNET.Services
         public FacultyScheduleSummary ScheduleSummary { get; set; } = new();
         public double? AverageAttendance { get; set; } // NEW: average_attendance from API
         public List<WeeklyAttendanceTrend>? WeeklyAttendanceTrends { get; set; } // NEW: weekly_attendance_trends from API
+        public List<MonthlyAttendanceTrend>? MonthlyAttendanceTrends { get; set; } // NEW: monthly_attendance_trends from API
     }
 
     public class FacultyCourseInfo
@@ -149,5 +150,12 @@ namespace AttendanceApp_ASPNET.Services
     {
         public string Day { get; set; } = string.Empty;
         public double Percentage { get; set; }
+    }
+
+    public class MonthlyAttendanceTrend
+    {
+        public string Month { get; set; } = string.Empty;
+        public int Absent { get; set; }
+        public int Present { get; set; }
     }
 }

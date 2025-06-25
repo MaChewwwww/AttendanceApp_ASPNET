@@ -23,6 +23,9 @@
 <script type="application/json" id="weekly-attendance-trends-data">
     @Html.Raw(Json.Serialize(ViewBag.WeeklyAttendanceTrends ?? new List<AttendanceApp_ASPNET.Services.WeeklyAttendanceTrend>()))
 </script>
+<script type="application/json" id="monthly-attendance-trends-data">
+    @Html.Raw(Json.Serialize(ViewBag.MonthlyAttendanceTrends ?? new List<AttendanceApp_ASPNET.Services.MonthlyAttendanceTrend>()))
+</script>
 <script type="text/plain" id="has-real-data">@(hasRealData.ToString().ToLower())</script>
 <script type="text/plain" id="has-charts-data">@((ViewBag.HasChartsData == true).ToString().ToLower())</script>
 <!-- Add weather data for faculty attendance modal -->
@@ -786,6 +789,16 @@
     </div>
 </div>
 
+<!-- Monthly Attendance Trends Line Chart -->
+<div class="bg-white rounded-lg shadow-sm p-6 dashboard-card-entrance mb-8">
+    <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold text-gray-900">Monthly Attendance Trends</h3>
+    </div>
+    <div class="h-80 bg-gradient-to-br from-indigo-50 to-white rounded-xl shadow-inner p-4 flex items-center justify-center">
+        <canvas id="monthlyTrendChart" class="max-w-full max-h-full"></canvas>
+    </div>
+</div>
+
 @section Scripts {
     <script src="~/js/faculty-dashboard.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -872,6 +885,96 @@
                                     font: { weight: 'bold' }
                                 },
                                 title: { display: true, text: 'Day', color: '#6366f1', font: { weight: 'bold' } }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            // Monthly Attendance Trends Line Chart
+            var monthlyDataElement = document.getElementById('monthly-attendance-trends-data');
+            var monthlyChartCanvas = document.getElementById('monthlyTrendChart');
+            if (monthlyDataElement && monthlyChartCanvas) {
+                var ctx = monthlyChartCanvas.getContext('2d');
+                var trends = [];
+                try {
+                    trends = JSON.parse(monthlyDataElement.textContent);
+                } catch (e) {
+                    trends = [];
+                }
+                // Only keep months with data
+                trends = (trends || []).filter(function(t) {
+                    return (t.present && t.present > 0) || (t.absent && t.absent > 0);
+                });
+                if (!trends.length) {
+                    trends = [
+                        { month: 'No Data', present: 0, absent: 0 }
+                    ];
+                }
+                var months = trends.map(t => t.month);
+                var present = trends.map(t => t.present);
+                var absent = trends.map(t => t.absent);
+                var maxY = Math.max(1, Math.ceil((Math.max.apply(null, present.concat(absent)) || 0) * 1.1));
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: months,
+                        datasets: [
+                            {
+                                label: 'Present',
+                                data: present,
+                                borderColor: 'rgba(99, 102, 241, 1)',
+                                backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                                fill: false,
+                                tension: 0.3,
+                                pointRadius: 5,
+                                pointBackgroundColor: 'rgba(99, 102, 241, 1)'
+                            },
+                            {
+                                label: 'Absent',
+                                data: absent,
+                                borderColor: 'rgba(239, 68, 68, 1)',
+                                backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                                fill: false,
+                                tension: 0.3,
+                                pointRadius: 5,
+                                pointBackgroundColor: 'rgba(239, 68, 68, 1)'
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: true },
+                            tooltip: {
+                                backgroundColor: 'rgba(30, 41, 59, 0.95)',
+                                titleColor: '#fff',
+                                bodyColor: '#fff',
+                                borderColor: 'rgba(99,102,241,0.2)',
+                                borderWidth: 1
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: maxY,
+                                grid: {
+                                    color: 'rgba(99,102,241,0.08)',
+                                    borderDash: [4, 4]
+                                },
+                                ticks: {
+                                    color: '#6366f1',
+                                    font: { weight: 'bold' },
+                                    stepSize: 1,
+                                    callback: function(value) { return Number.isInteger(value) ? value : null; }
+                                },
+                                title: { display: true, text: 'Count', color: '#6366f1', font: { weight: 'bold' } }
+                            },
+                            x: {
+                                grid: { display: false },
+                                ticks: { color: '#6366f1', font: { weight: 'bold' } },
+                                title: { display: true, text: 'Month', color: '#6366f1', font: { weight: 'bold' } }
                             }
                         }
                     }
