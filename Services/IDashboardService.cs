@@ -85,6 +85,7 @@ namespace AttendanceApp_ASPNET.Services
         public int TodayAttendanceCount { get; set; }
         public List<FacultyRecentAttendance> RecentAttendance { get; set; } = new();
         public FacultyScheduleSummary ScheduleSummary { get; set; } = new();
+        public double? AverageAttendance { get; set; } // NEW: average_attendance from API
     }
 
     public class FacultyCourseInfo

@@ -351,6 +351,20 @@ namespace AttendanceApp_ASPNET.Services
             dashboardData.TotalPendingApprovals = GetIntProperty(apiResponse, "total_pending_approvals");
             dashboardData.TodayAttendanceCount = GetIntProperty(apiResponse, "today_attendance_count");
 
+            // Parse average_attendance (optional float)
+            if (apiResponse.TryGetProperty("average_attendance", out var avgAttendanceElement) &&
+                (avgAttendanceElement.ValueKind == JsonValueKind.Number || avgAttendanceElement.ValueKind == JsonValueKind.String))
+            {
+                if (avgAttendanceElement.ValueKind == JsonValueKind.Number)
+                {
+                    dashboardData.AverageAttendance = avgAttendanceElement.GetDouble();
+                }
+                else if (double.TryParse(avgAttendanceElement.GetString(), out var avg))
+                {
+                    dashboardData.AverageAttendance = avg;
+                }
+            }
+
             return dashboardData;
         }
 

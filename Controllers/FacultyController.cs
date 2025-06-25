@@ -111,6 +111,7 @@ namespace AttendanceApp_ASPNET.Controllers
                         ViewBag.TotalStudents = dashboardData.Data.CurrentCourses.Sum(c => c.EnrolledStudents);
                         ViewBag.PendingReviews = dashboardData.Data.TotalPendingApprovals;
                         ViewBag.TodayAttendanceCount = dashboardData.Data.TodayAttendanceCount;
+                        ViewBag.AverageAttendance = dashboardData.Data.AverageAttendance;
                         
                         Console.WriteLine($"FACULTY CONTROLLER: Total courses: {dashboardData.Data.TotalCurrentCourses}");
                         Console.WriteLine($"FACULTY CONTROLLER: Today's schedule count: {dashboardData.Data.TodaySchedule.Count}");
@@ -156,9 +157,6 @@ namespace AttendanceApp_ASPNET.Controllers
                 ViewBag.PendingReviews = 12;
                 ViewBag.TodayAttendanceCount = 8;
             }
-
-            // Keep existing mock data approach for now
-            ViewBag.AverageAttendance = 87;
 
             return View();
         }
