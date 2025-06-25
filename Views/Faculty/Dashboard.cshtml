@@ -20,6 +20,9 @@
 <!-- Hidden data elements for JavaScript -->
 <script type="application/json" id="dashboard-data">@Html.Raw(Json.Serialize(allSchedules))</script>
 <script type="application/json" id="faculty-dashboard-data">@Html.Raw(Json.Serialize(facultyDashboardData))</script>
+<script type="application/json" id="weekly-attendance-trends-data">
+    @Html.Raw(Json.Serialize(ViewBag.WeeklyAttendanceTrends ?? new List<AttendanceApp_ASPNET.Services.WeeklyAttendanceTrend>()))
+</script>
 <script type="text/plain" id="has-real-data">@(hasRealData.ToString().ToLower())</script>
 <script type="text/plain" id="has-charts-data">@((ViewBag.HasChartsData == true).ToString().ToLower())</script>
 <!-- Add weather data for faculty attendance modal -->
@@ -678,7 +681,7 @@
 <!-- Analytics and Charts Section -->
 <div class="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-8">
     <!-- Course Performance Overview -->
-    <div class="bg-white rounded-lg shadow-sm p-6 dashboard-card-entrance">
+    <div class="bg-white rounded-lg shadow-sm p-6 dashboard-card-entrance xl:col-span-1">
         <div class="flex items-center justify-between mb-6">
             <h3 class="text-lg font-semibold text-gray-900">Course Performance</h3>
             <div class="text-sm text-gray-500">Current Semester</div>
@@ -730,8 +733,8 @@
         </div>
     </div>
 
-    <!-- Recent Activity -->
-    <div class="bg-white rounded-lg shadow-sm p-6 dashboard-card-entrance">
+    <!-- Recent Activity (smaller) -->
+    <div class="bg-white rounded-lg shadow-sm p-6 dashboard-card-entrance xl:col-span-1">
         <div class="flex items-center justify-between mb-6">
             <h3 class="text-lg font-semibold text-gray-900">Recent Activity</h3>
             <div class="text-sm text-gray-500">Last 7 days</div>
@@ -772,20 +775,12 @@
         </div>
     </div>
 
-    <!-- Weekly Attendance Trends -->
-    <div class="bg-white rounded-lg shadow-sm p-6 dashboard-card-entrance">
+    <!-- Weekly Attendance Trends (rightmost column, not below) -->
+    <div class="bg-white rounded-lg shadow-sm p-6 dashboard-card-entrance xl:col-span-1 xl:col-start-3">
         <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-semibold text-gray-900">Weekly Attendance Trends</h3>
-            <div class="flex items-center space-x-2">
-                <span class="w-3 h-3 bg-green-500 rounded-full"></span>
-                <span class="text-sm text-gray-500">Present</span>
-                <span class="w-3 h-3 bg-yellow-500 rounded-full ml-3"></span>
-                <span class="text-sm text-gray-500">Late</span>
-                <span class="w-3 h-3 bg-red-500 rounded-full ml-3"></span>
-                <span class="text-sm text-gray-500">Absent</span>
-            </div>
         </div>
-        <div class="h-64">
+        <div class="h-72 bg-gradient-to-br from-indigo-50 to-white rounded-xl shadow-inner p-4 flex items-center justify-center">
             <canvas id="weeklyTrendChart" class="max-w-full max-h-full"></canvas>
         </div>
     </div>
@@ -819,43 +814,95 @@
 @section Scripts {
     <script src="~/js/faculty-dashboard.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="~/js/faculty-charts.js"></script>
     <script src="~/js/faculty-mark-attendance.js"></script>
-    
     <script>
-        // Initialize faculty dashboard after all scripts are loaded
         document.addEventListener('DOMContentLoaded', function() {
-            // Get real data status
-            const hasRealData = document.getElementById('has-real-data')?.textContent === 'true';
-            
-            if (hasRealData) {
-                const facultyDataElement = document.getElementById('faculty-dashboard-data');
-                if (facultyDataElement) {
-                    try {
-                        const facultyData = JSON.parse(facultyDataElement.textContent);
-                        // Update any dynamic elements that need real-time data
-                        updateDashboardWithRealData(facultyData);
-                    } catch (e) {
-                        console.error('Error parsing faculty dashboard data:', e);
-                    }
+            var trendsDataElement = document.getElementById('weekly-attendance-trends-data');
+            var chartCanvas = document.getElementById('weeklyTrendChart');
+            if (trendsDataElement && chartCanvas) {
+                var ctx = chartCanvas.getContext('2d');
+                var trends = [];
+                try {
+                    trends = JSON.parse(trendsDataElement.textContent);
+                } catch (e) {
+                    trends = [];
                 }
+                if (!trends || !trends.length) {
+                    trends = [
+                        { day: 'Monday', percentage: 0 },
+                        { day: 'Tuesday', percentage: 0 },
+                        { day: 'Wednesday', percentage: 0 },
+                        { day: 'Thursday', percentage: 0 },
+                        { day: 'Friday', percentage: 0 },
+                        { day: 'Saturday', percentage: 0 }
+                    ];
+                }
+                // Shorten day names
+                var dayShort = { 'Monday': 'Mon', 'Tuesday': 'Tue', 'Wednesday': 'Wed', 'Thursday': 'Thu', 'Friday': 'Fri', 'Saturday': 'Sat', 'Sunday': 'Sun' };
+                var days = trends.map(t => dayShort[t.day] || t.day);
+                var percentages = trends.map(t => t.percentage);
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: days,
+                        datasets: [{
+                            label: 'Attendance %',
+                            data: percentages,
+                            backgroundColor: 'rgba(99, 102, 241, 0.7)',
+                            borderRadius: 12,
+                            borderSkipped: false,
+                            borderColor: 'rgba(99, 102, 241, 1)',
+                            borderWidth: 1,
+                            maxBarThickness: 48
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: 'rgba(30, 41, 59, 0.95)',
+                                titleColor: '#fff',
+                                bodyColor: '#fff',
+                                borderColor: 'rgba(99,102,241,0.2)',
+                                borderWidth: 1,
+                                callbacks: {
+                                    label: function(context) {
+                                        return context.parsed.y + '%';
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 100,
+                                grid: {
+                                    color: 'rgba(99,102,241,0.08)',
+                                    borderDash: [4, 4]
+                                },
+                                ticks: {
+                                    color: '#6366f1',
+                                    font: { weight: 'bold' }
+                                },
+                                title: { display: true, text: 'Attendance %', color: '#6366f1', font: { weight: 'bold' } }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                },
+                                ticks: {
+                                    color: '#6366f1',
+                                    font: { weight: 'bold' }
+                                },
+                                title: { display: true, text: 'Day', color: '#6366f1', font: { weight: 'bold' } }
+                            }
+                        }
+                    }
+                });
             }
         });
-        
-        function updateDashboardWithRealData(facultyData) {
-            // Update current time display if needed
-            const currentTimeElements = document.querySelectorAll('[data-current-time]');
-            currentTimeElements.forEach(element => {
-                element.textContent = new Date().toLocaleTimeString();
-            });
-            
-            // Update any status indicators
-            const statusElements = document.querySelectorAll('[data-status]');
-            statusElements.forEach(element => {
-                const status = element.getAttribute('data-status');
-                // Update status-specific styling or content
-            });
-        }
     </script>
     
     <style>

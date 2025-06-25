@@ -365,7 +365,29 @@ namespace AttendanceApp_ASPNET.Services
                 }
             }
 
+            // Parse weekly_attendance_trends (optional array)
+            if (apiResponse.TryGetProperty("weekly_attendance_trends", out var weeklyTrendsElement) &&
+                weeklyTrendsElement.ValueKind == JsonValueKind.Array)
+            {
+                dashboardData.WeeklyAttendanceTrends = ParseWeeklyAttendanceTrends(weeklyTrendsElement);
+            }
+
             return dashboardData;
+        }
+
+        private List<WeeklyAttendanceTrend> ParseWeeklyAttendanceTrends(JsonElement trendsElement)
+        {
+            var trends = new List<WeeklyAttendanceTrend>();
+            foreach (var item in trendsElement.EnumerateArray())
+            {
+                var trend = new WeeklyAttendanceTrend
+                {
+                    Day = GetStringProperty(item, "day"),
+                    Percentage = item.TryGetProperty("percentage", out var perc) && perc.ValueKind == JsonValueKind.Number ? perc.GetDouble() : 0.0
+                };
+                trends.Add(trend);
+            }
+            return trends;
         }
 
         private Dictionary<string, object> ParseStudentInfo(JsonElement studentInfoElement)
