@@ -786,31 +786,6 @@
     </div>
 </div>
 
-<!-- Monthly Performance Analysis -->
-<div class="grid grid-cols-1 gap-8 mb-8">
-    <div class="bg-white rounded-xl shadow-lg p-8 dashboard-card-entrance border border-gray-100">
-        <div class="flex items-center justify-between mb-6">
-            <div>
-                <h3 class="text-xl font-bold text-gray-900">Monthly Attendance Analysis</h3>
-                <p class="text-sm text-gray-500 mt-1">Track student attendance patterns across all courses</p>
-            </div>
-            <div class="flex items-center space-x-2">
-                <div class="w-3 h-3 bg-indigo-500 rounded-full"></div>
-                <span class="text-sm font-medium text-gray-600">Attendance Rate</span>
-            </div>
-        </div>
-        <div class="h-80 rounded-lg p-4">
-            <canvas id="monthlyAnalysisChart" class="max-w-full max-h-full"></canvas>
-        </div>
-        <div class="mt-4 flex items-center justify-center">
-            <div class="text-xs text-gray-500 bg-gray-50 px-3 py-1 rounded-full">
-                <i class="fas fa-info-circle mr-1"></i>
-                Hover over points for detailed monthly statistics
-            </div>
-        </div>
-    </div>
-</div>
-
 @section Scripts {
     <script src="~/js/faculty-dashboard.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
