@@ -42,10 +42,8 @@ A modern, secure attendance management system built with ASP.NET Core featuring 
 - **Delivery Confirmation** and error handling
 
 ### 🌍 **Environmental & Location Services**
-- **GPS Location Tracking** with user consent and privacy protection
 - **Weather Data Integration** with location-based forecasting
 - **Environmental Context** for attendance and activity planning
-- **Location-based Features** with geofencing capabilities
 
 ### 📊 **Advanced Attendance System**
 - **Face Recognition Integration** for biometric attendance marking
