@@ -1170,6 +1170,52 @@ function applyAttendanceFilters() {
     renderAttendanceRecordsTable();
 }
 
+function exportAttendanceRecords() {
+    // Use filteredAttendanceRecords for export
+    if (!filteredAttendanceRecords || filteredAttendanceRecords.length === 0) {
+        alert('No attendance records to export.');
+        return;
+    }
+
+    // Define CSV headers
+    const headers = [
+        'Student Name',
+        'Student Number',
+        'Date',
+        'Time',
+        'Status'
+    ];
+
+    // Build CSV rows
+    const rows = filteredAttendanceRecords.map(record => [
+        `"${(record.student_name || '').replace(/"/g, '""')}"`,
+        `"${(record.student_number || '').replace(/"/g, '""')}"`,
+        `"${record.attendance_date || ''}"`,
+        `"${record.attendance_time || ''}"`,
+        `"${record.status || ''}"`
+    ].join(','));
+
+    // Combine headers and rows
+    const csvContent = [headers.join(','), ...rows].join('\r\n');
+
+    // Create a Blob and trigger download
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+
+    // Create a temporary link and click it
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'attendance_records.csv';
+    document.body.appendChild(link);
+    link.click();
+
+    // Cleanup
+    setTimeout(() => {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }, 100);
+}
+
 // --- Suspend Class Modal Logic ---
 
 // Helper to get assignedCourseId for the modal (from currentAttendanceData)
