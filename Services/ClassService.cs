@@ -283,6 +283,36 @@ namespace AttendanceApp_ASPNET.Services
             }
         }
 
+        public async Task<SuspendClassResponse> SuspendClassTodayAsync(int assignedCourseId, SuspendClassRequest request, string jwtToken)
+        {
+            try
+            {
+                var responseJson = await _apiService.SuspendClassTodayAsync(assignedCourseId, request, jwtToken);
+                var response = JsonSerializer.Deserialize<SuspendClassResponse>(responseJson, _jsonOptions);
+                return response ?? new SuspendClassResponse
+                {
+                    success = false,
+                    message = "Failed to suspend class.",
+                    assigned_course_id = assignedCourseId,
+                    date = "",
+                    reason = request.reason,
+                    type = request.type
+                };
+            }
+            catch (Exception ex)
+            {
+                return new SuspendClassResponse
+                {
+                    success = false,
+                    message = $"Error suspending class: {ex.Message}",
+                    assigned_course_id = assignedCourseId,
+                    date = "",
+                    reason = request.reason,
+                    type = request.type
+                };
+            }
+        }
+
         private static readonly JsonSerializerOptions _logJsonOptions = new JsonSerializerOptions { WriteIndented = true };
 
         private static void LogDebug(string message, object data)

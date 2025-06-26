@@ -54,6 +54,8 @@ namespace AttendanceApp_ASPNET.Services
         Task<string> UpdateAttendanceStatusAsync(int assignedCourseId, int attendanceId, string status, string jwtToken);
         Task<string> ValidateFacultyAttendanceSubmissionAsync(object validationData, string jwtToken);
         Task<string> SubmitFacultyAttendanceAsync(object submissionData, string jwtToken);
+        // Add suspend class method
+        Task<string> SuspendClassTodayAsync(int assignedCourseId, object request, string jwtToken);
 
         // Faculty dashboard data methods
         Task<string> GetFacultyDashboardAsync(string jwtToken);
@@ -786,6 +788,26 @@ namespace AttendanceApp_ASPNET.Services
                 throw;
             }
         }
+
+        public async Task<string> SuspendClassTodayAsync(int assignedCourseId, object request, string jwtToken)
+        {
+            // POST /faculty/courses/{assignedCourse_id}/suspend
+            return await PostApiRequestWithStructuredErrorAsync(
+                $"/faculty/courses/{assignedCourseId}/suspend",
+                request,
+                jwtToken,
+                "Failed to suspend class",
+                new
+                {
+                    success = false,
+                    message = "",
+                    assigned_course_id = assignedCourseId,
+                    date = "",
+                    reason = "",
+                    type = ""
+                }
+            );
+        }
     }
 }
- 
+

@@ -677,6 +677,42 @@ namespace AttendanceApp_ASPNET.Controllers
                 });
             }
         }
+
+        [HttpPost]
+        public async Task<IActionResult> SuspendClassToday(int assignedCourseId, [FromBody] SuspendClassRequest request)
+        {
+            try
+            {
+                var faculty = GetCurrentFacultyInfo();
+                var jwtToken = HttpContext.Session.GetString("AuthToken");
+
+                if (string.IsNullOrEmpty(jwtToken))
+                {
+                    return Json(new { success = false, message = "Authentication required" });
+                }
+
+                if (assignedCourseId <= 0)
+                {
+                    return Json(new { success = false, message = "Invalid course ID" });
+                }
+
+                // Extend session before making API call
+                ExtendSession();
+
+                var result = await _classService.SuspendClassTodayAsync(assignedCourseId, request, jwtToken);
+
+                return Json(result);
+            }
+            catch (Exception ex)
+            {
+                return Json(new
+                {
+                    success = false,
+                    message = "Failed to suspend class. Please try again later.",
+                    error = ex.Message
+                });
+            }
+        }
     }
 
     public class UpdateStudentStatusRequest

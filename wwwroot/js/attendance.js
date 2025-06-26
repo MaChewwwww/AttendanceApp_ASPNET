@@ -562,7 +562,7 @@ function showAttendanceUpdateConfirmation(record, newStatus, selectElement) {
                 </p>
                 <div class="mt-3 text-sm text-gray-500">
                     <div>Student ID: ${record.student_number}</div>
-                    <div>Date: ${new Date(record.attendance_date).toLocaleDateString()}</div>
+                    <div>Date: ${record.attendance_date}</div>
                     <div>Time: ${record.attendance_time || 'N/A'}</div>
                     <div>Attendance ID: ${attendanceId}</div>
                     <div class="mt-2 p-2 bg-blue-50 rounded text-xs">
@@ -992,13 +992,18 @@ function showAttendanceUpdateNotification(record, newStatus) {
     // Find the notification area
     const notificationArea = document.getElementById('attendanceNotificationArea');
     if (!notificationArea) return;
-    
+
     // Remove any existing notification
     notificationArea.innerHTML = '';
-    
-    // Create a notification inside the modal
+
+    // Create a notification absolutely positioned at the top right of the modal (flush to edge)
     const notification = document.createElement('div');
-    notification.className = 'bg-green-100 border border-green-400 text-green-700 px-3 py-2 rounded-lg shadow-lg transition-all duration-300 transform translate-x-0 opacity-100 text-sm min-w-[250px]';
+    notification.className = 'bg-green-100 border border-green-400 text-green-700 px-3 py-2 rounded-lg shadow-lg transition-all duration-300 transform opacity-100 text-sm min-w-[250px]';
+    notification.style.position = 'absolute';
+    notification.style.top = '0';
+    notification.style.right = '0';
+    notification.style.margin = '1rem';
+    notification.style.zIndex = '11000';
     notification.innerHTML = `
         <div class="flex items-center justify-between">
             <div class="flex items-center">
@@ -1010,15 +1015,13 @@ function showAttendanceUpdateNotification(record, newStatus) {
             </button>
         </div>
     `;
-    
-    // Add notification to the notification area
+
     notificationArea.appendChild(notification);
-    
+
     // Auto-remove notification after 4 seconds
     setTimeout(() => {
         if (notification && notification.parentElement) {
             notification.style.opacity = '0';
-            notification.style.transform = 'translateX(20px)';
             setTimeout(() => {
                 if (notification && notification.parentElement) {
                     notification.remove();
@@ -1029,15 +1032,14 @@ function showAttendanceUpdateNotification(record, newStatus) {
 }
 
 function showAttendanceUpdateError(message) {
-    const notificationArea = document.getElementById('attendanceNotificationArea');
-    if (!notificationArea) return;
-    
-    // Remove any existing notification
-    notificationArea.innerHTML = '';
-    
-    // Create error notification
+    // Show error notification as a fixed overlay in the center (fail notification)
     const notification = document.createElement('div');
     notification.className = 'bg-red-100 border border-red-400 text-red-700 px-3 py-2 rounded-lg shadow-lg transition-all duration-300 transform translate-x-0 opacity-100 text-sm min-w-[250px]';
+    notification.style.position = 'fixed';
+    notification.style.top = '35%';
+    notification.style.right = '45%';
+    notification.style.transform = 'translateX(50%)';
+    notification.style.zIndex = '11000';
     notification.innerHTML = `
         <div class="flex items-center justify-between">
             <div class="flex items-center">
@@ -1049,14 +1051,13 @@ function showAttendanceUpdateError(message) {
             </button>
         </div>
     `;
-    
-    notificationArea.appendChild(notification);
-    
+    document.body.appendChild(notification);
+
     // Auto-remove after 5 seconds
     setTimeout(() => {
         if (notification && notification.parentElement) {
             notification.style.opacity = '0';
-            notification.style.transform = 'translateX(20px)';
+            notification.style.transform = 'translateX(60%)';
             setTimeout(() => {
                 if (notification && notification.parentElement) {
                     notification.remove();
@@ -1169,155 +1170,119 @@ function applyAttendanceFilters() {
     renderAttendanceRecordsTable();
 }
 
-function attendanceQuickFilter(filterType) {
-    // Update UI for active quick filter
-    document.querySelectorAll('[id^="attendanceQuickFilter-"]').forEach(pill => {
-        pill.classList.remove('active', 'bg-green-100', 'text-green-700', 'border-green-200');
-        pill.classList.add('bg-gray-100', 'text-gray-600', 'border-gray-200');
-    });
-    
-    const activePill = document.getElementById(`attendanceQuickFilter-${filterType}`);
-    if (activePill) {
-        activePill.classList.add('active', 'bg-green-100', 'text-green-700', 'border-green-200');
-        activePill.classList.remove('bg-gray-100', 'text-gray-600', 'border-gray-200');
+// --- Suspend Class Modal Logic ---
+
+// Helper to get assignedCourseId for the modal (from currentAttendanceData)
+function getSuspendAssignedCourseId() {
+    if (currentAttendanceData && currentAttendanceData.AssignedCourseId) {
+        return currentAttendanceData.AssignedCourseId;
     }
-    
-    // Apply the filter
-    const today = new Date();
-    const startOfWeek = new Date(today.setDate(today.getDate() - today.getDay()));
-    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    
-    switch(filterType) {
-        case 'all':
-            filteredAttendanceRecords = [...attendanceRecordsData];
-            break;
-        case 'present':
-            filteredAttendanceRecords = attendanceRecordsData.filter(r => r.status.toLowerCase() === 'present');
-            break;
-        case 'late':
-            filteredAttendanceRecords = attendanceRecordsData.filter(r => r.status.toLowerCase() === 'late');
-            break;
-        case 'absent':
-            filteredAttendanceRecords = attendanceRecordsData.filter(r => r.status.toLowerCase() === 'absent');
-            break;
-        case 'today':
-            const todayStr = new Date().toISOString().split('T')[0];
-            filteredAttendanceRecords = attendanceRecordsData.filter(r => r.attendance_date === todayStr);
-            break;
-        case 'this-week':
-            filteredAttendanceRecords = attendanceRecordsData.filter(r => new Date(r.attendance_date) >= startOfWeek);
-            break;
-        case 'this-month':
-            filteredAttendanceRecords = attendanceRecordsData.filter(r => new Date(r.attendance_date) >= startOfMonth);
-            break;
-    }
-    
-    // Update summary cards with filtered data
-    updateAttendanceSummaryCards();
-    
-    renderAttendanceRecordsTable();
+    // fallback: try to get from modal data attribute if needed
+    return null;
 }
 
-function clearAttendanceFilters() {
-    document.getElementById('attendanceMonthFilter').value = '';
-    document.getElementById('attendanceDayFilter').value = '';
-    applyAttendanceFilters();
-}
-
-function clearAttendanceSearchFilters() {
-    document.getElementById('attendanceStudentSearchInput').value = '';
-    document.getElementById('attendanceSortSelect').value = 'name-asc';
-    attendanceQuickFilter('all');
-}
-
-function exportAttendanceRecords() {
-    if (filteredAttendanceRecords.length === 0) {
-        alert('No records to export');
-        return;
+// Ensure suspend modal opens on button click
+document.addEventListener('DOMContentLoaded', function() {
+    // Attach openSuspendClassModal to the button if not already attached
+    const suspendBtn = document.getElementById('suspendClassBtn');
+    if (suspendBtn) {
+        suspendBtn.onclick = openSuspendClassModal;
     }
-    
-    // Create CSV content
-    const headers = ['Student Name', 'Student Number', 'Date', 'Time', 'Status'];
-    const csvContent = [
-        headers.join(','),
-        ...filteredAttendanceRecords.map(record => [
-            `"${record.student_name}"`,
-            record.student_number,
-            record.attendance_date,
-            record.attendance_time || 'N/A',
-            record.status
-        ].join(','))
-    ].join('\n');
-    
-    // Download CSV
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `attendance-records-${new Date().toISOString().split('T')[0]}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
-}
 
-function printAttendanceRecords() {
-    if (filteredAttendanceRecords.length === 0) {
-        alert('No records to print');
-        return;
+    // Attach submit handler for suspend class form
+    const suspendForm = document.getElementById('suspendClassForm');
+    if (suspendForm) {
+        suspendForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            // Get values
+            const reason = document.getElementById('suspendReason').value;
+            const type = document.getElementById('suspendType').value;
+            const assignedCourseId = getSuspendAssignedCourseId();
+
+            // Basic validation
+            if (!assignedCourseId) {
+                showAttendanceSuspendNotification('Course information not found.');
+                return;
+            }
+            if (!type) {
+                showAttendanceSuspendNotification('Please select a type.');
+                return;
+            }
+
+            // Disable submit button
+            const submitBtn = suspendForm.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Suspending...';
+
+            try {
+                // API call
+                const response = await fetch(`/Faculty/SuspendClassToday?assignedCourseId=${assignedCourseId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({ reason, type })
+                });
+                const result = await response.json();
+
+                // Enable button
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Suspend';
+
+                if (result.success) {
+                    closeSuspendClassModal();
+                    showAttendanceSuspendNotification('Class suspended successfully.');
+                    // Do not reload the main modal's data
+                } else {
+                    showAttendanceSuspendNotification(result.message || 'Failed to suspend class.');
+                }
+            } catch (err) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Suspend';
+                showAttendanceSuspendNotification('Error suspending class. Please try again.');
+            }
+        });
     }
-    
-    const printWindow = window.open('', '_blank');
-    const printContent = `
-        <html>
-        <head>
-            <title>Attendance Records</title>
-            <style>
-                body { font-family: Arial, sans-serif; margin: 20px; }
-                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-                th { background-color: #f2f2f2; }
-                .header { margin-bottom: 20px; }
-            </style>
-        </head>
-        <body>
-            <div class="header">
-                <h1>Attendance Records</h1>
-                <p>Course: ${currentAttendanceData ? currentAttendanceData.CourseName || 'N/A' : 'N/A'}</p>
-                <p>Generated: ${new Date().toLocaleString()}</p>
-                <p>Total Records: ${filteredAttendanceRecords.length}</p>
+});
+
+// Show notification in attendance modal after suspension
+function showAttendanceSuspendNotification(message) {
+    const notificationArea = document.getElementById('attendanceNotificationArea');
+    if (!notificationArea) return;
+    notificationArea.innerHTML = '';
+    const notification = document.createElement('div');
+    notification.className = 'bg-red-100 border border-red-400 text-red-700 px-3 py-2 rounded-lg shadow-lg transition-all duration-300 transform translate-x-0 opacity-100 text-sm min-w-[250px]';
+    // Use fixed positioning and a very high z-index to ensure it's always on top
+    notification.style.position = 'fixed';
+    notification.style.top = '35%';
+    notification.style.right = '45%';
+    notification.style.transform = 'translateX(50%)';
+    notification.style.zIndex = '11000';
+    notification.innerHTML = `
+        <div class="flex items-center justify-between">
+            <div class="flex items-center">
+                <i class="fas fa-ban mr-2 text-red-600"></i>
+                <span>${message}</span>
             </div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Student Name</th>
-                        <th>Student Number</th>
-                        <th>Date</th>
-                        <th>Time</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${filteredAttendanceRecords.map(record => `
-                        <tr>
-                            <td>${record.student_name}</td>
-                            <td>${record.student_number}</td>
-                            <td>${new Date(record.attendance_date).toLocaleDateString()}</td>
-                            <td>${record.attendance_time || 'N/A'}</td>
-                            <td>${record.status}</td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-        </body>
-        </html>
+            <button onclick="this.parentElement.parentElement.remove()" class="ml-2 text-red-500 hover:text-red-700 transition-colors">
+                <i class="fas fa-times text-xs"></i>
+            </button>
+        </div>
     `;
-    
-    printWindow.document.write(printContent);
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
-    printWindow.close();
+    document.body.appendChild(notification);
+    setTimeout(() => {
+        if (notification && notification.parentElement) {
+            notification.style.opacity = '0';
+            notification.style.transform = 'translateX(60%)';
+            setTimeout(() => {
+                if (notification && notification.parentElement) {
+                    notification.remove();
+                }
+            }, 300);
+        }
+    }, 4000);
 }
 
 // Handle escape key for attendance modal
