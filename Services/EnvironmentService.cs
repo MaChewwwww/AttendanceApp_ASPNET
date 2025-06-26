@@ -7,7 +7,7 @@ namespace AttendanceApp_ASPNET.Services
     {
         private readonly HttpClient _httpClient;
         private readonly IConfiguration _configuration;
-        private const string WeatherApiKey = "87dbe1388ca54392a53202040250906";
+        private const string WeatherApiKey = "3072ab62435749a28c0124258252606";
 
         public EnvironmentService(HttpClient httpClient, IConfiguration configuration)
         {

@@ -18,6 +18,12 @@ A modern, secure attendance management system built with ASP.NET Core featuring 
 - **Course Details & Analytics** with comprehensive student directories
 - **Attendance History Tracking** with detailed record visualization
 
+### 📈 **Faculty Analytics Dashboard** (v1.3.0)
+- **Personal Attendance Overview** for faculty with statistics and trends
+- **Course & Academic Year Summaries** with aggregated stats
+- **Interactive Data Visualization** (charts, graphs)
+- **Expanded Faculty Attendance Endpoints** for analytics and summaries
+
 ### 🌐 **Modern Web Interface**
 - **Responsive Design** using Tailwind CSS
 - **Real-time Form Validation** with instant feedback
@@ -90,7 +96,7 @@ Create or update `appsettings.json`:
 {
   "ApiSettings": {
     "ApiKey": "your-api-key-here",
-    "ApiBaseUrl": "http://localhost:6000"
+    "ApiBaseUrl": "http://localhost:8000"
   },
   "Logging": {
     "LogLevel": {
@@ -136,49 +142,60 @@ The application automatically redirects to `/Auth/Register` for new users.
 ### Directory Structure
 ```
 AttendanceApp_ASPNET/
-├── 📁 Controllers/
-│   ├── AuthController.cs          # Authentication endpoints
-│   ├── StudentController.cs       # Student dashboard & academic features
+├── Controllers/
+│   ├── AuthController.cs                # Authentication endpoints
+│   ├── StudentController.cs             # Student dashboard & academic features
+│   ├── FacultyController.cs             # Faculty analytics & attendance endpoints (v1.3.0)
 │   └── Base/
-│       └── StudentBaseController.cs   # Base authentication logic
-├── 📁 Views/
-│   ├── Auth/                      # Authentication views
+│       └── StudentBaseController.cs     # Base authentication logic
+|       └── FacultyBaseController.cs     # Base authentication logic
+├── Views/
+│   ├── Auth/                            # Authentication views
 │   │   ├── Login.cshtml
 │   │   ├── Register.cshtml
-│   │   ├── RegisterStep2.cshtml   # Face capture
-│   │   ├── RegisterStep3.cshtml   # OTP verification
-│   │   └── RegisterStep4.cshtml   # Success confirmation
-│   ├── Student/                   # Student dashboard views
-│   │   ├── Dashboard.cshtml       # Main dashboard
-│   │   ├── Profile.cshtml         # Student profile
-│   │   ├── Courses.cshtml         # Course management
-│   │   ├── CourseDetails.cshtml   # Individual course details
-│   │   ├── Attendance.cshtml      # Attendance marking
-│   │   └── AttendanceHistory.cshtml # Historical records
+│   │   ├── RegisterStep2.cshtml         # Face capture
+│   │   ├── RegisterStep3.cshtml         # OTP verification
+│   │   └── RegisterStep4.cshtml         # Success confirmation
+│   ├── Student/                         # Student dashboard views
+│   │   ├── Dashboard.cshtml             # Main dashboard
+│   │   ├── Profile.cshtml               # Student profile
+│   │   ├── Courses.cshtml               # Course management
+│   │   ├── CourseDetails.cshtml         # Individual course details
+│   │   ├── Attendance.cshtml            # Attendance marking
+│   │   └── AttendanceHistory.cshtml     # Historical records
+│   ├── Faculty/                         # Faculty analytics & attendance views (v1.3.0)
+│   │   ├── Dashboard.cshtml             # Faculty analytics dashboard
+│   │   ├── AttendanceSummary.cshtml     # Attendance summary
+│   │   └── Courses.cshtml               # Faculty course analytics
 │   └── Shared/
 │       ├── _Layout.cshtml
-│       └── _AuthLayout.cshtml     # Authentication layout
-├── 📁 wwwroot/
-│   ├── css/                       # Stylesheets (Tailwind CSS)
-│   ├── js/                        # JavaScript modules
-│   │   ├── register.js            # Registration logic
-│   │   ├── Login.js               # Login functionality
-│   │   ├── ForgotPassword.js      # Password reset
-│   │   ├── NewPassword.js         # New password setup
-│   │   └── StudentSession.js      # Session management
-│   ├── lib/                       # Third-party libraries
-│   └── images/                    # Static images
-├── 📁 Services/
-│   ├── ApiService.cs              # Python API integration
-│   ├── IStudentManagementService.cs # Student management interface
-│   ├── IEnvironmentService.cs     # Location & weather services
-│   ├── ICourseService.cs          # Course management
-│   └── IStudentHistoryService.cs  # Attendance history
-├── 📁 Models/                     # Data models and DTOs
-├── 📁 version_update_logs/        # Version history
-├── Program.cs                     # Application entry point
-├── appsettings.json              # Configuration
-└── AttendaceApp_ASPNET.csproj    # Project file
+│       └── _AuthLayout.cshtml           # Authentication layout
+├── wwwroot/
+│   ├── css/                             # Stylesheets (Tailwind CSS)
+│   ├── js/                              # JavaScript modules
+│   │   ├── register.js                  # Registration logic
+│   │   ├── Login.js                     # Login functionality
+│   │   ├── ForgotPassword.js            # Password reset
+│   │   ├── NewPassword.js               # New password setup
+│   │   ├── StudentSession.js            # Session management
+│   │   └── FacultyAnalytics.js          # Faculty analytics dashboard (v1.3.0)
+│   ├── lib/                             # Third-party libraries
+│   └── images/                          # Static images
+├── Services/
+│   ├── ApiService.cs                    # Python API integration
+│   ├── IStudentManagementService.cs     # Student management interface
+│   ├── IEnvironmentService.cs           # Location & weather services
+│   ├── ICourseService.cs                # Course management
+│   ├── IStudentHistoryService.cs        # Attendance history
+│   ├── FacultyPersonalAttendanceService.cs      # Faculty analytics (v1.3.0)
+│   ├── FacultyAttendanceValidationService.cs    # Faculty attendance validation (v1.3.0)
+│   ├── FacultyAttendanceSubmissionService.cs    # Faculty attendance submission (v1.3.0)
+│   └── DashboardService.cs              # Dashboard data aggregation
+├── Models/                              # Data models and DTOs
+├── version_update_logs/                 # Version history
+├── Program.cs                           # Application entry point
+├── appsettings.json                     # Configuration
+└── AttendaceApp_ASPNET.csproj           # Project file
 ```
 
 ### Technology Stack
@@ -316,6 +333,12 @@ Update `appsettings.json` with your Python FastAPI backend:
 - **`POST /Student/CompleteOnboarding`** - Academic setup completion
 - **`POST /Student/SetUserLocation`** - Update user location data
 
+### Faculty Analytics Endpoints (v1.3.0)
+- **`GET /Faculty/Analytics`** - Faculty attendance dashboard and analytics
+- **`GET /Faculty/AttendanceSummary`** - Aggregated attendance stats per course/year
+- **`GET /Faculty/Courses`** - Faculty course list and analytics
+- **`POST /Faculty/UpdateAttendanceStatus`** - Update attendance status for students
+
 ### System Endpoints
 - **`GET /Student/CheckSessionStatus`** - Real-time session validation
 - **`POST /Student/SecureLogout`** - Secure session termination
@@ -408,8 +431,10 @@ Enable detailed logging in `appsettings.Development.json`:
 ## 📈 Version History
 
 See [version_update_logs/](./version_update_logs/) for detailed changelog:
-- **v1.0.0** - Complete authentication system with modern web interface
+- **v1.3.0** - Faculty Analytics, API & UI/UX Enhancements
+- **v1.2.0** - Advanced dashboard analytics & face recognition attendance
 - **v1.1.0** - Student dashboard, academic management, and attendance system
+- **v1.0.0** - Complete authentication system with modern web interface
 
 ## 🤝 Contributing
 
