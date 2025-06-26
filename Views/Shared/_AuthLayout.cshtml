@@ -352,7 +352,7 @@
                 <div id="slidingPanel" class="absolute inset-0 auth-slider transform z-20 content-container">
                     <video 
                         id="yourVideoId"
-                        src="/video/Copy%20of%20Copy%20of%20Attendify2.mp4" 
+                        src="/video/Attendify_Logo_Image.mp4" 
                         autoplay 
                         muted 
                         loop 
@@ -420,7 +420,7 @@
             <div id="otpSuccessMessage" class="hidden mb-6 rounded-lg bg-green-50 border border-green-200 p-4">
                 <div class="flex items-center">
                     <svg class="w-5 h-5 text-green-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 1186 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
                     </svg>
                     <p class="text-base font-medium text-green-800">Login successful! Redirecting...</p>
                 </div>
@@ -430,7 +430,7 @@
             <div id="otpResendSuccessMessage" class="hidden mb-6 rounded-lg bg-blue-50 border border-blue-200 p-4 animate-pulse">
                 <div class="flex items-center">
                     <svg class="w-5 h-5 text-blue-400 mr-3" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 1186 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
                     </svg>
                     <p class="text-base font-medium text-blue-800">New verification code sent successfully!</p>
                 </div>
@@ -493,7 +493,7 @@
 
             // Only jump to 6s if loaded directly at /auth/register
             if (window.location.pathname.toLowerCase().endsWith('/auth/register')) {
-                video.currentTime = 6;
+                video.currentTime = 11.25;
                 video.play().catch(() => {});
             }
 
@@ -503,7 +503,7 @@
             // Loop video from 12s when it ends
             video.addEventListener('ended', function() {
                 // Set to 9s and play again
-                video.currentTime = 11.5; // Start from 12s
+                video.currentTime = 11.25; // Start from 12s
                 // Wait for seek to complete before playing
                 video.pause();
                 video.addEventListener('seeked', function handler() {
@@ -988,7 +988,7 @@
 
                 if (view === 'register') {
                     // Jump to 5 seconds and play
-                    video.currentTime = 5;
+                    video.currentTime = 11.25;
                     video.play().catch(() => {});
                 } else {
                     // Start from beginning for login or other views
@@ -1153,7 +1153,7 @@
 
             // Only jump to 6s if loaded directly at /auth/register
             if (window.location.pathname.toLowerCase().endsWith('/auth/register')) {
-                video.currentTime = 6;
+                video.currentTime = 11.25;
                 video.play().catch(() => {});
             }
 
@@ -1163,7 +1163,7 @@
             // Loop video from 9s when it ends
             video.addEventListener('ended', function() {
                 // Set to 9s and play again
-                video.currentTime = 11.5;
+                video.currentTime = 11.25;
                 // Wait for seek to complete before playing
                 video.pause();
                 video.addEventListener('seeked', function handler() {
