@@ -7,7 +7,7 @@ namespace AttendanceApp_ASPNET.Controllers.Base
 {
     // Base controller for all student-related controllers.
     // Handles authentication, role validation, onboarding enforcement, and security measures.
-    public abstract class StudentBaseController : Controller
+    public class StudentBaseController : Controller
     {
         protected readonly IApiService _apiService;
 

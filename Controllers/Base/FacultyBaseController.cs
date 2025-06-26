@@ -5,7 +5,7 @@ using System.Text.Json;
 
 namespace AttendanceApp_ASPNET.Controllers.Base
 {
-    public abstract class FacultyBaseController : Controller
+    public class FacultyBaseController : Controller
     {
         protected readonly IApiService _apiService;
 
