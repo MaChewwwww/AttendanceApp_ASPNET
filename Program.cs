@@ -23,6 +23,8 @@ builder.Services.AddSession(options =>
 // Configure API settings
 builder.Services.Configure<ApiSettings>(builder.Configuration.GetSection("ApiSettings"));
 
+// DEPENDENCY INJECTION
+
 // Register HttpClient and ApiService
 builder.Services.AddHttpClient<IApiService, ApiService>();
 
